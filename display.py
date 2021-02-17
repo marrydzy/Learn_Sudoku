@@ -9,8 +9,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tabulate import tabulate
 
-import board_dspl
-
 DEBUG = False
 
 ERROR_MESSAGES = {

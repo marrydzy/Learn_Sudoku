@@ -10,6 +10,41 @@ from pathlib import Path
 from display import error_message, did_you_mean_message
 
 
+def block_cells(k):
+    """ return tuple of cells in k'th square """
+    cells = []
+    row = (k // 3) * 3
+    col = (k % 3) * 3
+    for offset in range(3):
+        for cell in range((row + offset) * 9 + col, (row + offset) * 9 + col + 3):
+            cells.append(cell)
+    return tuple(cells)
+
+
+def neighbour_cells(cell):
+    """ return tuple of all cells crossing with the given cell """
+    cells = set(CELLS_IN_ROW[cell // 9]).union(
+        set(CELLS_IN_COL[cell % 9]).union(
+            set(CELLS_IN_SQR[(cell // 27) * 3 + (cell % 9) // 3])
+        )
+    )
+    cells.discard(cell)
+    return cells
+
+
+CELLS_IN_ROW = tuple(tuple(n for n in range(i * 9, (i + 1) * 9)) for i in range(9))
+CELLS_IN_COL = tuple(tuple(n for n in range(i, 81, 9)) for i in range(9))
+CELLS_IN_SQR = tuple(block_cells(i) for i in range(9))
+
+ALL_NBRS = tuple(neighbour_cells(i) for i in range(81))
+SUDOKU_VALUES_LIST = list('123456789')
+SUDOKU_VALUES_SET = set('123456789')
+
+CELL_ROW = tuple(i // 9 for i in range(81))
+CELL_COL = tuple(i % 9 for i in range(81))
+CELL_SQR = tuple((i // 27) * 3 + (i % 9) // 3 for i in range(81))
+
+
 def check_file(pathname, data, additional_info=""):
     """ Check if the required files exist
     - otherwise show appropriate message and with error code = -1

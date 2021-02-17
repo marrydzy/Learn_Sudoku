@@ -5,27 +5,8 @@
 import time
 import itertools
 
-
-def block_cells(k):
-    """ return tuple of cells in k'th square """
-    cells = []
-    row = (k // 3) * 3
-    col = (k % 3) * 3
-    for offset in range(3):
-        for cell in range((row + offset) * 9 + col, (row + offset) * 9 + col + 3):
-            cells.append(cell)
-    return tuple(cells)
-
-
-def neighbour_cells(cell):
-    """ return tuple of all cells crossing with the given cell """
-    cells = set(CELLS_IN_ROW[cell // 9]).union(
-        set(CELLS_IN_COL[cell % 9]).union(
-            set(CELLS_IN_SQR[(cell // 27) * 3 + (cell % 9) // 3])
-        )
-    )
-    cells.discard(cell)
-    return cells
+from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
+from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
 
 
 def get_stats(func):
@@ -46,19 +27,6 @@ def get_stats(func):
     function_wrapper.time_in = 0
 
     return function_wrapper
-
-
-CELLS_IN_ROW = tuple(tuple(n for n in range(i * 9, (i + 1) * 9)) for i in range(9))
-CELLS_IN_COL = tuple(tuple(n for n in range(i, 81, 9)) for i in range(9))
-CELLS_IN_SQR = tuple(block_cells(i) for i in range(9))
-
-ALL_NBRS = tuple(neighbour_cells(i) for i in range(81))
-SUDOKU_VALUES_LIST = list('123456789')
-SUDOKU_VALUES_SET = set('123456789')
-
-CELL_ROW = tuple(i // 9 for i in range(81))
-CELL_COL = tuple(i % 9 for i in range(81))
-CELL_SQR = tuple((i // 27) * 3 + (i % 9) // 3 for i in range(81))
 
 
 def _check_zone(board, window, clue, zone, vertical):
@@ -113,14 +81,12 @@ def _find_unique_positions(board, window, house):
     board_updated = False
     house_options = SUDOKU_VALUES_SET.copy()
     house_options -= set(''.join([board[cell_id] for cell_id in house]))
-    print(f'{house_options = }')
     for option in house_options:
         in_cells = []
         for cell in house:
             if board[cell] == ".":
                 cell_opts = SUDOKU_VALUES_SET.copy()
                 cell_opts -= set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
-                print(f'{option = } {cell = } {cell_opts = }')
                 if option in  cell_opts:
                     in_cells.append(cell)
         if len(in_cells) == 1:
@@ -151,7 +117,6 @@ def manual_solver(board, window, _):
         board_updated = _find_naked_singles(board, window)
 
     # TODO - check if solved
-    print()
     board_updated = True
     while board_updated:
         board_updated = False
@@ -666,7 +631,7 @@ def naked_quads(board, window, lone_singles):
             break
     else:
         if naked_quads.board_updated:
-            print('\nnaked quads')
+            print('\nnaked quads')      # TODO - debugging code?
         return True if naked_quads.board_updated else None
     return False
 

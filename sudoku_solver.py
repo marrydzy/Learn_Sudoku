@@ -17,6 +17,7 @@ import math
 
 from progress.bar import Bar
 
+import solver_manual
 import solver_methods
 import display
 import graphics
@@ -358,7 +359,7 @@ def _run_in_silence():
 
 def _set_tools():
     techniques = {
-        "m": (solver_methods.manual_solver, "manual_solution"),
+        "m": (solver_manual.manual_solver, "manual_solution"),
         "u": (solver_methods.unique_values, "unique_values"),
         "h": (solver_methods.hidden_pairs, "hidden_pairs"),
         "p": (solver_methods.naked_twins, "naked_twins"),
