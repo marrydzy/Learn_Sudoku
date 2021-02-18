@@ -10,6 +10,7 @@ GREY = (160, 160, 160)
 MAGENTA = (255, 0, 255)
 LIME = (0, 255, 0)
 CYAN = (0, 255, 255)
+SILVER = (192, 192, 192)
 LIGHTGREEN = (190, 255, 190)
 LIGHTPINK = (255, 182, 193)
 GAINSBORO = (230, 230, 230)
@@ -273,6 +274,7 @@ class AppWindow:
 
         start = time.time()     # TODO
         house = kwargs["house"] if "house" in kwargs else None
+        greyed_out = kwargs["greyed_out"] if "greyed_out" in kwargs else None
         other_cells = kwargs["other_cells"] if "other_cells" in kwargs else None
 
         for row_id in range(9):
@@ -282,11 +284,16 @@ class AppWindow:
                             row_id * self.cell_size + self.top_margin)
                 pygame.draw.rect(self.screen, WHITE,
                                  (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
+                if house and cell_id in house:
+                    pygame.draw.rect(
+                        self.screen, C_HOUSE,   # TODO
+                        (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
+                if greyed_out and cell_id in greyed_out:
+                    pygame.draw.rect(
+                        self.screen, SILVER,
+                        (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
+
                 if board[cell_id] != '.':
-                    if house and cell_id in house:
-                        pygame.draw.rect(
-                            self.screen, C_HOUSE,   # TODO
-                            (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
                     if other_cells and cell_id in other_cells:
                         pygame.draw.rect(
                             self.screen, C_OTHER_CELLS,   # TODO

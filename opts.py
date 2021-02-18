@@ -246,14 +246,14 @@ def set_solver_options(config, data):
         "--techniques",
         type=str,
         help="basic techniques used for solving a sudoku",
-        default="muhoyirjxspt"      # "muhoyirpxstqj"  TODO
+        default="muphoyirjxst"      # "muhoyirpxstqj"  TODO
     )
     parser.add_argument(
         "-p",
         "--peep",
         type=str,
         help="have a look at working of the selected solving techniques",
-        default="meuhoyirjxspt",  # TODO  "meuhoyirjxspt"
+        default="muhoyirjxspt",  # TODO  "meuhoyirjxspt"
     )
     parser.add_argument(
         "-s",

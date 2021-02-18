@@ -24,6 +24,7 @@ import graphics
 import sudoku_ocr
 import opts
 import research
+from utils import is_solved
 
 
 RESEARCH = False
@@ -73,6 +74,9 @@ def apply_standard_techniques():
                                   house=solver_methods.ALL_NBRS[cell])
         return True
 
+    if is_solved(board):
+        return True
+
     report_stats = bool(config["method_stats"] and data["current_loop"] == 0)
     window = data["graph_display"] if config['graphical_mode'] else None
     board_changed = True
@@ -81,8 +85,9 @@ def apply_standard_techniques():
         if lone_singles:
             if not _erase_pencil_marks():
                 return False
-        if all(len(board[i]) == 1 for i in range(81)):
+        if is_solved(board):
             return True
+
         for method in methods[1:]:      # TODO - manual solution
             ret = method(board, window, lone_singles, report_stats)
             if ret is False:
@@ -198,14 +203,6 @@ def init_board():
     iter_stack.clear()
 
 
-def is_solved():
-    """ Check if all cells have their clue """
-    for cell_id in range(81):
-        if len(board[cell_id]) > 1:
-            return False
-    return True
-
-
 def run_solver(progress_bar=None):
     """Initialize the current sudoku board and resolve the puzzle.
     Return: True if the sudoku puzzle was solved, False otherwise
@@ -229,10 +226,10 @@ def run_solver(progress_bar=None):
     # print('\nDupa')
     # TODO - adding manual solution
     methods[0](board, data["graph_display"], None)
-
-    init_cells_options()
+    # init_cells_options()
+    
     ret_code = apply_standard_techniques()
-    if ret_code and not is_solved():
+    if ret_code and not is_solved(board):
         ret_code = find_cells_values()
     data["resolution_time"] = time.time() - start_time
 

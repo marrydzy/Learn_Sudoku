@@ -45,6 +45,16 @@ CELL_COL = tuple(i % 9 for i in range(81))
 CELL_SQR = tuple((i // 27) * 3 + (i % 9) // 3 for i in range(81))
 
 
+def is_solved(board):
+    """ check if the board is solved """
+    return all(board[i] != "." and len(board[i]) == 1 for i in range(81))
+
+
+def is_clue(value):
+    """ check if the cell has clue (is solved) """
+    return False if value == "." or len(value) != 1 else True
+
+
 def check_file(pathname, data, additional_info=""):
     """ Check if the required files exist
     - otherwise show appropriate message and with error code = -1
