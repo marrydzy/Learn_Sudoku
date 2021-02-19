@@ -12,7 +12,10 @@ naked_singles = []
 
 
 def _open_singles(board, window, options_set=False):
-    """ 'Open Singles' technique (see: https://www.learn-sudoku.com/open-singles.html) """
+    """ 'Open Singles' technique (see: https://www.learn-sudoku.com/open-singles.html)
+        The technique is applicable only in the initial phase of sudoku solving process when
+        options in empty cells haven't been calculated yet.
+    """
     if options_set:
         return False
 
@@ -48,10 +51,15 @@ def _open_singles(board, window, options_set=False):
     return board_updated
 
 
-def _visual_elimination(board, window):
-    """ 'Visual Elimination' techniques (see: https://www.learn-sudoku.com/visual-elimination.html) """
+def _visual_elimination(board, window, options_set=False):
+    """ 'Visual Elimination' techniques (see: https://www.learn-sudoku.com/visual-elimination.html)
+        The technique is applicable only in the initial phase of sudoku solving process when
+        options in empty cells haven't been calculated yet.
+    """
+    if options_set:
+        return False
 
-    def _check_zone(board, window, clue, zone, vertical):
+    def _check_zone(clue, zone, vertical):
         """ Look for lone singles in the zone (vertical or horizontal stack of squares) """
         cols_rows = CELLS_IN_COL if vertical else CELLS_IN_ROW
         with_clues = [cell for offset in range(3) for cell in cols_rows[3*zone + offset] if board[cell] == clue]
@@ -95,10 +103,10 @@ def _visual_elimination(board, window):
         clue_found = False
         for clue in SUDOKU_VALUES_LIST:
             for zone in range(3):
-                if _check_zone(board, window, clue, zone, True):
+                if _check_zone(clue, zone, True):
                     clue_found = True
             for zone in range(3):
-                if _check_zone(board, window, clue, zone, False):
+                if _check_zone(clue, zone, False):
                     clue_found = True
         if clue_found:
             board_updated = True
@@ -106,49 +114,46 @@ def _visual_elimination(board, window):
     return board_updated
 
 
-def _naked_singles(board, window):
+def _naked_singles(board, window, options_set=False):
     """ 'Naked Singles' technique (see: https://www.learn-sudoku.com/lone-singles.html) """
+    if options_set:
+        while naked_singles:
+            naked_single = naked_singles.pop(0)
+            clue = board[naked_single]
+            to_remove = []
+            for cell in ALL_NBRS[naked_single]:
+                if clue in board[cell]:
+                    to_remove.append((clue, cell))
+                    board[cell] = board[cell].replace(clue, "")
+                    if not board[cell]:
+                        raise DeadEndException
+                    elif len(board[cell]) == 1:
+                        naked_singles.append(cell)
+            if window:
+                window.display_info("'Naked Singles' technique:")
+                window.draw_board(board, "hidden_pairs", new_clue=naked_single,
+                                  remove=to_remove, naked_singles=naked_singles)
+        return True
+    else:
+        def _solve_lone_singles():
+            """ Find naked singles in the remaining cells without clue """
+            fix_found = False
+            for cell in range(81):
+                if board[cell] == ".":
+                    cell_opts = SUDOKU_VALUES_SET.copy()
+                    cell_opts -= set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
+                    if len(cell_opts) == 1:
+                        board[cell] = cell_opts.pop()
+                        fix_found = True
+                        if window:
+                            window.display_info("'Naked Singles' technique:")
+                            window.draw_board(board, "manual_solution", singles=[cell,], new_clue=cell)
+            return fix_found
 
-    def _solve_lone_singles():
-        """ Find naked singles in the remaining cells without clue """
-        fix_found = False
-        for cell in range(81):
-            if board[cell] == ".":
-                cell_opts = SUDOKU_VALUES_SET.copy()
-                cell_opts -= set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
-                if len(cell_opts) == 1:
-                    board[cell] = cell_opts.pop()
-                    fix_found = True
-                    if window:
-                        window.display_info("'Naked Singles' technique:")
-                        window.draw_board(board, "manual_solution", singles=[cell,], new_clue=cell)
-        return fix_found
-
-    board_updated = False
-    while _solve_lone_singles():
-        board_updated = True
-
-    return board_updated
-
-
-def _solve_naked_singles(board, window):
-    """ Solve identified 'naked singles' """
-    while naked_singles:
-        naked_single = naked_singles.pop(0)
-        clue = board[naked_single]
-        to_remove = []
-        for cell in ALL_NBRS[naked_single]:
-            if clue in board[cell]:
-                to_remove.append((clue, cell))
-                board[cell] = board[cell].replace(clue, "")
-                if not board[cell]:
-                    raise DeadEndException
-                elif len(board[cell]) == 1:
-                    naked_singles.append(cell)
-        if window:
-            window.display_info("'Naked Singles' technique:")
-            window.draw_board(board, "hidden_pairs", new_clue=naked_single,
-                              remove=to_remove, naked_singles=naked_singles)
+        board_updated = False
+        while _solve_lone_singles():
+            board_updated = True
+        return board_updated
 
 
 def _hidden_singles(board, window, options_set=False):
@@ -197,7 +202,7 @@ def _hidden_singles(board, window, options_set=False):
                                 naked_singles.append(cell_id)
                     if window:
                         window.set_current_board(board)
-                    _solve_naked_singles(board, window)
+                    _naked_singles(board, window, options_set)
                     break
             else:
                 break
@@ -308,6 +313,7 @@ def manual_solver(board, window, _):
     """ TODO - manual solver """
 
     board_updated = True
+    with_options = False
     while board_updated:
         board_updated = False
         if _open_singles(board, window):
