@@ -227,7 +227,7 @@ def run_solver(progress_bar=None):
     # TODO - adding manual solution
     methods[0](board, data["graph_display"], None)
     # init_cells_options()
-    
+
     ret_code = apply_standard_techniques()
     if ret_code and not is_solved(board):
         ret_code = find_cells_values()

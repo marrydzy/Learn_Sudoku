@@ -276,6 +276,7 @@ class AppWindow:
         house = kwargs["house"] if "house" in kwargs else None
         greyed_out = kwargs["greyed_out"] if "greyed_out" in kwargs else None
         other_cells = kwargs["other_cells"] if "other_cells" in kwargs else None
+        naked_singles = kwargs["naked_singles"] if "naked_singles" in kwargs else []
 
         for row_id in range(9):
             for col_id in range(9):
@@ -307,7 +308,7 @@ class AppWindow:
                             self._higlight_clue(cell_id, cell_pos, **kwargs)
                             self._render_clue(board[cell_id], cell_pos)
                     else:
-                        if len(self.input_board[cell_id]) == 1:
+                        if len(self.input_board[cell_id]) == 1 and cell_id not in naked_singles:
                             self._higlight_clue(cell_id, cell_pos, **kwargs)
                             self._render_clue(self.input_board[cell_id], cell_pos)
                         else:

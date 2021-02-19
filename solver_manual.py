@@ -5,18 +5,23 @@
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
-from utils import is_clue
+from utils import is_clue, DeadEndException
 
 
-def _open_singles(board, window):
+naked_singles = []
+
+
+def _open_singles(board, window, options_set=False):
     """ 'Open Singles' technique (see: https://www.learn-sudoku.com/open-singles.html) """
+    if options_set:
+        return False
 
-    def _set_missing_number(board, window, house):
+    def _set_missing_number(house):
         open_cells = [cell for cell in house if not is_clue(board[cell])]
         if len(open_cells) == 1:
             missing_value = SUDOKU_VALUES_SET.copy() - set(''.join([board[cell] for cell in house]))
+            assert(len(missing_value) == 1)
             board[open_cells[0]] = missing_value.pop()
-            print("\nOpen Singles")
             if window:
                 window.display_info("'Open Singles' technique:")
                 window.draw_board(board, "manual_solution", singles=open_cells, new_clue=open_cells[0])
@@ -29,13 +34,13 @@ def _open_singles(board, window):
     while clue_found:
         clue_found = False
         for row in range(9):
-            if _set_missing_number(board, window, CELLS_IN_ROW[row]):
+            if _set_missing_number(CELLS_IN_ROW[row]):
                 clue_found = True
         for col in range(9):
-            if _set_missing_number(board, window, CELLS_IN_COL[col]):
+            if _set_missing_number(CELLS_IN_COL[col]):
                 clue_found = True
         for sqr in range(9):
-            if _set_missing_number(board, window, CELLS_IN_SQR[sqr]):
+            if _set_missing_number(CELLS_IN_SQR[sqr]):
                 clue_found = True
         if clue_found:
             board_updated = True
@@ -104,59 +109,104 @@ def _visual_elimination(board, window):
 def _naked_singles(board, window):
     """ 'Naked Singles' technique (see: https://www.learn-sudoku.com/lone-singles.html) """
 
-    def _solve_lone_singles(board, window):
+    def _solve_lone_singles():
         """ Find naked singles in the remaining cells without clue """
-        board_updated = False
+        fix_found = False
         for cell in range(81):
             if board[cell] == ".":
                 cell_opts = SUDOKU_VALUES_SET.copy()
                 cell_opts -= set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
                 if len(cell_opts) == 1:
                     board[cell] = cell_opts.pop()
-                    board_updated = True
+                    fix_found = True
                     if window:
                         window.display_info("'Naked Singles' technique:")
                         window.draw_board(board, "manual_solution", singles=[cell,], new_clue=cell)
-        return board_updated
+        return fix_found
 
     board_updated = False
 
     clue_found = True
     while clue_found:
-        clue_found = _solve_lone_singles(board, window)
+        clue_found = _solve_lone_singles()
         if clue_found:
             board_updated = True
 
     return board_updated
 
 
-def _hidden_singles(board, window):
+def _solve_naked_singles(board, window):
+    """ Solve identified 'naked singles' """
+    while naked_singles:
+        naked_single = naked_singles.pop(0)
+        clue = board[naked_single]
+        to_remove = []
+        for cell in ALL_NBRS[naked_single]:
+            if clue in board[cell]:
+                to_remove.append((clue, cell))
+                board[cell] = board[cell].replace(clue, "")
+                if not board[cell]:
+                    raise DeadEndException
+                elif len(board[cell]) == 1:
+                    naked_singles.append(cell)
+        if window:
+            window.display_info("'Naked Singles' technique:")
+            window.draw_board(board, "hidden_pairs", new_clue=naked_single,
+                              remove=to_remove, naked_singles=naked_singles)
+
+
+def _hidden_singles(board, window, options_set=False):
     """ 'Hidden Singles' technique (see: https://www.learn-sudoku.com/hidden-singles.html) """
 
     def _find_unique_positions(board, window, house):
-        """ Find unique positions of missing clues within the house """
-        board_updated = False
-        house_options = SUDOKU_VALUES_SET.copy()
-        house_options -= set(''.join([board[cell_id] for cell_id in house]))
-        for option in house_options:
-            in_cells = []
-            greyed_out = []
-            for cell in house:
-                if board[cell] == ".":
-                    cell_opts = SUDOKU_VALUES_SET.copy()
-                    cell_opts -= set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
-                    if option in  cell_opts:
+        """ Find unique positions of missing clues within the house and 'solve' the cells """
+        cell_solved = False
+
+        while True:
+            if not options_set:
+                house_options = SUDOKU_VALUES_SET.copy()
+                house_options -= set(''.join([board[cell_id] for cell_id in house]))
+            else:
+                house_options = set(''.join(board[cell_id] for cell_id in house if len(board[cell_id]) > 1))
+            for option in house_options:
+                in_cells = []
+                greyed_out = []
+                for cell in house:
+                    if not options_set and board[cell] == ".":
+                        cell_opts = SUDOKU_VALUES_SET.copy()
+                        cell_opts -= set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
+                        if option in cell_opts:
+                            in_cells.append(cell)
+                        else:
+                            greyed_out.append(cell)
+                    if options_set and option in board[cell]:
                         in_cells.append(cell)
-                    else:
-                        greyed_out.append((cell))
-            if len(in_cells) == 1:
-                board[in_cells[0]] = option
-                board_updated = True
-                if window:
-                    window.display_info("'Hidden Singles' technique:")
-                    window.draw_board(board, "manual_solution", singles=[in_cells[0], ], new_clue=in_cells[0],
-                                      house=house, greyed_out=greyed_out)
-        return board_updated
+
+                if len(in_cells) == 1:
+                    board[in_cells[0]] = option
+                    cell_solved = True
+                    if not options_set and window:
+                        window.display_info("'Hidden Singles' technique:")
+                        window.draw_board(board, "manual_solution", singles=[in_cells[0], ], new_clue=in_cells[0],
+                                          house=house, greyed_out=greyed_out)
+                    if options_set and window:
+                        greyed_out = [(option, cell) for cell in ALL_NBRS[in_cells[0]] if option in board[cell]]
+                        window.display_info("'Hidden Singles' technique:")
+                        window.draw_board(board, "hidden_pairs", remove=greyed_out, singles=in_cells, house=house,
+                                          naked_singles=naked_singles)
+                    if options_set:
+                        for value, cell_id in greyed_out:
+                            board[cell_id] = board[cell_id].replace(value, "")
+                            if len(board[cell_id]) == 1:
+                                naked_singles.append(cell_id)
+                    if window:
+                        window.set_current_board(board)
+                    _solve_naked_singles(board, window)
+                    break
+            else:
+                break
+
+        return cell_solved      # TODO - should return True, None, False
 
     board_updated = False
 
@@ -176,6 +226,76 @@ def _hidden_singles(board, window):
             board_updated = True
 
     return board_updated
+
+
+def _hidden_pairs(board, window):
+    """A Hidden Pair is basically just a “buried” Naked Pair.
+    It occurs when two pencil marks appear in exactly two cells within
+    the same house (row, column, or block).
+    This technique doesn't solve any cells; instead it reveals Naked Pairs
+    by removing other candidates in the Naked Pair cells
+    (see https://www.learn-sudoku.com/hidden-pairs.html)
+    """
+
+    def _find_pairs(cells):
+        values_dic = {}
+        pairs_dic = {}
+        to_remove = []
+        pairs = []
+
+        for cell in cells:
+            for value in board[cell]:
+                if value in values_dic:
+                    values_dic[value].append(cell)
+                else:
+                    values_dic[value] = [cell]
+        for value, in_cells in values_dic.items():
+            if len(in_cells) == 2:
+                pair = tuple(in_cells)
+                if pair in pairs_dic:
+                    pairs_dic[pair].append(value)
+                else:
+                    pairs_dic[pair] = [value]
+
+        options_removed = False
+        for in_cells, values in pairs_dic.items():
+            if len(values) == 2:
+                pair = ''.join(values)
+                if len(board[in_cells[0]]) > 2:
+                    board[in_cells[0]] = pair
+                    options_removed = True
+                if len(board[in_cells[1]]) > 2:
+                    board[in_cells[1]] = pair
+                    options_removed = True
+                if options_removed:
+                    pairs.append(in_cells[0])
+                    pairs.append(in_cells[1])
+                    other_options = [value for value in '123456789' if value not in pair]
+                    for option in other_options:
+                        to_remove.append((option, in_cells[0]))
+                        to_remove.append((option, in_cells[1]))
+                    if window:
+                        window.draw_board(board, "hidden_pairs", remove=to_remove, subset=pairs, house=cells)
+        return options_removed
+
+    if window:
+        window.display_info("'Hidden Pairs' technique:")
+        window.set_current_board(board)
+
+    pair_found = False
+    board_updated = True
+    while board_updated:
+        board_updated = False
+        for i in range(9):
+            if _find_pairs(CELLS_IN_ROW[i]):
+                board_updated = True
+            if _find_pairs(CELLS_IN_COL[i]):
+                board_updated = True
+            if _find_pairs(CELLS_IN_SQR[i]):
+                board_updated = True
+            if board_updated:
+                pair_found = True
+    return pair_found
 
 
 def _init_options(board, window):
@@ -198,9 +318,19 @@ def manual_solver(board, window, _):
             board_updated = True
         if _visual_elimination(board, window):
             board_updated = True
+            continue
         if _naked_singles(board, window):
             board_updated = True
+            continue
         if _hidden_singles(board, window):
             board_updated = True
+            continue
 
     _init_options(board, window)
+    board_updated = True
+    while board_updated:
+        board_updated = False
+        if _hidden_singles(board, window, True):
+            board_updated = True
+        if _hidden_pairs(board, window):
+            board_updated = True
