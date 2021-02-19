@@ -125,12 +125,8 @@ def _naked_singles(board, window):
         return fix_found
 
     board_updated = False
-
-    clue_found = True
-    while clue_found:
-        clue_found = _solve_lone_singles()
-        if clue_found:
-            board_updated = True
+    while _solve_lone_singles():
+        board_updated = True
 
     return board_updated
 
