@@ -2,6 +2,7 @@
 
 """ SUDOKU SOLVING METHODS """
 
+from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
@@ -311,13 +312,10 @@ def _naked_twins(board, window):
 
     def _find_pairs(cells):
         unsolved = [cell for cell in cells if len(board[cell]) > 1]
-        pairs = {}
+        pairs = defaultdict(list)
         for cell in unsolved:
             if len(board[cell]) == 2:
-                if board[cell] in pairs:
-                    pairs[board[cell]].append(cell)
-                else:
-                    pairs[board[cell]] = [cell]
+                pairs[board[cell]].append(cell)
 
         for values, in_cells in pairs.items():
             if len(in_cells) > 2:
@@ -328,31 +326,27 @@ def _naked_twins(board, window):
                 to_remove = [(values[0], cell) for cell in unsolved if values[0] in board[cell]]
                 to_remove.extend([(values[1], cell) for cell in unsolved if values[1] in board[cell]])
                 if to_remove:
-                    if window:
-                        window.draw_board(board, "naked_twins", remove=to_remove, subset=in_cells, house=cells)
+                    _naked_twins.board_updated = True
                     for value, cell in to_remove:
                         board[cell] = board[cell].replace(value, "")
                         if len(board[cell]) == 1:
                             naked_singles.append(cell)
                     if window:
-                        window.set_current_board(board)
+                        # window.display_info("'Naked Pairs' technique")
+                        window.draw_board(board, "naked_twins", remove=to_remove, subset=in_cells, house=cells,
+                                          naked_singles=naked_singles)
+                    if len(naked_singles) > 1:
+                        print(f'\nnumber of nakked singles = {len(naked_singles)}')
                     _naked_singles(board, window, True)
-        return True
 
-    if window:
-        window.display_info("'Naked Pairs' technique")
-        window.set_current_board(board)
     _naked_twins.board_updated = False
+    if window:
+        window.set_current_board(board)
     for i in range(9):
-        if not _find_pairs(CELLS_IN_ROW[i]):
-            break
-        if not _find_pairs(CELLS_IN_COL[i]):
-            break
-        if not _find_pairs(CELLS_IN_SQR[i]):
-            break
-    else:
-        return True if _naked_twins.board_updated else None
-    return False
+        _find_pairs(CELLS_IN_ROW[i])
+        _find_pairs(CELLS_IN_COL[i])
+        _find_pairs(CELLS_IN_SQR[i])
+    return _naked_twins.board_updated
 
 
 def _init_options(board, window):

@@ -42,7 +42,7 @@ def _set_config_defaults(args, config, data):
     config["ocr"] = False   # checking integrity of OCR scan - no solver output
 
     set_puzzle_imput_file(args.sudoku, config, data)
-    data["error_data"] = config["cnn_model"]
+    data["error_data"] = config["cnn_model"]        # TODO
     check_file(config["cnn_model"], data, additional_info="CNN model")
 
     return True

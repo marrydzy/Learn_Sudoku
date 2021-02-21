@@ -272,6 +272,10 @@ class AppWindow:
         if solver_tool and not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
             return
 
+        # TODO
+        if solver_tool == "naked_twins":
+            self.display_info("'Naked Pairs' technique")
+
         start = time.time()     # TODO
         house = kwargs["house"] if "house" in kwargs else None
         greyed_out = kwargs["greyed_out"] if "greyed_out" in kwargs else None
