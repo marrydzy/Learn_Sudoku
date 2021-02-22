@@ -9,6 +9,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tabulate import tabulate
 
+screen_messages = {
+    None: "",
+    "open_singles": "'Open Singles' technique:",
+    "visual_elimination": "'Visual Elimination' technique:",
+    "naked_singles": "'Naked Singles technique",
+    "hidden_singles": "'Hidden Singles' technique",
+    "hidden_pairs": "'Hidden Pairs' technique",
+    "naked_twins": "'Naked Twins' technique",
+    "omissions": "'Omission' technique",
+    "swordfish": "'Swordfish' technique",
+    "scrub_pencil_marks": "WTF",
+    "unique_values": "WTF",
+}
+
 DEBUG = False
 
 ERROR_MESSAGES = {

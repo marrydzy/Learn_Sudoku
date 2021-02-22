@@ -4,6 +4,8 @@ import pygame
 import sys
 import time
 
+from display import screen_messages
+
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREY = (160, 160, 160)
@@ -63,9 +65,13 @@ class AppWindow:
         self.show_solution_steps = True
         self.inspect = inspect
         self.method = {
-            "manual_solution": "m",
-            "scrub_pencil_marks": "e",
-            "unique_values": "u",
+            # "manual_solution": "m",     # TODO - fix it (remove manual solution)
+            "open_singles": "g",
+            "visual_elimination": "v",
+            "naked_singles": "n",
+            "hidden_singles": "u",
+            "scrub_pencil_marks": "e",  # TODO - fix it!
+            "unique_values": "u",       # TODO - fix it!
             "hidden_pairs": "h",
             "naked_twins": "p",
             "omissions": "o",
@@ -258,13 +264,14 @@ class AppWindow:
 
     def display_info(self, text):
         """ Display info 'text' starting at the left top corner of the window """
-        msg = self.font_text.render(text, True, BLACK)
-        top_margin = (self.top_margin - self.font_text.get_ascent()) // 2
-        info_rect = pygame.Rect((self.left_margin, top_margin, 9 * self.cell_size, self.font_text_size+1))
-        pygame.draw.rect(self.screen, GAINSBORO, info_rect)
-        self.screen.set_clip(info_rect)
-        self.screen.blit(msg, (self.left_margin, top_margin))
-        self.screen.set_clip(None)
+        if text:
+            msg = self.font_text.render(text, True, BLACK)
+            top_margin = (self.top_margin - self.font_text.get_ascent()) // 2
+            info_rect = pygame.Rect((self.left_margin, top_margin, 9 * self.cell_size, self.font_text_size+1))
+            pygame.draw.rect(self.screen, GAINSBORO, info_rect)
+            self.screen.set_clip(info_rect)
+            self.screen.blit(msg, (self.left_margin, top_margin))
+            self.screen.set_clip(None)
 
     def draw_board(self, board, solver_tool=None, **kwargs):
         """ TODO """
@@ -273,14 +280,16 @@ class AppWindow:
             return
 
         # TODO
-        if solver_tool == "naked_twins":
-            self.display_info("'Naked Pairs' technique")
+        # if solver_tool == "naked_twins":
 
         start = time.time()     # TODO
+        options_set = kwargs["options_set"] if "options_set" in kwargs else True
         house = kwargs["house"] if "house" in kwargs else None
         greyed_out = kwargs["greyed_out"] if "greyed_out" in kwargs else None
         other_cells = kwargs["other_cells"] if "other_cells" in kwargs else None
         naked_singles = kwargs["naked_singles"] if "naked_singles" in kwargs else []
+
+        self.display_info(screen_messages[solver_tool])
 
         for row_id in range(9):
             for col_id in range(9):
@@ -304,13 +313,11 @@ class AppWindow:
                             self.screen, C_OTHER_CELLS,   # TODO
                             (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
 
-                    if solver_tool is None: # and len(board[cell_id]) == 1:      TODO - fix it
-                        # self._higlight_clue(cell_id, cell_pos, **kwargs)
+                    if solver_tool is None:
                         self._render_clue(board[cell_id], cell_pos)
-                    elif solver_tool == "manual_solution":
-                        if board[cell_id] != ".":
-                            self._higlight_clue(cell_id, cell_pos, **kwargs)
-                            self._render_clue(board[cell_id], cell_pos)
+                    elif not options_set:
+                        self._higlight_clue(cell_id, cell_pos, **kwargs)
+                        self._render_clue(board[cell_id], cell_pos)
                     else:
                         if len(self.input_board[cell_id]) == 1 and cell_id not in naked_singles:
                             self._higlight_clue(cell_id, cell_pos, **kwargs)

@@ -8,7 +8,6 @@ from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELL
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
 from utils import is_clue, is_solved, DeadEndException
 
-
 naked_singles = []
 
 
@@ -23,32 +22,27 @@ def _open_singles(board, window, options_set=False):
     def _set_missing_number(house):
         open_cells = [cell for cell in house if not is_clue(board[cell])]
         if len(open_cells) == 1:
+            _open_singles.clue_found = True
             missing_value = SUDOKU_VALUES_SET.copy() - set(''.join([board[cell] for cell in house]))
-            assert(len(missing_value) == 1)
+            if len(missing_value) != 1:
+                raise DeadEndException
             board[open_cells[0]] = missing_value.pop()
             if window:
-                window.display_info("'Open Singles' technique:")
-                window.draw_board(board, "manual_solution", singles=open_cells, new_clue=open_cells[0])
-            return True
-        return False
+                window.draw_board(board, "open_singles", options_set=False,
+                                  singles=open_cells, new_clue=open_cells[0])
 
     board_updated = False
-
-    clue_found = True
-    while clue_found:
-        clue_found = False
+    _open_singles.clue_found = True
+    while _open_singles.clue_found:
+        _open_singles.clue_found = False
         for row in range(9):
-            if _set_missing_number(CELLS_IN_ROW[row]):
-                clue_found = True
+            _set_missing_number(CELLS_IN_ROW[row])
         for col in range(9):
-            if _set_missing_number(CELLS_IN_COL[col]):
-                clue_found = True
+            _set_missing_number(CELLS_IN_COL[col])
         for sqr in range(9):
-            if _set_missing_number(CELLS_IN_SQR[sqr]):
-                clue_found = True
-        if clue_found:
+            _set_missing_number(CELLS_IN_SQR[sqr])
+        if _open_singles.clue_found:
             board_updated = True
-            
     return board_updated
 
 
@@ -63,17 +57,16 @@ def _visual_elimination(board, window, options_set=False):
     def _check_zone(clue, zone, vertical):
         """ Look for lone singles in the zone (vertical or horizontal stack of squares) """
         cols_rows = CELLS_IN_COL if vertical else CELLS_IN_ROW
-        with_clues = [cell for offset in range(3) for cell in cols_rows[3*zone + offset] if board[cell] == clue]
-        if len(with_clues) == 2:
-            squares = [zone + 3 * offset for offset in range(3)] if vertical else [3 * zone + offset for offset in
-                                                                                   range(3)]
-            squares.remove(CELL_SQR[with_clues[0]])
-            squares.remove(CELL_SQR[with_clues[1]])
+        with_clue = [cell for offset in range(3) for cell in cols_rows[3*zone + offset] if board[cell] == clue]
+        if len(with_clue) == 2:
+            squares = [zone + 3*offset if vertical else 3*zone + offset for offset in range(3)]
+            squares.remove(CELL_SQR[with_clue[0]])
+            squares.remove(CELL_SQR[with_clue[1]])
             cells = set(CELLS_IN_SQR[squares[0]])
             if vertical:
-                cells -= set(CELLS_IN_COL[CELL_COL[with_clues[0]]]).union(set(CELLS_IN_COL[CELL_COL[with_clues[1]]]))
+                cells -= set(CELLS_IN_COL[CELL_COL[with_clue[0]]]).union(set(CELLS_IN_COL[CELL_COL[with_clue[1]]]))
             else:
-                cells -= set(CELLS_IN_ROW[CELL_ROW[with_clues[0]]]).union(set(CELLS_IN_ROW[CELL_ROW[with_clues[1]]]))
+                cells -= set(CELLS_IN_ROW[CELL_ROW[with_clue[0]]]).union(set(CELLS_IN_ROW[CELL_ROW[with_clue[1]]]))
             possible_clue_cells = [cell for cell in cells if not is_clue(board[cell])]
             clues = []
             greyed_out = []
@@ -83,35 +76,29 @@ def _visual_elimination(board, window, options_set=False):
                 else:
                     other_clue = [cell_id for cell_id in CELLS_IN_COL[CELL_COL[cell]] if board[cell_id] == clue]
                 if other_clue:
-                    with_clues.append(other_clue[0])
+                    with_clue.append(other_clue[0])
                     greyed_out.append(cell)
                 else:
                     clues.append(cell)
             if len(clues) == 1:
+                _visual_elimination.clue_found = True
                 board[clues[0]] = clue
                 if window:
-                    window.display_info("'Visual Elimination' technique:")
                     house = [cell for offset in range(3) for cell in cols_rows[3*zone + offset]]
-                    window.draw_board(board, "manual_solution", house=house, singles=with_clues, new_clue=clues[0],
-                                      greyed_out=greyed_out)
-                return True
-        return False
+                    window.draw_board(board, "visual_elimination", options_set=options_set,
+                                      house=house, singles=with_clue, new_clue=clues[0], greyed_out=greyed_out)
 
     board_updated = False
-
-    clue_found = True
-    while clue_found:
-        clue_found = False
+    _visual_elimination.clue_found = True
+    while _visual_elimination.clue_found:
+        _visual_elimination.clue_found = False
         for clue in SUDOKU_VALUES_LIST:
             for zone in range(3):
-                if _check_zone(clue, zone, True):
-                    clue_found = True
+                _check_zone(clue, zone, True)
             for zone in range(3):
-                if _check_zone(clue, zone, False):
-                    clue_found = True
-        if clue_found:
+                _check_zone(clue, zone, False)
+        if _visual_elimination.clue_found:
             board_updated = True
-
     return board_updated
 
 
@@ -133,8 +120,7 @@ def _naked_singles(board, window, options_set=False):
                     elif len(board[cell]) == 1:
                         naked_singles.append(cell)
             if window:
-                window.display_info("'Naked Singles' technique:")
-                window.draw_board(board, "hidden_pairs", new_clue=naked_single,
+                window.draw_board(board, "naked_singles", options_set=True, new_clue=naked_single,
                                   remove=to_remove, naked_singles=naked_singles)
         return True
     else:
@@ -149,8 +135,8 @@ def _naked_singles(board, window, options_set=False):
                         board[cell] = cell_opts.pop()
                         fix_found = True
                         if window:
-                            window.display_info("'Naked Singles' technique:")
-                            window.draw_board(board, "manual_solution", singles=[cell,], new_clue=cell)
+                            window.draw_board(board, "naked_singles", options_set=False,
+                                              singles=[cell], new_clue=cell)
             return fix_found
 
         board_updated = False
@@ -191,14 +177,14 @@ def _hidden_singles(board, window, options_set=False):
                     if not options_set and window:
                         with_clue = set()
                         with_clue.add(in_cells[0])
-                        window.display_info("'Hidden Singles' technique:")
-                        window.draw_board(board, "manual_solution", singles=with_clue, new_clue=in_cells[0],
+                        window.draw_board(board, "hidden_pairs", options_set=False,
+                                          singles=with_clue, new_clue=in_cells[0],
                                           house=house, greyed_out=greyed_out)
                     if options_set:
                         greyed_out = [(option, cell) for cell in ALL_NBRS[in_cells[0]] if option in board[cell]]
                         if window:
-                            window.display_info("'Hidden Singles' technique:")
-                            window.draw_board(board, "hidden_pairs", remove=greyed_out, singles=in_cells, house=house,
+                            window.draw_board(board, "hidden_pairs", options_set=True,
+                                              remove=greyed_out, singles=in_cells, house=house,
                                               naked_singles=naked_singles)
                     if options_set:
                         for value, cell_id in greyed_out:
@@ -332,7 +318,6 @@ def _naked_twins(board, window):
                         if len(board[cell]) == 1:
                             naked_singles.append(cell)
                     if window:
-                        # window.display_info("'Naked Pairs' technique")
                         window.draw_board(board, "naked_twins", remove=to_remove, subset=in_cells, house=cells,
                                           naked_singles=naked_singles)
                     if len(naked_singles) > 1:
