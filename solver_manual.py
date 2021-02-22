@@ -108,7 +108,7 @@ def _naked_singles(board, window, options_set=False):
         if not naked_singles:
             return False
         while naked_singles:
-            naked_single = naked_singles.pop(0)
+            naked_single = naked_singles.pop()
             clue = board[naked_single]
             to_remove = []
             for cell in ALL_NBRS[naked_single]:
@@ -151,18 +151,15 @@ def _hidden_singles(board, window, options_set=False):
 
     def _find_unique_positions(house):
         """ Find unique positions of missing clues within the house and 'solve' the cells """
-        if not options_set:
-            house_options = SUDOKU_VALUES_SET.copy()
-            house_options -= set(''.join([board[cell_id] for cell_id in house]))
-        else:
+        if options_set:
             house_options = set(''.join(board[cell_id] for cell_id in house if len(board[cell_id]) > 1))
+        else:
+            house_options = SUDOKU_VALUES_SET.copy() - set(''.join([board[cell_id] for cell_id in house]))
         for option in house_options:
             in_cells = []
             greyed_out = []
             for cell in house:
                 if not options_set and board[cell] == ".":
-                    # cell_opts = SUDOKU_VALUES_SET.copy()
-                    # cell_opts -= set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
                     cell_opts = get_options(board, cell)
                     if option in cell_opts:
                         in_cells.append(cell)
@@ -171,31 +168,31 @@ def _hidden_singles(board, window, options_set=False):
                 if options_set and option in board[cell]:
                     in_cells.append(cell)
 
-            if len(in_cells) == 1:
-                board[in_cells[0]] = option
+            # it is necessary to check if the cell has still other options
+            # as it might already be solved by calling _naked_singles()
+            if len(in_cells) == 1 and not is_clue(board[in_cells[0]]):
                 _hidden_singles.clue_found = True
-                if not options_set and window:
-                    # with_clue = set()
-                    # with_clue.add(in_cells[0])
-                    window.draw_board(board, "hidden_singles", options_set=False,
-                                      singles=[in_cells[0]], new_clue=in_cells[0],
-                                      house=house, greyed_out=greyed_out)
+                board[in_cells[0]] = option
+                if window:
+                    window.set_current_board(board)     # to properly display the hidden single
                 if options_set:
-                    greyed_out = [(option, cell) for cell in ALL_NBRS[in_cells[0]] if option in board[cell]]
-                    if window:
-                        window.draw_board(board, "hidden_singles", options_set=True,
-                                          remove=greyed_out, singles=in_cells, house=house,
-                                          naked_singles=naked_singles)
-                    for value, cell_id in greyed_out:
+                    to_remove = [(option, cell) for cell in ALL_NBRS[in_cells[0]] if option in board[cell]]
+                    for value, cell_id in to_remove:
                         board[cell_id] = board[cell_id].replace(value, "")
                         if len(board[cell_id]) == 1:
                             naked_singles.append(cell_id)
-                    _naked_singles(board, window, options_set)
+                    if window:
+                        window.draw_board(board, "hidden_singles", options_set=True, new_clue=in_cells[0],
+                                          remove=to_remove, house=house)
+                    _naked_singles(board, window, True)
+                elif window:
+                    window.draw_board(board, "hidden_singles", options_set=False, singles=[in_cells[0]],
+                                      new_clue=in_cells[0], house=house, greyed_out=greyed_out)
 
     board_updated = False
     _hidden_singles.clue_found = True
     while _hidden_singles.clue_found:
-        _hidden_singles.clue.clue_found = False
+        _hidden_singles.clue_found = False
         for row in range(9):
             _find_unique_positions(CELLS_IN_ROW[row])
         for col in range(9):
