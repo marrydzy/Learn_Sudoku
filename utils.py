@@ -59,6 +59,19 @@ def is_clue(value):
     return False if value == "." or len(value) != 1 else True
 
 
+def are_cells_set(board, cells):
+    """ check if all cells are set """
+    return all([True if is_clue(board[cell_id]) else False for cell_id in cells])
+
+
+def get_options(board, cell):
+    """ returns set of options of the cell """
+    if is_clue(board[cell]):
+        return set(board[cell])
+    else:
+        return SUDOKU_VALUES_SET.copy() - set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
+
+
 def check_file(pathname, data, additional_info=""):
     """ Check if the required files exist
     - otherwise show appropriate message and with error code = -1

@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
-from utils import is_clue, is_solved, DeadEndException
+from utils import is_clue, is_solved, get_options, are_cells_set, DeadEndException
 
 naked_singles = []
 
@@ -124,24 +124,25 @@ def _naked_singles(board, window, options_set=False):
                                   remove=to_remove, naked_singles=naked_singles)
         return True
     else:
-        def _solve_lone_singles():
-            """ Find naked singles in the remaining cells without clue """
-            fix_found = False
+        board_updated = False
+        _naked_singles.clue_found = True
+        while _naked_singles.clue_found:
+            _naked_singles.clue_found = False
             for cell in range(81):
                 if board[cell] == ".":
-                    cell_opts = SUDOKU_VALUES_SET.copy()
-                    cell_opts -= set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
+                    cell_opts = get_options(board, cell)
                     if len(cell_opts) == 1:
                         board[cell] = cell_opts.pop()
-                        fix_found = True
+                        _naked_singles.clue_found = True
                         if window:
-                            window.draw_board(board, "naked_singles", options_set=False,
+                            was_open_single = are_cells_set(board, CELLS_IN_ROW[CELL_ROW[cell]]) or \
+                                              are_cells_set(board, CELLS_IN_COL[CELL_COL[cell]]) or \
+                                              are_cells_set(board, CELLS_IN_SQR[CELL_SQR[cell]])
+                            method = "open_singles" if was_open_single else "naked_singles"
+                            window.draw_board(board, method, options_set=False,
                                               singles=[cell], new_clue=cell)
-            return fix_found
-
-        board_updated = False
-        while _solve_lone_singles():
-            board_updated = True
+            if _naked_singles.clue_found:
+                board_updated = True
         return board_updated
 
 
