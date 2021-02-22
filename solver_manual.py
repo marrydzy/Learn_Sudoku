@@ -151,73 +151,59 @@ def _hidden_singles(board, window, options_set=False):
 
     def _find_unique_positions(house):
         """ Find unique positions of missing clues within the house and 'solve' the cells """
-        cell_solved = False
-        while True:
-            if not options_set:
-                house_options = SUDOKU_VALUES_SET.copy()
-                house_options -= set(''.join([board[cell_id] for cell_id in house]))
-            else:
-                house_options = set(''.join(board[cell_id] for cell_id in house if len(board[cell_id]) > 1))
-            for option in house_options:
-                in_cells = []
-                greyed_out = []
-                for cell in house:
-                    if not options_set and board[cell] == ".":
-                        cell_opts = SUDOKU_VALUES_SET.copy()
-                        cell_opts -= set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
-                        if option in cell_opts:
-                            in_cells.append(cell)
-                        else:
-                            greyed_out.append(cell)
-                    if options_set and option in board[cell]:
+        if not options_set:
+            house_options = SUDOKU_VALUES_SET.copy()
+            house_options -= set(''.join([board[cell_id] for cell_id in house]))
+        else:
+            house_options = set(''.join(board[cell_id] for cell_id in house if len(board[cell_id]) > 1))
+        for option in house_options:
+            in_cells = []
+            greyed_out = []
+            for cell in house:
+                if not options_set and board[cell] == ".":
+                    # cell_opts = SUDOKU_VALUES_SET.copy()
+                    # cell_opts -= set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
+                    cell_opts = get_options(board, cell)
+                    if option in cell_opts:
                         in_cells.append(cell)
+                    else:
+                        greyed_out.append(cell)
+                if options_set and option in board[cell]:
+                    in_cells.append(cell)
 
-                if len(in_cells) == 1:
-                    board[in_cells[0]] = option
-                    cell_solved = True
-                    if not options_set and window:
-                        with_clue = set()
-                        with_clue.add(in_cells[0])
-                        window.draw_board(board, "hidden_pairs", options_set=False,
-                                          singles=with_clue, new_clue=in_cells[0],
-                                          house=house, greyed_out=greyed_out)
-                    if options_set:
-                        greyed_out = [(option, cell) for cell in ALL_NBRS[in_cells[0]] if option in board[cell]]
-                        if window:
-                            window.draw_board(board, "hidden_pairs", options_set=True,
-                                              remove=greyed_out, singles=in_cells, house=house,
-                                              naked_singles=naked_singles)
-                    if options_set:
-                        for value, cell_id in greyed_out:
-                            board[cell_id] = board[cell_id].replace(value, "")
-                            if len(board[cell_id]) == 1:
-                                naked_singles.append(cell_id)
+            if len(in_cells) == 1:
+                board[in_cells[0]] = option
+                _hidden_singles.clue_found = True
+                if not options_set and window:
+                    # with_clue = set()
+                    # with_clue.add(in_cells[0])
+                    window.draw_board(board, "hidden_singles", options_set=False,
+                                      singles=[in_cells[0]], new_clue=in_cells[0],
+                                      house=house, greyed_out=greyed_out)
+                if options_set:
+                    greyed_out = [(option, cell) for cell in ALL_NBRS[in_cells[0]] if option in board[cell]]
                     if window:
-                        window.set_current_board(board)
+                        window.draw_board(board, "hidden_singles", options_set=True,
+                                          remove=greyed_out, singles=in_cells, house=house,
+                                          naked_singles=naked_singles)
+                    for value, cell_id in greyed_out:
+                        board[cell_id] = board[cell_id].replace(value, "")
+                        if len(board[cell_id]) == 1:
+                            naked_singles.append(cell_id)
                     _naked_singles(board, window, options_set)
-                    break
-            else:
-                break
-
-        return cell_solved      # TODO - should return True, None, False
 
     board_updated = False
-
-    clue_found = True
-    while clue_found:
-        clue_found = False
+    _hidden_singles.clue_found = True
+    while _hidden_singles.clue_found:
+        _hidden_singles.clue.clue_found = False
         for row in range(9):
-            if _find_unique_positions(CELLS_IN_ROW[row]):
-                clue_found = True
+            _find_unique_positions(CELLS_IN_ROW[row])
         for col in range(9):
-            if _find_unique_positions(CELLS_IN_COL[col]):
-                clue_found = True
+            _find_unique_positions(CELLS_IN_COL[col])
         for sqr in range(9):
-            if _find_unique_positions(CELLS_IN_SQR[sqr]):
-                clue_found = True
-        if clue_found:
+            _find_unique_positions(CELLS_IN_SQR[sqr])
+        if _hidden_singles.clue_found:
             board_updated = True
-
     return board_updated
 
 
