@@ -59,6 +59,16 @@ def is_clue(value):
     return False if value == "." or len(value) != 1 else True
 
 
+def is_single(board, house, value):
+    """ check if the value is a lone single in the house """
+    values = ''.join(board[cell] for cell in house)
+    if values.count(value) == 1:
+        for cell in house:
+            if value in board[cell]:
+                return cell
+    return None
+
+
 def are_cells_set(board, cells):
     """ check if all cells are set """
     return all([True if is_clue(board[cell_id]) else False for cell_id in cells])

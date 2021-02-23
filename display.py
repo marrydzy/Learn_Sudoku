@@ -19,6 +19,7 @@ screen_messages = {
     "naked_twins": "'Naked Twins' technique",
     "omissions": "'Omission' technique",
     "swordfish": "'Swordfish' technique",
+    "y_wings": "'y-wings' technique",
     "scrub_pencil_marks": "WTF",
     "unique_values": "WTF",
 }
