@@ -318,19 +318,19 @@ def _omissions(board, window):
                 unsolved = {cell for cell in cells if len(board[cell]) > 1}
                 in_blocks = set(CELL_SQR[cell] for cell in unsolved if value in board[cell])
                 if len(in_blocks) == 1:
-                    single = is_single(board, cells, value)
-                    if single is not None:
-                        print(f'{single = }  {board[single] = }')
-                        board[single] = value
-                        naked_singles.append(single)
+                    # single = is_single(board, cells, value)
+                    # if single is not None:
+                    #     print(f'{single = }  {board[single] = }')
+                    #     board[single] = value
+                    #     naked_singles.append(single)
                         # if window:
                             # window.set_current_board(board)
-                        _naked_singles(board, window, True)
-                    else:
-                        other_cells = set(CELLS_IN_SQR[in_blocks.pop()]) - set(cells)
-                        to_remove = [(value, cell) for cell in other_cells if value in board[cell]]
-                        if to_remove:
-                            _remove_options(to_remove, cells, other_cells)
+                     #   _naked_singles(board, window, True)
+                    # else:
+                    other_cells = set(CELLS_IN_SQR[in_blocks.pop()]) - set(cells)
+                    to_remove = [(value, cell) for cell in other_cells if value in board[cell]]
+                    if to_remove:
+                        _remove_options(to_remove, cells, other_cells)
 
     def _in_block(cells):
         options = SUDOKU_VALUES_SET - {board[cell] for cell in cells if len(board[cell]) == 1}
