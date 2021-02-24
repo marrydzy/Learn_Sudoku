@@ -81,29 +81,33 @@ def _visual_elimination(board, window, options_set=False):
                 else:
                     clues.append(cell)
             if len(clues) == 1:
-                _visual_elimination.clue_found = True
+                # _visual_elimination.clue_found = True
                 board[clues[0]] = clue
                 if window:
                     house = [cell for offset in range(3) for cell in cols_rows[3*zone + offset]]
                     window.draw_board(board, "visual_elimination", options_set=options_set,
                                       house=house, singles=with_clue, new_clue=clues[0], greyed_out=greyed_out)
+                    return True
+        return False
 
     board_updated = False
-    _visual_elimination.clue_found = True
-    while _visual_elimination.clue_found:
-        _visual_elimination.clue_found = False
-        for clue in SUDOKU_VALUES_LIST:
-            for zone in range(3):
-                _check_zone(clue, zone, True)
-                if _visual_elimination.clue_found:
-                    return True
-            for zone in range(3):
-                _check_zone(clue, zone, False)
-                if _visual_elimination.clue_found:
-                    return True
-        if _visual_elimination.clue_found:
-            board_updated = True
-    return board_updated
+    # _visual_elimination.clue_found = True
+    # while True:     # _visual_elimination.clue_found:
+    # _visual_elimination.clue_found = False
+    for clue in SUDOKU_VALUES_LIST:
+        for zone in range(3):
+            if _check_zone(clue, zone, True):
+            # if _visual_elimination.clue_found:
+                return True
+        for zone in range(3):
+            if _check_zone(clue, zone, False):
+            # if _visual_elimination.clue_found:
+                return True
+    # break
+    # if _visual_elimination.clue_found:
+        # board_updated = True
+    # return board_updated
+    return False
 
 
 def _naked_singles(board, window, options_set=False):
