@@ -95,8 +95,12 @@ def _visual_elimination(board, window, options_set=False):
         for clue in SUDOKU_VALUES_LIST:
             for zone in range(3):
                 _check_zone(clue, zone, True)
+                if _visual_elimination.clue_found:
+                    return True
             for zone in range(3):
                 _check_zone(clue, zone, False)
+                if _visual_elimination.clue_found:
+                    return True
         if _visual_elimination.clue_found:
             board_updated = True
     return board_updated
@@ -135,12 +139,9 @@ def _naked_singles(board, window, options_set=False):
                         board[cell] = cell_opts.pop()
                         _naked_singles.clue_found = True
                         if window:
-                            was_open_single = are_cells_set(board, CELLS_IN_ROW[CELL_ROW[cell]]) or \
-                                              are_cells_set(board, CELLS_IN_COL[CELL_COL[cell]]) or \
-                                              are_cells_set(board, CELLS_IN_SQR[CELL_SQR[cell]])
-                            method = "open_singles" if was_open_single else "naked_singles"
-                            window.draw_board(board, method, options_set=False,
+                            window.draw_board(board, "naked_singles", options_set=False,
                                               singles=[cell], new_clue=cell)
+                        return True
             if _naked_singles.clue_found:
                 board_updated = True
         return board_updated
@@ -195,10 +196,16 @@ def _hidden_singles(board, window, options_set=False):
         _hidden_singles.clue_found = False
         for row in range(9):
             _find_unique_positions(CELLS_IN_ROW[row])
+            if _hidden_singles.clue_found:
+                return True
         for col in range(9):
             _find_unique_positions(CELLS_IN_COL[col])
+            if _hidden_singles.clue_found:
+                return True
         for sqr in range(9):
             _find_unique_positions(CELLS_IN_SQR[sqr])
+            if _hidden_singles.clue_found:
+                return True
         if _hidden_singles.clue_found:
             board_updated = True
     return board_updated
