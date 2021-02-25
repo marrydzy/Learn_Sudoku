@@ -208,15 +208,13 @@ def _hidden_pairs(board, window):
                 values_dic[value].append(cell)
         for value, in_cells in values_dic.items():
             if len(in_cells) == 2:
-                pair = tuple(in_cells)
-                pairs_dic[pair].append(value)
+                pairs_dic[tuple(in_cells)].append(value)
 
         for in_cells, values in pairs_dic.items():
             if len(values) == 2:
                 pair = ''.join(values)
-                if len(board[in_cells[0]]) > 2 or len(board[in_cells[1]]) > 2:
-                    _hidden_pairs.found_pairs = True
-                    cell_1, cell_2 = in_cells
+                cell_1, cell_2 = in_cells
+                if len(board[cell_1]) > 2 or len(board[cell_2]) > 2:
                     board[cell_1] = pair
                     board[cell_2] = pair
                     other_options = [value for value in '123456789' if value not in pair]
@@ -227,20 +225,19 @@ def _hidden_pairs(board, window):
                     if window:
                         window.draw_board(board, "hidden_pairs", remove=to_remove,
                                           subset=[cell_1, cell_2], house=cells)
+                    return True
+        return False
 
-    board_updated = False
-    _hidden_pairs.found_pairs = True
-    while _hidden_pairs.found_pairs:
-        _hidden_pairs.found_pairs = False
-        for i in range(9):
-            _find_pairs(CELLS_IN_ROW[i])
-        for i in range(9):
-            _find_pairs(CELLS_IN_COL[i])
-        for i in range(9):
-            _find_pairs(CELLS_IN_SQR[i])
-        if _hidden_pairs.found_pairs:
-            board_updated = True
-    return board_updated
+    for i in range(9):
+        if _find_pairs(CELLS_IN_ROW[i]):
+            return True
+    for i in range(9):
+        if _find_pairs(CELLS_IN_COL[i]):
+            return True
+    for i in range(9):
+        if _find_pairs(CELLS_IN_SQR[i]):
+            return True
+    return False
 
 
 def _naked_twins(board, window):
