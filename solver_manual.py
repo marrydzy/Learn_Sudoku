@@ -11,6 +11,16 @@ from utils import is_clue, is_solved, is_single, get_options, are_cells_set, Dea
 naked_singles = []
 
 
+def _remove_options(board, to_remove):
+    """ utility function: removes options as per 'to_remove' list """
+    for option, cell in to_remove:
+        board[cell] = board[cell].replace(option, "")
+        if not board[cell]:
+            raise DeadEndException
+        elif len(board[cell]) == 1:
+            naked_singles.append(cell)
+
+
 def _open_singles(board, window, options_set=False):
     """ 'Open Singles' technique (see: https://www.learn-sudoku.com/open-singles.html)
         The technique is applicable only in the initial phase of sudoku solving process when
@@ -50,16 +60,20 @@ def _visual_elimination(board, window, options_set=False):
     """ 'Visual Elimination' techniques (see: https://www.learn-sudoku.com/visual-elimination.html)
         The technique is applicable only in the initial phase of sudoku solving process when
         options in empty cells haven't been calculated yet.
+        After finding a clue The function returns to the main solver loop to allow trying 'simpler'
+        'open singles' method
     """
     if options_set:
         return False
 
-    def _check_zone(clue, zone, vertical):
-        """ Look for lone singles in the zone (vertical or horizontal stack of squares) """
+    def _check_zone(value, band):
+        """ Look for lone singles in the band (vertical or horizontal stack of squares) """
+        vertical = True if band < 3 else False
+        band = band % 3
         cols_rows = CELLS_IN_COL if vertical else CELLS_IN_ROW
-        with_clue = [cell for offset in range(3) for cell in cols_rows[3*zone + offset] if board[cell] == clue]
+        with_clue = [cell for offset in range(3) for cell in cols_rows[3*band + offset] if board[cell] == value]
         if len(with_clue) == 2:
-            squares = [zone + 3*offset if vertical else 3*zone + offset for offset in range(3)]
+            squares = [band + 3*offset if vertical else 3*band + offset for offset in range(3)]
             squares.remove(CELL_SQR[with_clue[0]])
             squares.remove(CELL_SQR[with_clue[1]])
             cells = set(CELLS_IN_SQR[squares[0]])
@@ -72,83 +86,61 @@ def _visual_elimination(board, window, options_set=False):
             greyed_out = []
             for cell in possible_clue_cells:
                 if vertical:
-                    other_clue = [cell_id for cell_id in CELLS_IN_ROW[CELL_ROW[cell]] if board[cell_id] == clue]
+                    other_clue = [cell_id for cell_id in CELLS_IN_ROW[CELL_ROW[cell]] if board[cell_id] == value]
                 else:
-                    other_clue = [cell_id for cell_id in CELLS_IN_COL[CELL_COL[cell]] if board[cell_id] == clue]
+                    other_clue = [cell_id for cell_id in CELLS_IN_COL[CELL_COL[cell]] if board[cell_id] == value]
                 if other_clue:
                     with_clue.append(other_clue[0])
                     greyed_out.append(cell)
                 else:
                     clues.append(cell)
             if len(clues) == 1:
-                # _visual_elimination.clue_found = True
-                board[clues[0]] = clue
+                board[clues[0]] = value
                 if window:
-                    house = [cell for offset in range(3) for cell in cols_rows[3*zone + offset]]
+                    house = [cell for offset in range(3) for cell in cols_rows[3*band + offset]]
                     window.draw_board(board, "visual_elimination", options_set=options_set,
                                       house=house, singles=with_clue, new_clue=clues[0], greyed_out=greyed_out)
                     return True
         return False
 
-    board_updated = False
-    # _visual_elimination.clue_found = True
-    # while True:     # _visual_elimination.clue_found:
-    # _visual_elimination.clue_found = False
-    for clue in SUDOKU_VALUES_LIST:
-        for zone in range(3):
-            if _check_zone(clue, zone, True):
-            # if _visual_elimination.clue_found:
+    for value in SUDOKU_VALUES_LIST:
+        for zone in range(6):
+            if _check_zone(value, zone):
                 return True
-        for zone in range(3):
-            if _check_zone(clue, zone, False):
-            # if _visual_elimination.clue_found:
-                return True
-    # break
-    # if _visual_elimination.clue_found:
-        # board_updated = True
-    # return board_updated
     return False
 
 
 def _naked_singles(board, window, options_set=False):
-    """ 'Naked Singles' technique (see: https://www.learn-sudoku.com/lone-singles.html) """
+    """ 'Naked Singles' technique (see: https://www.learn-sudoku.com/lone-singles.html)
+        In the initial phase of sudoku solving when options of all unsolved cells are not set yet,
+        After finding a clue The function returns to the main solver loop to allow trying 'simpler'
+        methods ('open singles' and then 'visual elimination'
+        When options for all unsolved cells are already set the function continues solving naked singles until
+        the 'naked_singles' list is empty (at this stage of sudoku solving it is the 'simplest' method)
+    """
     if options_set:
         if not naked_singles:
             return False
         while naked_singles:
             naked_single = naked_singles.pop()
             clue = board[naked_single]
-            to_remove = []
-            for cell in ALL_NBRS[naked_single]:
-                if clue in board[cell]:
-                    to_remove.append((clue, cell))
-                    board[cell] = board[cell].replace(clue, "")
-                    if not board[cell]:
-                        raise DeadEndException
-                    elif len(board[cell]) == 1:
-                        naked_singles.append(cell)
+            to_remove = [(clue, cell) for cell in ALL_NBRS[naked_single] if clue in board[cell]]
+            _remove_options(board, to_remove)
             if window:
                 window.draw_board(board, "naked_singles", options_set=True, new_clue=naked_single,
                                   remove=to_remove, naked_singles=naked_singles)
         return True
     else:
-        board_updated = False
-        _naked_singles.clue_found = True
-        while _naked_singles.clue_found:
-            _naked_singles.clue_found = False
-            for cell in range(81):
-                if board[cell] == ".":
-                    cell_opts = get_options(board, cell)
-                    if len(cell_opts) == 1:
-                        board[cell] = cell_opts.pop()
-                        _naked_singles.clue_found = True
-                        if window:
-                            window.draw_board(board, "naked_singles", options_set=False,
-                                              singles=[cell], new_clue=cell)
-                        return True
-            if _naked_singles.clue_found:
-                board_updated = True
-        return board_updated
+        for cell in range(81):
+            if board[cell] == ".":
+                cell_opts = get_options(board, cell)
+                if len(cell_opts) == 1:
+                    board[cell] = cell_opts.pop()
+                    if window:
+                        window.draw_board(board, "naked_singles", options_set=False,
+                                          singles=[cell], new_clue=cell)
+                    return True
+        return False
 
 
 def _hidden_singles(board, window, options_set=False):
