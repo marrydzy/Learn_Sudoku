@@ -165,51 +165,29 @@ def _hidden_singles(board, window, options_set=False):
                 if options_set and option in board[cell]:
                     in_cells.append(cell)
 
-            # it is necessary to check if the cell has still other options
-            # as it might already be solved by calling _naked_singles()
-            # if len(in_cells) == 1 and is_clue(board[in_cells[0]]):
-                # print('Dupa')
-            if len(in_cells) == 1: # and not is_clue(board[in_cells[0]]):
-                # _hidden_singles.clue_found = True
+            if len(in_cells) == 1:
                 board[in_cells[0]] = option
                 if window:
                     window.set_current_board(board)     # to properly display the hidden single
                 if options_set:
                     to_remove = [(option, cell) for cell in ALL_NBRS[in_cells[0]] if option in board[cell]]
-                    for value, cell_id in to_remove:
-                        board[cell_id] = board[cell_id].replace(value, "")
-                        if len(board[cell_id]) == 1:
-                            naked_singles.append(cell_id)
-                    if window:
-                        window.draw_board(board, "hidden_singles", options_set=True, new_clue=in_cells[0],
-                                          remove=to_remove, house=house)
-                    # _naked_singles(board, window, True)
-                elif window:
-                    window.draw_board(board, "hidden_singles", options_set=False, singles=[in_cells[0]],
+                    _remove_options(board, to_remove)
+                if window:
+                    window.draw_board(board, "hidden_singles", options_set=options_set, singles=[in_cells[0]],
                                       new_clue=in_cells[0], house=house, greyed_out=greyed_out)
                 return True
         return False
 
-    board_updated = False
-    # _hidden_singles.clue_found = True
-    # while True: # _hidden_singles.clue_found:
-        # _hidden_singles.clue_found = False
     for row in range(9):
         if _find_unique_positions(CELLS_IN_ROW[row]):
-        # if _hidden_singles.clue_found:
             return True
     for col in range(9):
         if _find_unique_positions(CELLS_IN_COL[col]):
-        # if _hidden_singles.clue_found:
             return True
     for sqr in range(9):
         if _find_unique_positions(CELLS_IN_SQR[sqr]):
-        # if _hidden_singles.clue_found:
             return True
     return False
-        # if _hidden_singles.clue_found:
-            # board_updated = True
-    # return board_updated
 
 
 def _hidden_pairs(board, window):
