@@ -262,26 +262,33 @@ def _naked_twins(board, window):
                 to_remove = [(values[0], cell) for cell in unsolved if values[0] in board[cell]]
                 to_remove.extend([(values[1], cell) for cell in unsolved if values[1] in board[cell]])
                 if to_remove:
-                    _naked_twins.board_updated = True
-                    for value, cell in to_remove:
-                        board[cell] = board[cell].replace(value, "")
-                        if len(board[cell]) == 1:
-                            naked_singles.append(cell)
+                    _remove_options(board, to_remove)
+                    # _naked_twins.board_updated = True
+                    # for value, cell in to_remove:
+                    #     board[cell] = board[cell].replace(value, "")
+                    #     if len(board[cell]) == 1:
+                    #         naked_singles.append(cell)
                     if window:
                         window.draw_board(board, "naked_twins", remove=to_remove, subset=in_cells, house=cells,
                                           naked_singles=naked_singles)
                     # if len(naked_singles) > 1:    TODO
                         # print(f'\nnumber of nakked singles = {len(naked_singles)}')
-                    _naked_singles(board, window, True)
+                    # _naked_singles(board, window, True)
+                    print('Dupa')
+                    return True
+        return False
 
     _naked_twins.board_updated = False
     if window:
         window.set_current_board(board)
     for i in range(9):
-        _find_pairs(CELLS_IN_ROW[i])
-        _find_pairs(CELLS_IN_COL[i])
-        _find_pairs(CELLS_IN_SQR[i])
-    return _naked_twins.board_updated
+        if _find_pairs(CELLS_IN_ROW[i]):
+            return True
+        if _find_pairs(CELLS_IN_COL[i]):
+            return True
+        if _find_pairs(CELLS_IN_SQR[i]):
+            return True
+    return False # _naked_twins.board_updated
 
 
 def _omissions(board, window):
@@ -396,9 +403,7 @@ def manual_solver(board, window, _):
         if not options_set:
             _init_options(board, window)
             options_set = True
-        if _hidden_pairs(board, window):
-            _naked_twins(board, window)
-            continue
+        _hidden_pairs(board, window)
         if _naked_twins(board, window):
             continue
         if _omissions(board, window):
