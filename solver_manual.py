@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
-from utils import is_clue, is_solved, is_single, get_options, are_cells_set, DeadEndException
+from utils import is_clue, is_solved, is_single, get_options, DeadEndException
 
 naked_singles = []
 
@@ -197,6 +197,8 @@ def _hidden_pairs(board, window):
     This technique doesn't solve any cells; instead it reveals Naked Pairs
     by removing other candidates in the Naked Pair cells
     (see https://www.learn-sudoku.com/hidden-pairs.html)
+    The method is called only when all unsolved cells have their options set
+    The method exits after finding first Naked Pair
     """
 
     def _find_pairs(cells):
@@ -244,6 +246,8 @@ def _naked_twins(board, window):
     """For each 'house' (row, column or square) find twin cells with two options
     and remove the values from the list of candidates (options) of the remaining cells
     (see https://www.learn-sudoku.com/naked-pairs.html)
+    The method is called only when all unsolved cells have their options set
+    The method exits after finding and 'fixing' such Naked Pair
     """
 
     def _find_pairs(cells):
@@ -263,24 +267,12 @@ def _naked_twins(board, window):
                 to_remove.extend([(values[1], cell) for cell in unsolved if values[1] in board[cell]])
                 if to_remove:
                     _remove_options(board, to_remove)
-                    # _naked_twins.board_updated = True
-                    # for value, cell in to_remove:
-                    #     board[cell] = board[cell].replace(value, "")
-                    #     if len(board[cell]) == 1:
-                    #         naked_singles.append(cell)
                     if window:
                         window.draw_board(board, "naked_twins", remove=to_remove, subset=in_cells, house=cells,
                                           naked_singles=naked_singles)
-                    # if len(naked_singles) > 1:    TODO
-                        # print(f'\nnumber of nakked singles = {len(naked_singles)}')
-                    # _naked_singles(board, window, True)
-                    print('Dupa')
                     return True
         return False
 
-    _naked_twins.board_updated = False
-    if window:
-        window.set_current_board(board)
     for i in range(9):
         if _find_pairs(CELLS_IN_ROW[i]):
             return True
@@ -288,7 +280,7 @@ def _naked_twins(board, window):
             return True
         if _find_pairs(CELLS_IN_SQR[i]):
             return True
-    return False # _naked_twins.board_updated
+    return False
 
 
 def _omissions(board, window):
