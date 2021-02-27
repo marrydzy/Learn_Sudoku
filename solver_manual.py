@@ -155,6 +155,7 @@ def _hidden_singles(board, window, options_set=False):
         for option in house_options:
             in_cells = []
             greyed_out = []
+            to_remove = []
             for cell in house:
                 if not options_set and board[cell] == ".":
                     cell_opts = get_options(board, cell)
@@ -174,7 +175,8 @@ def _hidden_singles(board, window, options_set=False):
                     _remove_options(board, to_remove)
                 if window:
                     window.draw_board(board, "hidden_singles", options_set=options_set, singles=[in_cells[0]],
-                                      new_clue=in_cells[0], house=house, greyed_out=greyed_out)
+                                      new_clue=in_cells[0], house=house, greyed_out=greyed_out,
+                                      remove=to_remove)
                 return True
         return False
 
@@ -215,18 +217,14 @@ def _hidden_pairs(board, window):
         for in_cells, values in pairs_dic.items():
             if len(values) == 2:
                 pair = ''.join(values)
-                cell_1, cell_2 = in_cells
-                if len(board[cell_1]) > 2 or len(board[cell_2]) > 2:
-                    board[cell_1] = pair
-                    board[cell_2] = pair
-                    other_options = [value for value in '123456789' if value not in pair]
-                    to_remove = []
-                    for option in other_options:
-                        to_remove.append((option, cell_1))
-                        to_remove.append((option, cell_2))
+                other_options = [value for value in '123456789' if value not in pair]
+                to_remove = \
+                    [(option, cell) for option in other_options for cell in in_cells if option in board[cell]]
+                if to_remove:
+                    _remove_options(board, to_remove)
                     if window:
                         window.draw_board(board, "hidden_pairs", remove=to_remove,
-                                          subset=[cell_1, cell_2], house=cells)
+                                          subset=in_cells, house=cells)
                     return True
         return False
 
@@ -285,8 +283,8 @@ def _naked_twins(board, window):
 
 def _omissions(board, window):
     """For rows and columns:
-     - when pencil marks in a row or column are contained within a single block,
-       the pencil marks elsewhere in the block can be removed
+     - when pencil marks in a row or column are contained within a single square
+       the pencil marks elsewhere in the square may be removed
     For blocks:
      - when pencil marks in a block are in one row or column, the pencil marks
        elsewhere in the row or the column can be removed
@@ -298,73 +296,92 @@ def _omissions(board, window):
         if options:
             for value in options:
                 unsolved = {cell for cell in cells if len(board[cell]) > 1}
-                in_blocks = set(CELL_SQR[cell] for cell in unsolved if value in board[cell])
-                if len(in_blocks) == 1:
-                    # single = is_single(board, cells, value)
-                    # if single is not None:
-                    #     print(f'{single = }  {board[single] = }')
-                    #     board[single] = value
-                    #     naked_singles.append(single)
-                        # if window:
-                            # window.set_current_board(board)
-                     #   _naked_singles(board, window, True)
-                    # else:
-                    other_cells = set(CELLS_IN_SQR[in_blocks.pop()]) - set(cells)
+                squares = {CELL_SQR[cell] for cell in unsolved if value in board[cell]}
+                if len(squares) == 1:
+                    other_cells = set(CELLS_IN_SQR[squares.pop()]) - set(cells)
                     to_remove = [(value, cell) for cell in other_cells if value in board[cell]]
                     if to_remove:
-                        _remove_options(to_remove, cells, other_cells)
+                        _remove_options(board, to_remove)
+                        if window:
+                            claims = [(to_remove[0][0], cell) for cell in cells]
+                            window.draw_board(board, "omissions", claims=claims, remove=to_remove,
+                                              singles=naked_singles, house=cells, other_cells=other_cells)
+                        return True
+        return False
 
     def _in_block(cells):
         options = SUDOKU_VALUES_SET - {board[cell] for cell in cells if len(board[cell]) == 1}
-        if options:
-            for value in options:
-                unsolved = {cell for cell in cells if len(board[cell]) > 1}
-                in_rows = set(CELL_ROW[cell] for cell in unsolved if value in board[cell])
-                in_cols = set(CELL_COL[cell] for cell in unsolved if value in board[cell])
-                if len(in_rows) == 1 and len(in_cols) == 1:
-                    single = is_single(board, cells, value)
-                    board[single] = value
-                    naked_singles.append(single)
+        for value in options:
+            unsolved = {cell for cell in cells if len(board[cell]) > 1}
+            in_rows = set(CELL_ROW[cell] for cell in unsolved if value in board[cell])
+            in_cols = set(CELL_COL[cell] for cell in unsolved if value in board[cell])
+            if len(in_rows) == 1 or len(in_cols) == 1:
+                other_cells = set()
+                if len(in_rows) == 1:
+                    other_cells = set(CELLS_IN_ROW[in_rows.pop()]) - set(cells)
+                elif len(in_cols) == 1:
+                    other_cells = set(CELLS_IN_COL[in_cols.pop()]) - set(cells)
+                to_remove = [(value, cell) for cell in other_cells if value in board[cell]]
+                if to_remove:
+                    _remove_options(board, to_remove)
                     if window:
-                        window.set_current_board(board)
-                    _naked_singles(board, window, True)
-                else:
-                    other_cells = set()
-                    if len(in_rows) == 1:
-                        other_cells = set(CELLS_IN_ROW[in_rows.pop()]) - set(cells)
-                    elif len(in_cols) == 1:
-                        other_cells = set(CELLS_IN_COL[in_cols.pop()]) - set(cells)
-                    to_remove = [(value, cell) for cell in other_cells if value in board[cell]]
-                    if to_remove:
-                        _remove_options(to_remove, cells, other_cells)
+                        claims = [(to_remove[0][0], cell) for cell in cells]
+                        window.draw_board(board, "omissions", claims=claims, remove=to_remove,
+                                          singles=naked_singles, house=cells, other_cells=other_cells)
+                    return True
+        return False
 
-    def _remove_options(to_remove, house, other_cells):
-        _omissions.board_updated = True
-        for value, cell in to_remove:
-            board[cell] = board[cell].replace(value, "")
-            if not board[cell]:
-                raise DeadEndException
-            elif len(board[cell]) == 1:
-                naked_singles.append(cell)
-        if window:
-            claims = [(to_remove[0][0], cell) for cell in house]
-            window.draw_board(board, "omissions", claims=claims, remove=to_remove,
-                              singles=naked_singles, house=house, other_cells=other_cells)
-        if naked_singles:
-            _naked_singles(board, window, True)
+    for i in range(9):
+        if _in_row_col(CELLS_IN_ROW[i]):
+            return True
+        if _in_row_col(CELLS_IN_COL[i]):
+            return True
+        if _in_block(CELLS_IN_SQR[i]):
+            return True
 
-    board_updated = False
-    while True:
-        _omissions.board_updated = False
-        for i in range(9):
-            _in_row_col(CELLS_IN_ROW[i])
-            _in_row_col(CELLS_IN_COL[i])
-            _in_block(CELLS_IN_SQR[i])
-        if _omissions.board_updated:
-            board_updated = True
-        else:
-            break
-    return board_updated
+    return False
+
+
+def _y_wings(board, window):
+    """Remove candidates (options) using XY Wing technique
+    (see https://www.learn-sudoku.com/xy-wing.html)"""
+
+    def _find_wings(cell_id):
+        a_value, b_value = board[cell_id]
+        corners_ax = defaultdict(list)
+        corners_bx = defaultdict(list)
+        for nbr_cell in ALL_NBRS[cell_id]:
+            if len(board[nbr_cell]) == 2:
+                if a_value in board[nbr_cell]:
+                    x_value = board[nbr_cell].replace(a_value, "")
+                    corners_ax[x_value].append(nbr_cell)
+                elif b_value in board[nbr_cell]:
+                    x_value = board[nbr_cell].replace(b_value, "")
+                    corners_bx[x_value].append(nbr_cell)
+        wings = [(x_value, cell_id, corner_ax, corner_bx)
+                 for x_value in set(corners_ax) & set(corners_bx)
+                 for corner_ax in corners_ax[x_value]
+                 for corner_bx in corners_bx[x_value]]
+        return wings
+
+    def _reduce_xs(wings):
+        for wing in wings:
+            to_remove = []
+            for cell_id in set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]]):
+                if wing[0] in board[cell_id]:
+                    to_remove.append((wing[0], cell_id))
+            if to_remove:
+                _remove_options(board, to_remove)
+                if window:
+                    window.draw_board(board, "y_wings", y_wing=wing, singles=naked_singles, remove=to_remove,
+                                      other_cells=set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]]))
+                return True
+        return False
+
+    for cell in range(81):
+        if len(board[cell]) == 2 and _reduce_xs(_find_wings(cell)):
+            return True
+    return False
 
 
 def _init_options(board, window):
@@ -395,10 +412,13 @@ def manual_solver(board, window, _):
         if not options_set:
             _init_options(board, window)
             options_set = True
-        _hidden_pairs(board, window)
+        if _hidden_pairs(board, window):
+            continue
         if _naked_twins(board, window):
             continue
         if _omissions(board, window):
+            continue
+        if _y_wings(board, window):
             continue
 
         return True
