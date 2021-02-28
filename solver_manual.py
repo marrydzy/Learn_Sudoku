@@ -2,11 +2,12 @@
 
 """ SUDOKU SOLVING METHODS """
 
+import itertools
 from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
-from utils import is_clue, is_solved, is_single, get_options, DeadEndException
+from utils import is_clue, is_solved, get_options, DeadEndException
 
 naked_singles = []
 
@@ -240,6 +241,46 @@ def _hidden_pairs(board, window):
     return False
 
 
+def _hidden_triplets(board, window):
+    """When three given pencil marks appear in only three cells
+    in any given row, column, or block, all other pencil marks may be removed
+    from those cells.
+    (see https://www.learn-sudoku.com/hidden-triplets.html)
+    """
+
+    def _find_triplets(cells):
+        unsolved = [cell for cell in cells if len(board[cell]) > 1]
+        options = set("".join(board[cell] for cell in unsolved))
+        if len(unsolved) < 4 or len(options) < 4:
+            return
+
+        options_dic = {value: {cell for cell in unsolved if value in board[cell]} for value in options}
+        for triplet in itertools.combinations(options, 3):
+            triplet_cells = set()
+            for value in triplet:
+                triplet_cells = triplet_cells.union(options_dic[value])
+            if len(triplet_cells) == 3:
+                remove_opts = set("".join(board[cell] for cell in triplet_cells)) - set(triplet)
+                to_remove = [(value, cell) for value in remove_opts for cell in triplet_cells]
+                if to_remove:
+                    _remove_options(board, to_remove)
+                    if window:
+                        window.draw_board(board, "hidden_triplets", remove=to_remove,
+                                          subset=triplet_cells, house=cells)
+                    return True
+        return False
+
+    for i in range(9):
+        if _find_triplets(CELLS_IN_ROW[i]):
+            return True
+        if _find_triplets(CELLS_IN_COL[i]):
+            return True
+        if _find_triplets(CELLS_IN_SQR[i]):
+            return True
+
+    return False
+
+
 def _naked_twins(board, window):
     """For each 'house' (row, column or square) find twin cells with two options
     and remove the values from the list of candidates (options) of the remaining cells
@@ -419,6 +460,8 @@ def manual_solver(board, window, _):
         if _omissions(board, window):
             continue
         if _y_wings(board, window):
+            continue
+        if _hidden_triplets(board, window):
             continue
 
         return True

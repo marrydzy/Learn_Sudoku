@@ -16,6 +16,7 @@ screen_messages = {
     "naked_singles": "'Odkryty Singiel' (ang. Naked Single):",
     "hidden_singles": "'Ukryty Singiel' (ang. Hidden Single):",
     "hidden_pairs": "'Ukryta Para' (ang. Hidden Pair):",
+    "hidden_triplets": "'Ukryta Trójka' (ang. Hidden Triplet):",
     "naked_twins": "'Odkryta Para' (ang. Naked Pair):",
     "omissions": "'Zablokowany Kandydat' (ang. Locked Candidate)",
     "swordfish": "'Swordfish' technique",

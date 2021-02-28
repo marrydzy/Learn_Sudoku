@@ -273,16 +273,8 @@ class AppWindow:
             self.screen.blit(msg, (self.left_margin, top_margin))
             self.screen.set_clip(None)
 
-    def draw_board(self, board, solver_tool=None, **kwargs):
-        """ TODO """
-
-        if solver_tool and not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
-            return
-
-        # TODO
-        # if solver_tool == "naked_twins":
-
-        start = time.time()     # TODO
+    def _render_board(self, board, solver_tool, **kwargs):
+        """ render board (TODO) """
         options_set = kwargs["options_set"] if "options_set" in kwargs else True
         house = kwargs["house"] if "house" in kwargs else None
         greyed_out = kwargs["greyed_out"] if "greyed_out" in kwargs else None
@@ -335,7 +327,16 @@ class AppWindow:
                              (i * self.cell_size + self.left_margin,
                               self.top_margin + 9 * self.cell_size), line_thickness)
         self._draw_board_features(**kwargs)
-        btn_rect = self._draw_button(solver_tool)
+        btn_rect = self._draw_button(solver_tool)   # TODO
+        return btn_rect
+
+    def draw_board(self, board, solver_tool=None, **kwargs):
+        """ TODO """
+
+        if solver_tool and not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
+            return
+        start = time.time()     # TODO
+        btn_rect = self._render_board(board, solver_tool, **kwargs)
 
         wait = True
         # start = time.time()
@@ -354,7 +355,9 @@ class AppWindow:
                     if ev.key == pygame.K_RIGHT:
                         wait = False
                     if ev.key == pygame.K_DOWN:
-                        wait = False
+                        btn_rect = self._render_board(board, solver_tool, **kwargs)
+                    if ev.key == pygame.K_UP:
+                        btn_rect = self._render_board(self.input_board, solver_tool, options_set=False)
                     if ev.key == pygame.K_q:
                         pygame.quit()
                         sys.exit(0)
