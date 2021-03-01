@@ -7,6 +7,7 @@ import time
 from display import screen_messages
 
 BLACK = (0, 0, 0)
+BLUE = (0, 0, 255)
 WHITE = (255, 255, 255)
 GREY = (160, 160, 160)
 MAGENTA = (255, 0, 255)
@@ -14,7 +15,7 @@ LIME = (0, 255, 0)
 CYAN = (0, 255, 255)
 SILVER = (192, 192, 192)
 LIGHTGREEN = (190, 255, 190)
-LIGHTPINK = (255, 182, 193)
+LIENGHTPINK = (255, 182, 193)
 GAINSBORO = (230, 230, 230)
 
 C_HOUSE = (255, 255, 225)
@@ -95,6 +96,7 @@ class AppWindow:
         pygame.display.set_icon(pygame.image.load('demon.png'))     # TODO - fix it!
 
         self.input_board = None
+        self.clues_found = []
 
     def _draw_button(self, step):
         """ TODO """
@@ -113,9 +115,9 @@ class AppWindow:
         self.screen.blit(btn_txt, (txt_x, txt_y))
         return btn_rect
 
-    def _render_clue(self, clue, pos):
+    def _render_clue(self, clue, pos, color):
         """ Render board clues """
-        digit = self.font_clues.render(clue, True, BLACK)
+        digit = self.font_clues.render(clue, True, color)
         self.screen.blit(digit, (pos[0] + self.clue_shift_x, pos[1] + self.clue_shift_y))
 
     def _higlight_clue(self, cell_id, pos, **kwargs):
@@ -306,14 +308,16 @@ class AppWindow:
                             (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
 
                     if solver_tool is None:
-                        self._render_clue(board[cell_id], cell_pos)
+                        self._render_clue(board[cell_id], cell_pos, BLACK)
                     elif not options_set:
                         self._higlight_clue(cell_id, cell_pos, **kwargs)
-                        self._render_clue(board[cell_id], cell_pos)
+                        self._render_clue(board[cell_id], cell_pos, BLUE if cell_id in self.clues_found
+                                          else BLACK)
                     else:
                         if len(self.input_board[cell_id]) == 1 and cell_id not in naked_singles:
                             self._higlight_clue(cell_id, cell_pos, **kwargs)
-                            self._render_clue(self.input_board[cell_id], cell_pos)
+                            self._render_clue(self.input_board[cell_id], cell_pos,
+                                              BLUE if cell_id in self.clues_found else BLACK)
                         else:
                             self._highlight_options(cell_id, board[cell_id], cell_pos, **kwargs)
                             self._render_options(cell_id, cell_pos)
@@ -379,6 +383,8 @@ class AppWindow:
             for i in range(81):
                board[i] = self.input_board[i]
         self.time_in += time.time() - start
+
+        return accept
 
     def quit(self):
         """ TODO """

@@ -38,9 +38,9 @@ def _open_singles(board, window, options_set=False):
             if len(missing_value) != 1:
                 raise DeadEndException
             board[open_cells[0]] = missing_value.pop()
-            if window:
-                window.draw_board(board, "open_singles", options_set=False,
-                                  singles=open_cells, new_clue=open_cells[0])
+            if window and window.draw_board(board, "open_singles", options_set=False,
+                                            singles=open_cells, new_clue=open_cells[0]):
+                window.clues_found.append(open_cells[0])
 
     board_updated = False
     _open_singles.clue_found = True
@@ -99,8 +99,10 @@ def _visual_elimination(board, window, options_set=False):
                 board[clues[0]] = value
                 if window:
                     house = [cell for offset in range(3) for cell in cols_rows[3*band + offset]]
-                    window.draw_board(board, "visual_elimination", options_set=options_set,
-                                      house=house, singles=with_clue, new_clue=clues[0], greyed_out=greyed_out)
+                    if window.draw_board(board, "visual_elimination", options_set=options_set,
+                                         house=house, singles=with_clue, new_clue=clues[0],
+                                         greyed_out=greyed_out):
+                        window.clues_found.append(clues[0])
                     return True
         return False
 
@@ -127,9 +129,9 @@ def _naked_singles(board, window, options_set=False):
             clue = board[naked_single]
             to_remove = [(clue, cell) for cell in ALL_NBRS[naked_single] if clue in board[cell]]
             _remove_options(board, to_remove)
-            if window:
-                window.draw_board(board, "naked_singles", options_set=True, new_clue=naked_single,
-                                  remove=to_remove, naked_singles=naked_singles)
+            if window and window.draw_board(board, "naked_singles", options_set=True, new_clue=naked_single,
+                                            remove=to_remove, naked_singles=naked_singles):
+                window.clues_found.append(naked_single)
         return True
     else:
         for cell in range(81):
@@ -137,9 +139,9 @@ def _naked_singles(board, window, options_set=False):
                 cell_opts = get_options(board, cell)
                 if len(cell_opts) == 1:
                     board[cell] = cell_opts.pop()
-                    if window:
-                        window.draw_board(board, "naked_singles", options_set=False,
-                                          singles=[cell], new_clue=cell)
+                    if window and window.draw_board(board, "naked_singles", options_set=False,
+                                                    singles=[cell], new_clue=cell):
+                        window.clues_found.append(cell)
                     return True
         return False
 
@@ -174,10 +176,10 @@ def _hidden_singles(board, window, options_set=False):
                 if options_set:
                     to_remove = [(option, cell) for cell in ALL_NBRS[in_cells[0]] if option in board[cell]]
                     _remove_options(board, to_remove)
-                if window:
-                    window.draw_board(board, "hidden_singles", options_set=options_set, singles=[in_cells[0]],
-                                      new_clue=in_cells[0], house=house, greyed_out=greyed_out,
-                                      remove=to_remove)
+                if window and window.draw_board(board, "hidden_singles", options_set=options_set,
+                                                singles=[in_cells[0]], new_clue=in_cells[0],
+                                                house=house, greyed_out=greyed_out, remove=to_remove):
+                    window.clues_found.append(in_cells[0])
                 return True
         return False
 
