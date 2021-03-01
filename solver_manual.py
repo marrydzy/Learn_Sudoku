@@ -169,8 +169,8 @@ def _hidden_singles(board, window, options_set=False):
 
             if len(in_cells) == 1:
                 board[in_cells[0]] = option
-                if window:
-                    window.set_current_board(board)     # to properly display the hidden single
+                # if window:    TODO!
+                #     window.set_current_board(board)     # to properly display the hidden single
                 if options_set:
                     to_remove = [(option, cell) for cell in ALL_NBRS[in_cells[0]] if option in board[cell]]
                     _remove_options(board, to_remove)

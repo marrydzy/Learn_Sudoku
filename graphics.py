@@ -333,13 +333,19 @@ class AppWindow:
     def draw_board(self, board, solver_tool=None, **kwargs):
         """ TODO """
 
+        # print(f'{solver_tool = }')
+
         if solver_tool and not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
             return
-        start = time.time()     # TODO
-        btn_rect = self._render_board(board, solver_tool, **kwargs)
 
+        start = time.time()     # TODO
+
+        options_set = kwargs["options_set"] if "options_set" in kwargs else True
+        btn_rect = self._render_board(self.input_board if self.input_board else board,
+                                      "plain_board" if solver_tool else None,
+                                      options_set=options_set)
+        accept = True
         wait = True
-        # start = time.time()
         while wait:
             for ev in pygame.event.get():
                 if ev.type == pygame.QUIT:
@@ -353,17 +359,25 @@ class AppWindow:
                         self.show_solution_steps = False
                         wait = False
                     if ev.key == pygame.K_RIGHT:
-                        wait = False
+                        if accept:
+                            wait = False
                     if ev.key == pygame.K_DOWN:
+                        accept = True
                         btn_rect = self._render_board(board, solver_tool, **kwargs)
                     if ev.key == pygame.K_UP:
-                        btn_rect = self._render_board(self.input_board, solver_tool, options_set=False)
+                        accept = False
+                        btn_rect = self._render_board(self.input_board if self.input_board else board,
+                                                      "plain_board", options_set=options_set)
                     if ev.key == pygame.K_q:
                         pygame.quit()
                         sys.exit(0)
             pygame.display.update()
 
-        self.input_board = board.copy()
+        if accept:
+            self.input_board = board.copy()
+        elif self.input_board:
+            for i in range(81):
+               board[i] = self.input_board[i]
         self.time_in += time.time() - start
 
     def quit(self):

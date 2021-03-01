@@ -11,11 +11,12 @@ from tabulate import tabulate
 
 screen_messages = {
     None: "",
-    "open_singles": "'Otwarty Singiel' (ang. Open Single):",
+    "plain_board": " ",
+    "open_singles": "'Open Single' technique:",
     "visual_elimination": "'Visual Elimination' technique:",
-    "naked_singles": "'Odkryty Singiel' (ang. Naked Single):",
-    "hidden_singles": "'Ukryty Singiel' (ang. Hidden Single):",
-    "hidden_pairs": "'Ukryta Para' (ang. Hidden Pair):",
+    "naked_singles": "'Naked Single' technique:",
+    "hidden_singles": "'Hidden Single' technique:",
+    "hidden_pairs": "'Hidden Pair' technique:",
     "hidden_triplets": "'Ukryta Trójka' (ang. Hidden Triplet):",
     "naked_twins": "'Odkryta Para' (ang. Naked Pair):",
     "omissions": "'Zablokowany Kandydat' (ang. Locked Candidate)",
