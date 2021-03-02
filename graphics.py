@@ -98,6 +98,14 @@ class AppWindow:
         self.input_board = None
         self.clues_found = []
         self.clues_defined = []
+        self.board_cells = {}
+
+        for row_id in range(9):
+            for col_id in range(9):
+                cell_rect = pygame.Rect((col_id * self.cell_size + self.left_margin,
+                                         row_id * self.cell_size + self.top_margin,
+                                         self.cell_size, self.cell_size))
+                self.board_cells[row_id * 9 + col_id] = cell_rect
 
     def _draw_button(self, step):
         """ TODO """
@@ -121,26 +129,15 @@ class AppWindow:
         digit = self.font_clues.render(clue, True, color)
         self.screen.blit(digit, (pos[0] + self.clue_shift_x, pos[1] + self.clue_shift_y))
 
-    def _higlight_clue(self, cell_id, pos, **kwargs):
+    def _highlight_clue(self, cell_id, pos, **kwargs):
         """ Highlight clue cell, as applicable """
 
-        # new_singles = kwargs["singles"] if "singles" in kwargs else []  TODO
         active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
 
         if cell_id == active_clue:
-        # if new_singles and cell_id in new_singles and len(self.input_board[cell_id]) == 1:
             pygame.draw.rect(
                 self.screen, LIGHTGREEN,
                 (pos[0], pos[1], self.cell_size + 1, self.cell_size + 1))
-
-        """
-        if cell_id == active_clue:
-            cell_center = (pos[0] + (self.cell_size + 1) // 2,
-                           pos[1] + (self.cell_size + 1) // 2)
-            pygame.draw.rect(self.screen, LIGHTGREEN,
-                             (pos[0], pos[1], self.cell_size + 1, self.cell_size + 1))
-            pygame.draw.circle(self.screen, (255, 99, 71), cell_center, (self.cell_size - 1) // 2, 5)
-        """
 
     def _highlight_options(self, cell_id, new_value, pos, **kwargs):
         """ Highlight pencil marks, as applicable """
@@ -156,7 +153,7 @@ class AppWindow:
 
         if iterate is not None and cell_id == iterate:
             pygame.draw.rect(
-                self.screen, LIGHTPINK,
+                self.screen, LIENGHTPINK,
                 (pos[0], pos[1], self.cell_size + 1, self.cell_size + 1))
         if y_wing is not None and cell_id == y_wing[1]:
             pygame.draw.rect(
@@ -181,13 +178,7 @@ class AppWindow:
                                  (pos[0] + self.offsets[value][0],
                                   pos[1] + self.offsets[value][1],
                                   self.cell_size // 3, self.cell_size // 3))
-            """
-            if value == new_value:
-                pygame.draw.rect(self.screen, LIME,
-                                 (pos[0] + self.offsets[value][0],
-                                  pos[1] + self.offsets[value][1],
-                                  self.cell_size // 3, self.cell_size // 3))
-            """
+
             if subset and value in new_value and cell_id in subset:
                 pygame.draw.rect(self.screen, CYAN,
                                  (pos[0] + self.offsets[value][0],
@@ -308,7 +299,7 @@ class AppWindow:
                         (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
 
                 if board[cell_id] != '.':
-                    self._higlight_clue(cell_id, cell_pos, **kwargs)
+                    self._highlight_clue(cell_id, cell_pos, **kwargs)
                     if other_cells and cell_id in other_cells:
                         pygame.draw.rect(
                             self.screen, C_OTHER_CELLS,   # TODO
@@ -317,11 +308,10 @@ class AppWindow:
                     if solver_tool is None or cell_id in self.clues_defined or (active_clue and active_clue == cell_id):
                         self._render_clue(board[cell_id], cell_pos, BLACK)
                     elif not options_set:
-                        self._render_clue(board[cell_id], cell_pos, BLUE)  # if cell_id in self.clues_found
-                                          # else BLACK)
+                        self._render_clue(board[cell_id], cell_pos, BLUE)
                     else:
                         if len(self.input_board[cell_id]) == 1 and cell_id in self.clues_found:
-                            self._higlight_clue(cell_id, cell_pos, **kwargs)
+                            self._highlight_clue(cell_id, cell_pos, **kwargs)
                             self._render_clue(self.input_board[cell_id], cell_pos,
                                               BLUE if cell_id in self.clues_found else BLACK)
                         else:
@@ -340,6 +330,14 @@ class AppWindow:
         self._draw_board_features(**kwargs)
         btn_rect = self._draw_button(solver_tool)   # TODO
         return btn_rect
+
+    def _get_cell_id(self, mouse_pos):
+        """ TODO """
+
+        for cell_id, cell_rect in self.board_cells.items():
+            if cell_rect.collidepoint(mouse_pos):
+                return cell_id
+        return None
 
     def draw_board(self, board, solver_tool=None, **kwargs):
         """ TODO """
@@ -368,6 +366,10 @@ class AppWindow:
                 if ev.type == pygame.MOUSEBUTTONDOWN and btn_rect.collidepoint(pygame.mouse.get_pos()):
                     self.show_solution_steps = False
                     wait = False
+                if ev.type == pygame.MOUSEBUTTONDOWN:
+                    cell_id = self._get_cell_id(pygame.mouse.get_pos())
+                    if cell_id is not None:
+                        print(f'{cell_id = }')
                 if ev.type == pygame.KEYDOWN:
                     if ev.key == pygame.K_RETURN:
                         self.show_solution_steps = False
@@ -391,7 +393,7 @@ class AppWindow:
             self.input_board = board.copy()
         elif self.input_board:
             for i in range(81):
-               board[i] = self.input_board[i]
+                board[i] = self.input_board[i]
         self.time_in += time.time() - start
 
         return accept
