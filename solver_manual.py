@@ -444,10 +444,6 @@ def manual_solver(board, window, _):
     while True:
         if is_solved(board):
             return True
-
-        if len(naked_singles) > 1:
-            print(f'{len(naked_singles) = }')
-
         _open_singles(board, window, options_set)
         if _visual_elimination(board, window, options_set):
             continue
@@ -470,5 +466,4 @@ def manual_solver(board, window, _):
             continue
 
         return True
-        # raise DeadEndException
 

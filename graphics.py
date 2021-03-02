@@ -288,11 +288,9 @@ class AppWindow:
         greyed_out = kwargs["greyed_out"] if "greyed_out" in kwargs else None
         other_cells = kwargs["other_cells"] if "other_cells" in kwargs else None
         active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
-        naked_singles = kwargs["naked_singles"] if "naked_singles" in kwargs else []
 
         self.display_info(screen_messages[solver_tool])
 
-        # print('\n')
         for row_id in range(9):
             for col_id in range(9):
                 cell_id = row_id * 9 + col_id
@@ -310,19 +308,17 @@ class AppWindow:
                         (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
 
                 if board[cell_id] != '.':
-                    # TODO
                     self._higlight_clue(cell_id, cell_pos, **kwargs)
-
                     if other_cells and cell_id in other_cells:
                         pygame.draw.rect(
                             self.screen, C_OTHER_CELLS,   # TODO
                             (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
-                    if solver_tool is None or cell_id in self.clues_defined or (active_clue and active_clue == cell_idst):
+
+                    if solver_tool is None or cell_id in self.clues_defined or (active_clue and active_clue == cell_id):
                         self._render_clue(board[cell_id], cell_pos, BLACK)
                     elif not options_set:
-                        # self._higlight_clue(cell_id, cell_pos, **kwargs)
-                        self._render_clue(board[cell_id], cell_pos, BLUE if cell_id in self.clues_found
-                                          else BLACK)
+                        self._render_clue(board[cell_id], cell_pos, BLUE)  # if cell_id in self.clues_found
+                                          # else BLACK)
                     else:
                         if len(self.input_board[cell_id]) == 1 and cell_id in self.clues_found:
                             self._higlight_clue(cell_id, cell_pos, **kwargs)
@@ -376,13 +372,13 @@ class AppWindow:
                     if ev.key == pygame.K_RETURN:
                         self.show_solution_steps = False
                         wait = False
-                    if ev.key == pygame.K_RIGHT:
+                    if ev.key == pygame.K_a:
                         if accept:
                             wait = False
-                    if ev.key == pygame.K_DOWN:
+                    if ev.key == pygame.K_h:
                         accept = True
                         btn_rect = self._render_board(board, solver_tool, **kwargs)
-                    if ev.key == pygame.K_UP:
+                    if ev.key == pygame.K_b:
                         accept = False
                         btn_rect = self._render_board(self.input_board if self.input_board else board,
                                                       "plain_board", options_set=options_set)
