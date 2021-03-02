@@ -124,20 +124,23 @@ class AppWindow:
     def _higlight_clue(self, cell_id, pos, **kwargs):
         """ Highlight clue cell, as applicable """
 
-        new_singles = kwargs["singles"] if "singles" in kwargs else []
+        # new_singles = kwargs["singles"] if "singles" in kwargs else []  TODO
         active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
 
-        if new_singles and cell_id in new_singles and len(self.input_board[cell_id]) == 1:
+        if cell_id == active_clue:
+        # if new_singles and cell_id in new_singles and len(self.input_board[cell_id]) == 1:
             pygame.draw.rect(
                 self.screen, LIGHTGREEN,
                 (pos[0], pos[1], self.cell_size + 1, self.cell_size + 1))
 
+        """
         if cell_id == active_clue:
             cell_center = (pos[0] + (self.cell_size + 1) // 2,
                            pos[1] + (self.cell_size + 1) // 2)
             pygame.draw.rect(self.screen, LIGHTGREEN,
                              (pos[0], pos[1], self.cell_size + 1, self.cell_size + 1))
             pygame.draw.circle(self.screen, (255, 99, 71), cell_center, (self.cell_size - 1) // 2, 5)
+        """
 
     def _highlight_options(self, cell_id, new_value, pos, **kwargs):
         """ Highlight pencil marks, as applicable """
@@ -178,11 +181,13 @@ class AppWindow:
                                  (pos[0] + self.offsets[value][0],
                                   pos[1] + self.offsets[value][1],
                                   self.cell_size // 3, self.cell_size // 3))
+            """
             if value == new_value:
                 pygame.draw.rect(self.screen, LIME,
                                  (pos[0] + self.offsets[value][0],
                                   pos[1] + self.offsets[value][1],
                                   self.cell_size // 3, self.cell_size // 3))
+            """
             if subset and value in new_value and cell_id in subset:
                 pygame.draw.rect(self.screen, CYAN,
                                  (pos[0] + self.offsets[value][0],
@@ -282,6 +287,7 @@ class AppWindow:
         house = kwargs["house"] if "house" in kwargs else None
         greyed_out = kwargs["greyed_out"] if "greyed_out" in kwargs else None
         other_cells = kwargs["other_cells"] if "other_cells" in kwargs else None
+        active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
         naked_singles = kwargs["naked_singles"] if "naked_singles" in kwargs else []
 
         self.display_info(screen_messages[solver_tool])
@@ -304,14 +310,17 @@ class AppWindow:
                         (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
 
                 if board[cell_id] != '.':
+                    # TODO
+                    self._higlight_clue(cell_id, cell_pos, **kwargs)
+
                     if other_cells and cell_id in other_cells:
                         pygame.draw.rect(
                             self.screen, C_OTHER_CELLS,   # TODO
                             (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
-                    if solver_tool is None or cell_id in self.clues_defined:
+                    if solver_tool is None or cell_id in self.clues_defined or (active_clue and active_clue == cell_idst):
                         self._render_clue(board[cell_id], cell_pos, BLACK)
                     elif not options_set:
-                        self._higlight_clue(cell_id, cell_pos, **kwargs)
+                        # self._higlight_clue(cell_id, cell_pos, **kwargs)
                         self._render_clue(board[cell_id], cell_pos, BLUE if cell_id in self.clues_found
                                           else BLACK)
                     else:
