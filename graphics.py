@@ -97,6 +97,7 @@ class AppWindow:
 
         self.input_board = None
         self.clues_found = []
+        self.clues_defined = []
 
     def _draw_button(self, step):
         """ TODO """
@@ -285,6 +286,7 @@ class AppWindow:
 
         self.display_info(screen_messages[solver_tool])
 
+        # print('\n')
         for row_id in range(9):
             for col_id in range(9):
                 cell_id = row_id * 9 + col_id
@@ -306,20 +308,20 @@ class AppWindow:
                         pygame.draw.rect(
                             self.screen, C_OTHER_CELLS,   # TODO
                             (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
-
-                    if solver_tool is None:
+                    if solver_tool is None or cell_id in self.clues_defined:
                         self._render_clue(board[cell_id], cell_pos, BLACK)
                     elif not options_set:
                         self._higlight_clue(cell_id, cell_pos, **kwargs)
                         self._render_clue(board[cell_id], cell_pos, BLUE if cell_id in self.clues_found
                                           else BLACK)
                     else:
-                        if len(self.input_board[cell_id]) == 1 and cell_id not in naked_singles:
+                        if len(self.input_board[cell_id]) == 1 and cell_id in self.clues_found:
                             self._higlight_clue(cell_id, cell_pos, **kwargs)
                             self._render_clue(self.input_board[cell_id], cell_pos,
                                               BLUE if cell_id in self.clues_found else BLACK)
                         else:
-                            self._highlight_options(cell_id, board[cell_id], cell_pos, **kwargs)
+                            if solver_tool != "plain_board":
+                                self._highlight_options(cell_id, board[cell_id], cell_pos, **kwargs)
                             self._render_options(cell_id, cell_pos)
 
         for i in range(10):
@@ -337,7 +339,10 @@ class AppWindow:
     def draw_board(self, board, solver_tool=None, **kwargs):
         """ TODO """
 
-        # print(f'{solver_tool = }')
+        if solver_tool is None and not self.clues_defined:
+            for i in range(81):
+                if board[i] != '.':
+                    self.clues_defined.append(i)
 
         if solver_tool and not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
             return
