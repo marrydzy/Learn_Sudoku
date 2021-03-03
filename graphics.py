@@ -5,6 +5,7 @@ import sys
 import time
 
 from display import screen_messages
+from utils import in_options
 
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
@@ -358,18 +359,28 @@ class AppWindow:
                                       options_set=options_set)
         accept = True
         wait = True
+        cell_selected = None
         while wait:
             for ev in pygame.event.get():
                 if ev.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit(0)
-                if ev.type == pygame.MOUSEBUTTONDOWN and btn_rect.collidepoint(pygame.mouse.get_pos()):
-                    self.show_solution_steps = False
-                    wait = False
                 if ev.type == pygame.MOUSEBUTTONDOWN:
-                    cell_id = self._get_cell_id(pygame.mouse.get_pos())
-                    if cell_id is not None:
-                        print(f'{cell_id = }')
+                    if btn_rect.collidepoint(pygame.mouse.get_pos()):
+                        self.show_solution_steps = False
+                        wait = False
+                    elif not accept:
+                        cell_id = self._get_cell_id(pygame.mouse.get_pos())
+                        if cell_id is not None:
+                            btn_rect = self._render_board(self.input_board if self.input_board else board,
+                                                          "plain_board", options_set=options_set)
+                            cell_selected = cell_id if cell_selected != cell_id else None
+                            # print(f'{cell_id}')
+                            if cell_selected is not None:
+                                self.input_board[cell_id] = '5'   # TODO
+                                self._render_board(self.input_board if self.input_board else board,
+                                                   "plain_board", options_set=options_set, new_clue=cell_id)
+
                 if ev.type == pygame.KEYDOWN:
                     if ev.key == pygame.K_RETURN:
                         self.show_solution_steps = False

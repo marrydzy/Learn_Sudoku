@@ -82,6 +82,12 @@ def get_options(board, cell):
         return SUDOKU_VALUES_SET.copy() - set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
 
 
+def in_options(board, cell_id, value):
+    """ check if the value can make correct clue of the cell """
+    options = SUDOKU_VALUES_SET.copy() - set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
+    return True if value in options else False
+
+
 def check_file(pathname, data, additional_info=""):
     """ Check if the required files exist
     - otherwise show appropriate message and with error code = -1
