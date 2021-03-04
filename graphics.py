@@ -18,6 +18,7 @@ SILVER = (192, 192, 192)
 LIGHTGREEN = (190, 255, 190)
 LIENGHTPINK = (255, 182, 193)
 GAINSBORO = (230, 230, 230)
+DARKGREY = (150, 150, 150)
 
 C_HOUSE = (255, 255, 225)
 C_OTHER_CELLS = (255, 250, 190)
@@ -25,8 +26,30 @@ Y_WING_ROOT = (255, 153, 51)
 Y_WING_LEAF = (255, 153, 51)  # (153, 255, 255)    (255, 229, 204)
 
 
+class Button:
+    """ TODO """
+    def __init__(self, rect, text, border_color=DARKGREY, face_color=WHITE):
+        self.rect = rect
+        self.text = text
+        self.border_color = border_color
+        self.face_color = face_color
+        self.font_color = BLACK
+        self.font_button = pygame.font.SysFont("FreeSans", 20, bold=True)
+        self.txt_x = rect[0] + (rect[2] - self.font_button.size(self.text)[0]) // 2
+        self.txt_y = rect[1] + (rect[3] - self.font_button.get_ascent()) // 2
+        self.active = True
+        self.pressed = False
+
+    def draw_button(self, screen):
+        """ TODO """
+        if self.active and not self.pressed:
+            pygame.draw.rect(screen, self.face_color, self.rect, border_radius=9)
+            pygame.draw.rect(screen, self.border_color, self.rect, width=2, border_radius=9)
+            btn_txt = self.font_button.render(self.text, True, self.font_color)
+            screen.blit(btn_txt, (self.txt_x, self.txt_y))
+
 class AppWindow:
-    """ TBD """
+    """ TODO """
     def __init__(self, inspect):
         pygame.init()
 
@@ -37,6 +60,11 @@ class AppWindow:
         self.btn_w = 140
         self.btn_h = 40
         self.btn_margin = 20
+        self.keypad_digit_w = 55
+        self.keypad_digit_h = 55
+        self.keypad_left_margin = 80
+        self.keypad_top_margin = 100
+        self.keypad_digit_offset = 10
 
         self.dark_grey = (150, 150, 150)        # TODO - remove it from here!
 
@@ -45,10 +73,12 @@ class AppWindow:
         self.font_options_size = 15
         self.font_button_size = 20
         self.font_text_size = 17
+        self.font_keypad_size = 22
         self.font_clues = pygame.font.SysFont(self.font_type, self.font_clues_size)
         self.font_options = pygame.font.SysFont(self.font_type, self.font_options_size, italic=True)
         self.font_button = pygame.font.SysFont(self.font_type, self.font_button_size, bold=True)
         self.font_text = pygame.font.SysFont(self.font_type, self.font_text_size, italic=True)
+        self.font_keypad = pygame.font.SysFont(self.font_type, self.font_keypad_size, bold=True)
         self.clue_shift_x = (self.cell_size - self.font_clues.size('1')[0]) // 2
         self.clue_shift_y = (self.cell_size - self.font_clues.get_ascent()) // 2 - 2    # TODO
         self.option_shift_x = (self.cell_size // 3 - self.font_options.size('1')[0]) // 2
@@ -89,7 +119,8 @@ class AppWindow:
         }
         self.time_in = 0
 
-        display_width = 2 * self.left_margin + 9 * self.cell_size
+        display_width = self.left_margin + 9 * self.cell_size + 2 * self.keypad_left_margin + \
+            3 * self.keypad_digit_w + 2 * self.keypad_digit_offset
         display_height = self.top_margin + 9 * self.cell_size + self.bottom_margin
         self.screen = pygame.display.set_mode((display_width, display_height))
         self.screen.fill(GAINSBORO)
@@ -100,6 +131,9 @@ class AppWindow:
         self.clues_found = []
         self.clues_defined = []
         self.board_cells = {}
+        self.keypad = {}
+        self.buttons = {}
+        self.animate = False
 
         for row_id in range(9):
             for col_id in range(9):
@@ -107,6 +141,43 @@ class AppWindow:
                                          row_id * self.cell_size + self.top_margin,
                                          self.cell_size, self.cell_size))
                 self.board_cells[row_id * 9 + col_id] = cell_rect
+
+        x_offset = self.left_margin + 9 * self.cell_size  + self.keypad_left_margin
+        for row in range(3):
+            for col in range(3):
+                digit = 3 * row + col + 1
+                btn_x = x_offset + col * (self.keypad_digit_w + self.keypad_digit_offset)
+                btn_y = self.keypad_top_margin + row * (self.keypad_digit_h + self.keypad_digit_offset)
+                btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_digit_w, self.keypad_digit_h))
+                self.keypad[digit] = btn_rect
+
+        x_offset -= 20
+        y_offset = self.keypad_top_margin - 20
+        keyboard_w = 3 * (self.keypad_digit_w + self.keypad_digit_offset) - self.keypad_digit_offset + 40
+        keyboard_h = 3 * (self.keypad_digit_h + self.keypad_digit_offset) - self.keypad_digit_offset + 40
+        self.keypad_frame = pygame.Rect((x_offset, y_offset, keyboard_w, keyboard_h))
+
+        btn_w, btn_h = 140, 40
+        display = pygame.display.get_window_size()
+        btn_x = (display[0] - btn_w) // 2
+        offset_y = self.top_margin + 9 * self.cell_size
+        btn_y = offset_y + (display[1] - offset_y - btn_h) // 2
+        btn_rect = pygame.Rect((btn_x, btn_y, btn_w, btn_h))
+        self.buttons["solve"] = Button(btn_rect, "Solve")
+
+    def _draw_keypad_button(self, btn_rect, digit):
+        """ TODO """
+        pygame.draw.rect(self.screen, self.dark_grey, btn_rect, border_radius=9)
+        button_text = self.font_keypad.render(str(digit), True, BLACK)
+        txt_x = btn_rect[0] + (self.keypad_digit_w - self.font_keypad.size(str(digit))[0]) // 2
+        txt_y = btn_rect[1] + (self.keypad_digit_h - self.font_keypad.get_ascent()) // 2
+        self.screen.blit(button_text, (txt_x, txt_y))
+
+    def _draw_keypad(self):
+        """ TODO """
+        pygame.draw.rect(self.screen, self.dark_grey, self.keypad_frame, width=1, border_radius=9)
+        for i in range(1, 10):
+            self._draw_keypad_button(self.keypad[i], i)
 
     def _draw_button(self, step):
         """ TODO """
@@ -329,8 +400,9 @@ class AppWindow:
                              (i * self.cell_size + self.left_margin,
                               self.top_margin + 9 * self.cell_size), line_thickness)
         self._draw_board_features(**kwargs)
-        btn_rect = self._draw_button(solver_tool)   # TODO
-        return btn_rect
+        # btn_rect = self._draw_button(solver_tool)   # TODO
+        self.buttons["solve"].draw_button(self.screen)
+        return None
 
     def _get_cell_id(self, mouse_pos):
         """ TODO """
@@ -354,51 +426,63 @@ class AppWindow:
         start = time.time()     # TODO
 
         options_set = kwargs["options_set"] if "options_set" in kwargs else True
+        self._draw_keypad()
         btn_rect = self._render_board(self.input_board if self.input_board else board,
                                       "plain_board" if solver_tool else None,
                                       options_set=options_set)
+
         accept = True
         wait = True
         cell_selected = None
-        while wait:
-            for ev in pygame.event.get():
-                if ev.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit(0)
-                if ev.type == pygame.MOUSEBUTTONDOWN:
-                    if btn_rect.collidepoint(pygame.mouse.get_pos()):
-                        self.show_solution_steps = False
-                        wait = False
-                    elif not accept:
-                        cell_id = self._get_cell_id(pygame.mouse.get_pos())
-                        if cell_id is not None:
-                            btn_rect = self._render_board(self.input_board if self.input_board else board,
-                                                          "plain_board", options_set=options_set)
-                            cell_selected = cell_id if cell_selected != cell_id else None
-                            # print(f'{cell_id}')
-                            if cell_selected is not None:
-                                self.input_board[cell_id] = '5'   # TODO
-                                self._render_board(self.input_board if self.input_board else board,
-                                                   "plain_board", options_set=options_set, new_clue=cell_id)
 
-                if ev.type == pygame.KEYDOWN:
-                    if ev.key == pygame.K_RETURN:
-                        self.show_solution_steps = False
-                        wait = False
-                    if ev.key == pygame.K_a:
-                        if accept:
-                            wait = False
-                    if ev.key == pygame.K_h:
-                        accept = True
-                        btn_rect = self._render_board(board, solver_tool, **kwargs)
-                    if ev.key == pygame.K_b:
-                        accept = False
-                        btn_rect = self._render_board(self.input_board if self.input_board else board,
-                                                      "plain_board", options_set=options_set)
-                    if ev.key == pygame.K_q:
+        if self.animate:
+            self._render_board(board, solver_tool, **kwargs)
+            time.sleep(1)
+            pygame.display.update()
+        else:
+            while wait:
+                for ev in pygame.event.get():
+                    if ev.type == pygame.QUIT:
                         pygame.quit()
                         sys.exit(0)
-            pygame.display.update()
+                    if ev.type == pygame.MOUSEBUTTONDOWN:
+                        if btn_rect.collidepoint(pygame.mouse.get_pos()):
+                            self.show_solution_steps = False
+                            wait = False
+                        elif not accept:
+                            cell_id = self._get_cell_id(pygame.mouse.get_pos())
+                            if cell_id is not None:
+                                btn_rect = self._render_board(self.input_board if self.input_board else board,
+                                                              "plain_board", options_set=options_set)
+                                cell_selected = cell_id if cell_selected != cell_id else None
+                                # print(f'{cell_id}')
+                                if cell_selected is not None:
+                                    self.input_board[cell_id] = '5'   # TODO
+                                    self._render_board(self.input_board if self.input_board else board,
+                                                       "plain_board", options_set=options_set, new_clue=cell_id)
+
+                    if ev.type == pygame.KEYDOWN:
+                        if ev.key == pygame.K_RETURN:
+                            self.show_solution_steps = False
+                            wait = False
+                        if ev.key == pygame.K_a:
+                            if accept:
+                                wait = False
+                        if ev.key == pygame.K_h:
+                            accept = True
+                            btn_rect = self._render_board(board, solver_tool, **kwargs)
+                        if ev.key == pygame.K_b:
+                            accept = False
+                            btn_rect = self._render_board(self.input_board if self.input_board else board,
+                                                          "plain_board", options_set=options_set)
+                        if ev.key == pygame.K_m:
+                            accept = True
+                            self.animate = True
+                            wait = False
+                        if ev.key == pygame.K_q:
+                            pygame.quit()
+                            sys.exit(0)
+                pygame.display.update()
 
         if accept:
             self.input_board = board.copy()

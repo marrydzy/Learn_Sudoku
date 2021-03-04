@@ -24,6 +24,7 @@ screen_messages = {
     "y_wings": "'y-wings' technique",
     "scrub_pencil_marks": "WTF",
     "unique_values": "WTF",
+    "observe": "Dupa Jaś"
 }
 
 DEBUG = False

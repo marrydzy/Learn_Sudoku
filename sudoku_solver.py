@@ -404,7 +404,7 @@ def _picture_ocr():
     ocr_engine.show_contour(1000)
     init_board()
     if config['graphical_mode']:
-        data["graph_display"] = graphics.AppWindow(config["observe"])
+        data["graph_display"] = graphics.AppWindow(config["peep"])
         data["graph_display"].display_info(os.path.abspath(config['image']))
     _solve_sudoku_puzzle()
 
