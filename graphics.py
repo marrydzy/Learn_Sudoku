@@ -5,8 +5,25 @@ import sys
 import time
 
 from display import screen_messages
-from utils import in_options
 
+# dimensions of sudoku board:
+CELL_SIZE = 66
+LEFT_MARGIN = 25
+TOP_MARGIN = 60
+BOTTOM_MARGIN = 90
+
+# keypad dimensions:
+KEYPAD_DIGIT_W = 55
+KEYPAD_DIGIT_H = 55
+KEYPAD_DIGIT_OFFSET = 10
+KEYPAD_LEFT_MARGIN = 80
+KEYPAD_TOP_MARGIN = 80
+
+# dimensions of control buttons:
+BUTTON_H = 45
+BUTTONS_OFFSET = 10
+
+# RGB colors:
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 WHITE = (255, 255, 255)
@@ -23,7 +40,7 @@ DARKGREY = (150, 150, 150)
 C_HOUSE = (255, 255, 225)
 C_OTHER_CELLS = (255, 250, 190)
 Y_WING_ROOT = (255, 153, 51)
-Y_WING_LEAF = (255, 153, 51)  # (153, 255, 255)    (255, 229, 204)
+Y_WING_LEAF = (255, 153, 51)  
 
 
 class Button:
@@ -48,23 +65,17 @@ class Button:
             btn_txt = self.font_button.render(self.text, True, self.font_color)
             screen.blit(btn_txt, (self.txt_x, self.txt_y))
 
+    def is_pressed(self, wait_to_release=False):
+        """ TODO """
+        if not wait_to_release:
+            return self.rect.collidepoint(pygame.mouse.get_pos())
+        return False
+
+
 class AppWindow:
     """ TODO """
     def __init__(self, inspect):
         pygame.init()
-
-        self.cell_size = 66
-        self.left_margin = 25
-        self.top_margin = 60
-        self.bottom_margin = 90
-        self.btn_w = 140
-        self.btn_h = 40
-        self.btn_margin = 20
-        self.keypad_digit_w = 55
-        self.keypad_digit_h = 55
-        self.keypad_left_margin = 80
-        self.keypad_top_margin = 100
-        self.keypad_digit_offset = 10
 
         self.dark_grey = (150, 150, 150)        # TODO - remove it from here!
 
@@ -76,22 +87,22 @@ class AppWindow:
         self.font_keypad_size = 22
         self.font_clues = pygame.font.SysFont(self.font_type, self.font_clues_size)
         self.font_options = pygame.font.SysFont(self.font_type, self.font_options_size, italic=True)
-        self.font_button = pygame.font.SysFont(self.font_type, self.font_button_size, bold=True)
+        # self.font_button = pygame.font.SysFont(self.font_type, self.font_button_size, bold=True)
         self.font_text = pygame.font.SysFont(self.font_type, self.font_text_size, italic=True)
         self.font_keypad = pygame.font.SysFont(self.font_type, self.font_keypad_size, bold=True)
-        self.clue_shift_x = (self.cell_size - self.font_clues.size('1')[0]) // 2
-        self.clue_shift_y = (self.cell_size - self.font_clues.get_ascent()) // 2 - 2    # TODO
-        self.option_shift_x = (self.cell_size // 3 - self.font_options.size('1')[0]) // 2
-        self.option_shift_y = (self.cell_size // 3 - self.font_options.get_ascent()) // 2
+        self.clue_shift_x = (CELL_SIZE - self.font_clues.size('1')[0]) // 2
+        self.clue_shift_y = (CELL_SIZE - self.font_clues.get_ascent()) // 2 - 2    # TODO
+        self.option_shift_x = (CELL_SIZE // 3 - self.font_options.size('1')[0]) // 2
+        self.option_shift_y = (CELL_SIZE // 3 - self.font_options.get_ascent()) // 2
         self.offsets = {'1': (0, 0),
-                        '2': (self.cell_size // 3, 0),
-                        '3': (2 * self.cell_size // 3, 0),
-                        '4': (0, self.cell_size // 3),
-                        '5': (self.cell_size // 3, self.cell_size // 3),
-                        '6': (2 * self.cell_size // 3, self.cell_size // 3),
-                        '7': (0, 2 * self.cell_size // 3),
-                        '8': (self.cell_size // 3, 2 * self.cell_size // 3),
-                        '9': (2 * self.cell_size // 3, 2 * self.cell_size // 3),
+                        '2': (CELL_SIZE // 3, 0),
+                        '3': (2 * CELL_SIZE // 3, 0),
+                        '4': (0, CELL_SIZE // 3),
+                        '5': (CELL_SIZE // 3, CELL_SIZE // 3),
+                        '6': (2 * CELL_SIZE // 3, CELL_SIZE // 3),
+                        '7': (0, 2 * CELL_SIZE // 3),
+                        '8': (CELL_SIZE // 3, 2 * CELL_SIZE // 3),
+                        '9': (2 * CELL_SIZE // 3, 2 * CELL_SIZE // 3),
                         }
 
         self.show_solution_steps = True
@@ -119,9 +130,9 @@ class AppWindow:
         }
         self.time_in = 0
 
-        display_width = self.left_margin + 9 * self.cell_size + 2 * self.keypad_left_margin + \
-            3 * self.keypad_digit_w + 2 * self.keypad_digit_offset
-        display_height = self.top_margin + 9 * self.cell_size + self.bottom_margin
+        display_width = LEFT_MARGIN + 9 * CELL_SIZE + 2 * KEYPAD_LEFT_MARGIN + \
+            3 * KEYPAD_DIGIT_W + 2 * KEYPAD_DIGIT_OFFSET
+        display_height = TOP_MARGIN + 9 * CELL_SIZE + BOTTOM_MARGIN
         self.screen = pygame.display.set_mode((display_width, display_height))
         self.screen.fill(GAINSBORO)
         pygame.display.set_caption('SUDOKU PUZZLE')
@@ -137,40 +148,74 @@ class AppWindow:
 
         for row_id in range(9):
             for col_id in range(9):
-                cell_rect = pygame.Rect((col_id * self.cell_size + self.left_margin,
-                                         row_id * self.cell_size + self.top_margin,
-                                         self.cell_size, self.cell_size))
+                cell_rect = pygame.Rect((col_id * CELL_SIZE + LEFT_MARGIN,
+                                         row_id * CELL_SIZE + TOP_MARGIN,
+                                         CELL_SIZE, CELL_SIZE))
                 self.board_cells[row_id * 9 + col_id] = cell_rect
 
-        x_offset = self.left_margin + 9 * self.cell_size  + self.keypad_left_margin
+        x_offset = LEFT_MARGIN + 9 * CELL_SIZE + KEYPAD_LEFT_MARGIN
         for row in range(3):
             for col in range(3):
                 digit = 3 * row + col + 1
-                btn_x = x_offset + col * (self.keypad_digit_w + self.keypad_digit_offset)
-                btn_y = self.keypad_top_margin + row * (self.keypad_digit_h + self.keypad_digit_offset)
-                btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_digit_w, self.keypad_digit_h))
+                btn_x = x_offset + col * (KEYPAD_DIGIT_W + KEYPAD_DIGIT_OFFSET)
+                btn_y = KEYPAD_TOP_MARGIN + row * (KEYPAD_DIGIT_H + KEYPAD_DIGIT_OFFSET)
+                btn_rect = pygame.Rect((btn_x, btn_y, KEYPAD_DIGIT_W, KEYPAD_DIGIT_H))
                 self.keypad[digit] = btn_rect
 
         x_offset -= 20
-        y_offset = self.keypad_top_margin - 20
-        keyboard_w = 3 * (self.keypad_digit_w + self.keypad_digit_offset) - self.keypad_digit_offset + 40
-        keyboard_h = 3 * (self.keypad_digit_h + self.keypad_digit_offset) - self.keypad_digit_offset + 40
+        y_offset = KEYPAD_TOP_MARGIN - 20
+        keyboard_w = 3 * (KEYPAD_DIGIT_W + KEYPAD_DIGIT_OFFSET) - KEYPAD_DIGIT_OFFSET + 40
+        keyboard_h = 3 * (KEYPAD_DIGIT_H + KEYPAD_DIGIT_OFFSET) - KEYPAD_DIGIT_OFFSET + 40
         self.keypad_frame = pygame.Rect((x_offset, y_offset, keyboard_w, keyboard_h))
 
-        btn_w, btn_h = 140, 40
-        display = pygame.display.get_window_size()
-        btn_x = (display[0] - btn_w) // 2
-        offset_y = self.top_margin + 9 * self.cell_size
-        btn_y = offset_y + (display[1] - offset_y - btn_h) // 2
-        btn_rect = pygame.Rect((btn_x, btn_y, btn_w, btn_h))
-        self.buttons["solve"] = Button(btn_rect, "Solve")
+        self._set_buttons()
+
+    def _set_buttons(self):
+        """ TODO """
+        btn_x = self.keypad_frame[0]
+        btn_y = self.keypad_frame[1] + self.keypad_frame[3] + 30
+
+        btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
+        self.buttons["clue"] = Button(btn_rect, "Clue")
+
+        btn_y += BUTTON_H + BUTTONS_OFFSET
+        btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
+        self.buttons["pencil_mark"] = Button(btn_rect, "Pencil Mark")
+
+        btn_y += BUTTON_H + 30
+        btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
+        self.buttons["hint"] = Button(btn_rect, "Get Hint")
+
+        btn_y += BUTTON_H + BUTTONS_OFFSET
+        btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
+        self.buttons["accept"] = Button(btn_rect, "Accept")
+
+        btn_y += BUTTON_H + BUTTONS_OFFSET
+        btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
+        self.buttons["animate"] = Button(btn_rect, "Animate")
+
+        btn_y += BUTTON_H + BUTTONS_OFFSET
+        btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
+        self.buttons["solve"] = Button(btn_rect, "Auto Solve")
+
+    def _draw_buttons(self):
+        """ TODO """
+        for button in self.buttons.values():
+            button.draw_button(self.screen)
+
+    def _button_pressed(self):
+        """ TODO """
+        for key, button in self.buttons.items():
+            if button.is_pressed():
+                return key
+        return None
 
     def _draw_keypad_button(self, btn_rect, digit):
         """ TODO """
         pygame.draw.rect(self.screen, self.dark_grey, btn_rect, border_radius=9)
         button_text = self.font_keypad.render(str(digit), True, BLACK)
-        txt_x = btn_rect[0] + (self.keypad_digit_w - self.font_keypad.size(str(digit))[0]) // 2
-        txt_y = btn_rect[1] + (self.keypad_digit_h - self.font_keypad.get_ascent()) // 2
+        txt_x = btn_rect[0] + (KEYPAD_DIGIT_W - self.font_keypad.size(str(digit))[0]) // 2
+        txt_y = btn_rect[1] + (KEYPAD_DIGIT_H - self.font_keypad.get_ascent()) // 2
         self.screen.blit(button_text, (txt_x, txt_y))
 
     def _draw_keypad(self):
@@ -178,23 +223,6 @@ class AppWindow:
         pygame.draw.rect(self.screen, self.dark_grey, self.keypad_frame, width=1, border_radius=9)
         for i in range(1, 10):
             self._draw_keypad_button(self.keypad[i], i)
-
-    def _draw_button(self, step):
-        """ TODO """
-        btn_w, btn_h = 140, 40
-        displ = pygame.display.get_window_size()
-        btn_x = (displ[0] - btn_w) // 2
-        offset_y = self.top_margin + 9 * self.cell_size
-        btn_y = offset_y + (displ[1] - offset_y - btn_h) // 2
-        btn_rect = pygame.Rect((btn_x, btn_y, btn_w, btn_h))
-        pygame.draw.rect(self.screen, self.dark_grey, btn_rect)
-        pygame.draw.rect(self.screen, WHITE, btn_rect.inflate(-4, -4))
-        btn_name = "Solve" if step else "Quit"                    # TODO - fix it!
-        btn_txt = self.font_button.render(btn_name, True, BLACK)
-        txt_x = btn_x + (self.btn_w - self.font_button.size(btn_name)[0]) // 2
-        txt_y = btn_y + (self.btn_h - self.font_button.get_ascent()) // 2
-        self.screen.blit(btn_txt, (txt_x, txt_y))
-        return btn_rect
 
     def _render_clue(self, clue, pos, color):
         """ Render board clues """
@@ -209,7 +237,7 @@ class AppWindow:
         if cell_id == active_clue:
             pygame.draw.rect(
                 self.screen, LIGHTGREEN,
-                (pos[0], pos[1], self.cell_size + 1, self.cell_size + 1))
+                (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
 
     def _highlight_options(self, cell_id, new_value, pos, **kwargs):
         """ Highlight pencil marks, as applicable """
@@ -226,56 +254,56 @@ class AppWindow:
         if iterate is not None and cell_id == iterate:
             pygame.draw.rect(
                 self.screen, LIENGHTPINK,
-                (pos[0], pos[1], self.cell_size + 1, self.cell_size + 1))
+                (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
         if y_wing is not None and cell_id == y_wing[1]:
             pygame.draw.rect(
                 self.screen, Y_WING_ROOT,
-                (pos[0], pos[1], self.cell_size + 1, self.cell_size + 1))
+                (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
         if y_wing is not None and (cell_id == y_wing[2] or cell_id == y_wing[3]):
             pygame.draw.rect(
                 self.screen, Y_WING_LEAF,
-                (pos[0], pos[1], self.cell_size + 1, self.cell_size + 1))
+                (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
         if corners and cell_id in corners or x_wing and cell_id in x_wing[1:]:
             pygame.draw.rect(
                 self.screen, Y_WING_LEAF,       # TODO
-                (pos[0], pos[1], self.cell_size + 1, self.cell_size + 1))
+                (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
         if sword and cell_id in sword[1:]:
             pygame.draw.rect(
                 self.screen, Y_WING_LEAF,       # TODO
-                (pos[0], pos[1], self.cell_size + 1, self.cell_size + 1))
+                (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
 
         for value in self.input_board[cell_id]:
             if remove and (value, cell_id) in remove:
                 pygame.draw.rect(self.screen, GREY,
                                  (pos[0] + self.offsets[value][0],
                                   pos[1] + self.offsets[value][1],
-                                  self.cell_size // 3, self.cell_size // 3))
+                                  CELL_SIZE // 3, CELL_SIZE // 3))
 
             if subset and value in new_value and cell_id in subset:
                 pygame.draw.rect(self.screen, CYAN,
                                  (pos[0] + self.offsets[value][0],
                                   pos[1] + self.offsets[value][1],
-                                  self.cell_size // 3, self.cell_size // 3))
+                                  CELL_SIZE // 3, CELL_SIZE // 3))
             if claims and (value, cell_id) in claims:
                 pygame.draw.rect(self.screen, CYAN,
                                  (pos[0] + self.offsets[value][0],
                                   pos[1] + self.offsets[value][1],
-                                  self.cell_size // 3, self.cell_size // 3))
+                                  CELL_SIZE // 3, CELL_SIZE // 3))
             if x_wing and value == x_wing[0] and cell_id in x_wing[1:]:
                 pygame.draw.rect(self.screen, CYAN,
                                  (pos[0] + self.offsets[value][0],
                                   pos[1] + self.offsets[value][1],
-                                  self.cell_size // 3, self.cell_size // 3))
+                                  CELL_SIZE // 3, CELL_SIZE // 3))
             if y_wing and value == y_wing[0] and cell_id in (y_wing[2], y_wing[3]):
                 pygame.draw.rect(self.screen, CYAN,
                                  (pos[0] + self.offsets[value][0],
                                   pos[1] + self.offsets[value][1],
-                                  self.cell_size // 3, self.cell_size // 3))
+                                  CELL_SIZE // 3, CELL_SIZE // 3))
             if sword and value == sword[0] and cell_id in sword[1:]:
                 pygame.draw.rect(self.screen, CYAN,
                                  (pos[0] + self.offsets[value][0],
                                   pos[1] + self.offsets[value][1],
-                                  self.cell_size // 3, self.cell_size // 3))
+                                  CELL_SIZE // 3, CELL_SIZE // 3))
 
     def _draw_board_features(self, **kwargs):
         """ TBD """
@@ -285,38 +313,38 @@ class AppWindow:
         x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
 
         if rectangle:
-            left = (rectangle[0] % 9 + 0.5) * self.cell_size + self.left_margin
-            top = (rectangle[0] // 9 + 0.5) * self.cell_size + self.top_margin
-            right = (rectangle[1] % 9 + 0.5) * self.cell_size + self.left_margin
-            bottom = (rectangle[2] // 9 + 0.5) * self.cell_size + self.top_margin
+            left = (rectangle[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            top = (rectangle[0] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+            right = (rectangle[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            bottom = (rectangle[2] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
             rect = pygame.Rect(left, top, right - left, bottom - top)
             pygame.draw.rect(self.screen, MAGENTA, rect, width=4)
 
         if x_wing:
             color = MAGENTA
             x_wing = sorted(x_wing[1:])
-            x1 = (x_wing[0] % 9 + 0.5) * self.cell_size + self.left_margin
-            y1 = (x_wing[0] // 9 + 0.5) * self.cell_size + self.top_margin
-            x2 = (x_wing[3] % 9 + 0.5) * self.cell_size + self.left_margin
-            y2 = (x_wing[3] // 9 + 0.5) * self.cell_size + self.top_margin
+            x1 = (x_wing[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            y1 = (x_wing[0] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+            x2 = (x_wing[3] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            y2 = (x_wing[3] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
             pygame.draw.line(self.screen, color, (x1, y1), (x2, y2), width=5)
-            x1 = (x_wing[1] % 9 + 0.5) * self.cell_size + self.left_margin
-            y1 = (x_wing[1] // 9 + 0.5) * self.cell_size + self.top_margin
-            x2 = (x_wing[2] % 9 + 0.5) * self.cell_size + self.left_margin
-            y2 = (x_wing[2] // 9 + 0.5) * self.cell_size + self.top_margin
+            x1 = (x_wing[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            y1 = (x_wing[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+            x2 = (x_wing[2] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            y2 = (x_wing[2] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
             pygame.draw.line(self.screen, color, (x1, y1), (x2, y2), width=5)
 
         if y_wing:
-            x1 = (y_wing[1] % 9 + 0.5) * self.cell_size + self.left_margin
-            y1 = (y_wing[1] // 9 + 0.5) * self.cell_size + self.top_margin
+            x1 = (y_wing[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            y1 = (y_wing[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
             root = (x1, y1)
-            x2 = (y_wing[2] % 9 + 0.5) * self.cell_size + self.left_margin
-            y2 = (y_wing[2] // 9 + 0.5) * self.cell_size + self.top_margin
+            x2 = (y_wing[2] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            y2 = (y_wing[2] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
             leaf = (x2, y2)
             width = 4 if x1 == x2 or y1 == y2 else 5
             pygame.draw.line(self.screen, MAGENTA, root, leaf, width=width)
-            x2 = (y_wing[3] % 9 + 0.5) * self.cell_size + self.left_margin
-            y2 = (y_wing[3] // 9 + 0.5) * self.cell_size + self.top_margin
+            x2 = (y_wing[3] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            y2 = (y_wing[3] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
             leaf = (x2, y2)
             width = 4 if x1 == x2 or y1 == y2 else 5
             pygame.draw.line(self.screen, MAGENTA, root, leaf, width=width)
@@ -337,11 +365,11 @@ class AppWindow:
         """ Display info 'text' starting at the left top corner of the window """
         if text:
             msg = self.font_text.render(text, True, BLACK)
-            top_margin = (self.top_margin - self.font_text.get_ascent()) // 2
-            info_rect = pygame.Rect((self.left_margin, top_margin, 9 * self.cell_size, self.font_text_size+1))
+            top_margin = (TOP_MARGIN - self.font_text.get_ascent()) // 2
+            info_rect = pygame.Rect((LEFT_MARGIN, top_margin, 9 * CELL_SIZE, self.font_text_size+1))
             pygame.draw.rect(self.screen, GAINSBORO, info_rect)
             self.screen.set_clip(info_rect)
-            self.screen.blit(msg, (self.left_margin, top_margin))
+            self.screen.blit(msg, (LEFT_MARGIN, top_margin))
             self.screen.set_clip(None)
 
     def _render_board(self, board, solver_tool, **kwargs):
@@ -357,25 +385,25 @@ class AppWindow:
         for row_id in range(9):
             for col_id in range(9):
                 cell_id = row_id * 9 + col_id
-                cell_pos = (col_id * self.cell_size + self.left_margin,
-                            row_id * self.cell_size + self.top_margin)
+                cell_pos = (col_id * CELL_SIZE + LEFT_MARGIN,
+                            row_id * CELL_SIZE + TOP_MARGIN)
                 pygame.draw.rect(self.screen, WHITE,
-                                 (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
+                                 (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
                 if house and cell_id in house:
                     pygame.draw.rect(
                         self.screen, C_HOUSE,   # TODO
-                        (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
+                        (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
                 if greyed_out and cell_id in greyed_out:
                     pygame.draw.rect(
                         self.screen, SILVER,
-                        (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
+                        (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
 
                 if board[cell_id] != '.':
                     self._highlight_clue(cell_id, cell_pos, **kwargs)
                     if other_cells and cell_id in other_cells:
                         pygame.draw.rect(
                             self.screen, C_OTHER_CELLS,   # TODO
-                            (cell_pos[0], cell_pos[1], self.cell_size + 1, self.cell_size + 1))
+                            (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
 
                     if solver_tool is None or cell_id in self.clues_defined or (active_clue and active_clue == cell_id):
                         self._render_clue(board[cell_id], cell_pos, BLACK)
@@ -393,15 +421,14 @@ class AppWindow:
 
         for i in range(10):
             line_thickness = 5 if i % 3 == 0 else 1
-            pygame.draw.line(self.screen, BLACK, (self.left_margin- 2, i * self.cell_size + self.top_margin),
-                             (self.left_margin+ 9 * self.cell_size + 2,
-                              i * self.cell_size + self.top_margin), line_thickness)
-            pygame.draw.line(self.screen, BLACK, (i * self.cell_size + self.left_margin, self.top_margin),
-                             (i * self.cell_size + self.left_margin,
-                              self.top_margin + 9 * self.cell_size), line_thickness)
+            pygame.draw.line(self.screen, BLACK, (LEFT_MARGIN- 2, i * CELL_SIZE + TOP_MARGIN),
+                             (LEFT_MARGIN+ 9 * CELL_SIZE + 2,
+                              i * CELL_SIZE + TOP_MARGIN), line_thickness)
+            pygame.draw.line(self.screen, BLACK, (i * CELL_SIZE + LEFT_MARGIN, TOP_MARGIN),
+                             (i * CELL_SIZE + LEFT_MARGIN,
+                              TOP_MARGIN + 9 * CELL_SIZE), line_thickness)
         self._draw_board_features(**kwargs)
-        # btn_rect = self._draw_button(solver_tool)   # TODO
-        self.buttons["solve"].draw_button(self.screen)
+        self._draw_buttons()
         return None
 
     def _get_cell_id(self, mouse_pos):
@@ -427,9 +454,8 @@ class AppWindow:
 
         options_set = kwargs["options_set"] if "options_set" in kwargs else True
         self._draw_keypad()
-        btn_rect = self._render_board(self.input_board if self.input_board else board,
-                                      "plain_board" if solver_tool else None,
-                                      options_set=options_set)
+        self._render_board(self.input_board if self.input_board else board, "plain_board" if solver_tool else None,
+                           ptions_set=options_set)
 
         accept = True
         wait = True
@@ -446,16 +472,26 @@ class AppWindow:
                         pygame.quit()
                         sys.exit(0)
                     if ev.type == pygame.MOUSEBUTTONDOWN:
-                        if btn_rect.collidepoint(pygame.mouse.get_pos()):
+                        btn_pressed = self._button_pressed()
+                        if btn_pressed == "solve":
                             self.show_solution_steps = False
+                            wait = False
+                        elif btn_pressed == "hint":
+                            accept = True
+                            self._render_board(board, solver_tool, **kwargs)
+                        elif btn_pressed == "accept":
+                            if accept:
+                                wait = False
+                        elif btn_pressed == "animate":
+                            accept = True
+                            self.animate = True
                             wait = False
                         elif not accept:
                             cell_id = self._get_cell_id(pygame.mouse.get_pos())
                             if cell_id is not None:
-                                btn_rect = self._render_board(self.input_board if self.input_board else board,
-                                                              "plain_board", options_set=options_set)
+                                self._render_board(self.input_board if self.input_board else board,
+                                                   "plain_board", options_set=options_set)
                                 cell_selected = cell_id if cell_selected != cell_id else None
-                                # print(f'{cell_id}')
                                 if cell_selected is not None:
                                     self.input_board[cell_id] = '5'   # TODO
                                     self._render_board(self.input_board if self.input_board else board,
@@ -470,11 +506,11 @@ class AppWindow:
                                 wait = False
                         if ev.key == pygame.K_h:
                             accept = True
-                            btn_rect = self._render_board(board, solver_tool, **kwargs)
+                            self._render_board(board, solver_tool, **kwargs)
                         if ev.key == pygame.K_b:
                             accept = False
-                            btn_rect = self._render_board(self.input_board if self.input_board else board,
-                                                          "plain_board", options_set=options_set)
+                            self._render_board(self.input_board if self.input_board else board,
+                                               "plain_board", options_set=options_set)
                         if ev.key == pygame.K_m:
                             accept = True
                             self.animate = True
