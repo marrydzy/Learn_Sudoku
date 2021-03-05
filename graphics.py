@@ -463,29 +463,41 @@ class AppWindow:
 
         if self.animate:
             self._render_board(board, solver_tool, **kwargs)
-            time.sleep(1)
             pygame.display.update()
+            time.sleep(1)
         else:
             while wait:
+                event = None
                 for ev in pygame.event.get():
                     if ev.type == pygame.QUIT:
+                        event = "quit"
+                    elif ev.type == pygame.MOUSEBUTTONDOWN:
+                        event = self._button_pressed()
+                    elif ev.type == pygame.KEYDOWN:
+                        event = ev.key
+
+                    if event in ("solve", pygame.K_s):
+                        self.show_solution_steps = False
+                        wait = False
+                    elif event in ("hint", pygame.K_h):
+                        accept = True
+                        self._render_board(board, solver_tool, **kwargs)
+                    elif event in ("accept", pygame.K_a):
+                        if accept:
+                            wait = False
+                    elif event in (pygame.K_b,):
+                        accept = False
+                        self._render_board(self.input_board if self.input_board else board,
+                                           "plain_board", options_set=options_set)
+                    elif event in ("animate", pygame.K_m):
+                        accept = True
+                        self.animate = True
+                        wait = False
+                    elif event in ("quit", pygame.K_q):
                         pygame.quit()
                         sys.exit(0)
-                    if ev.type == pygame.MOUSEBUTTONDOWN:
-                        btn_pressed = self._button_pressed()
-                        if btn_pressed == "solve":
-                            self.show_solution_steps = False
-                            wait = False
-                        elif btn_pressed == "hint":
-                            accept = True
-                            self._render_board(board, solver_tool, **kwargs)
-                        elif btn_pressed == "accept":
-                            if accept:
-                                wait = False
-                        elif btn_pressed == "animate":
-                            accept = True
-                            self.animate = True
-                            wait = False
+
+                    """
                         elif not accept:
                             cell_id = self._get_cell_id(pygame.mouse.get_pos())
                             if cell_id is not None:
@@ -496,28 +508,7 @@ class AppWindow:
                                     self.input_board[cell_id] = '5'   # TODO
                                     self._render_board(self.input_board if self.input_board else board,
                                                        "plain_board", options_set=options_set, new_clue=cell_id)
-
-                    if ev.type == pygame.KEYDOWN:
-                        if ev.key == pygame.K_RETURN:
-                            self.show_solution_steps = False
-                            wait = False
-                        if ev.key == pygame.K_a:
-                            if accept:
-                                wait = False
-                        if ev.key == pygame.K_h:
-                            accept = True
-                            self._render_board(board, solver_tool, **kwargs)
-                        if ev.key == pygame.K_b:
-                            accept = False
-                            self._render_board(self.input_board if self.input_board else board,
-                                               "plain_board", options_set=options_set)
-                        if ev.key == pygame.K_m:
-                            accept = True
-                            self.animate = True
-                            wait = False
-                        if ev.key == pygame.K_q:
-                            pygame.quit()
-                            sys.exit(0)
+                    """
                 pygame.display.update()
 
         if accept:
