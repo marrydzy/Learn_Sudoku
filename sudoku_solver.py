@@ -199,6 +199,10 @@ def init_board():
     board.clear()
     for cell_id in range(81):
         board.append(boards[data["current_sudoku"] - 1][cell_id])
+    if config['graphical_mode']:
+        data["graph_display"] = graphics.AppWindow(board, config["peep"])
+        if config['fname']:
+            data["graph_display"].display_info(os.path.abspath(config['fname']))
     board_image_stack.clear()
     iter_stack.clear()
 
@@ -394,7 +398,7 @@ def _video_ocr():
     ocr_engine.close()
     config["ocr"] = False
     init_board()
-    data["graph_display"] = graphics.AppWindow(config["peep"])  # TODO
+    data["graph_display"] = graphics.AppWindow(board, config["peep"])  # TODO
     _solve_sudoku_puzzle()
 
 
@@ -404,7 +408,7 @@ def _picture_ocr():
     ocr_engine.show_contour(1000)
     init_board()
     if config['graphical_mode']:
-        data["graph_display"] = graphics.AppWindow(config["peep"])
+        data["graph_display"] = graphics.AppWindow(board, config["peep"])
         data["graph_display"].display_info(os.path.abspath(config['image']))
     _solve_sudoku_puzzle()
 
@@ -422,9 +426,6 @@ def main():
     solver_tools, functions = _set_tools()
     _read_boards()
     if boards:
-        if config['graphical_mode']:  # TODO - fix it!
-            data["graph_display"] = graphics.AppWindow(config["peep"])
-            data["graph_display"].display_info(os.path.abspath(config['fname']))
         if not config["puzzles_list"]:
             data["current_sudoku"] = config["first_id"]
             _solve_sudoku_puzzle()

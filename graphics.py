@@ -25,7 +25,7 @@ BUTTONS_OFFSET = 10
 
 # RGB colors:
 BLACK = (0, 0, 0)
-BLUE = (0, 0, 255)
+BLUE = (51, 102, 153)
 WHITE = (255, 255, 255)
 GREY = (160, 160, 160)
 MAGENTA = (255, 0, 255)
@@ -36,6 +36,7 @@ LIGHTGREEN = (190, 255, 190)
 LIENGHTPINK = (255, 182, 193)
 GAINSBORO = (230, 230, 230)
 DARKGREY = (150, 150, 150)
+LIGHTGREY = (200, 200, 200)
 
 C_HOUSE = (255, 255, 225)
 C_OTHER_CELLS = (255, 250, 190)
@@ -45,24 +46,43 @@ Y_WING_LEAF = (255, 153, 51)
 
 class Button:
     """ TODO """
-    def __init__(self, rect, text, border_color=DARKGREY, face_color=WHITE):
+    def __init__(self, rect, text,
+                 border_color=DARKGREY, face_color=WHITE, font_color=BLACK,
+                 disable_border_color=LIGHTGREY, disable_face_color=WHITE, disable_font_color=LIGHTGREY,
+                 pressed_border_color=DARKGREY, pressed_face_color=WHITE, pressed_font_color=BLACK):
         self.rect = rect
         self.text = text
         self.border_color = border_color
         self.face_color = face_color
-        self.font_color = BLACK
+        self.font_color = font_color
+        self.disable_border_color = disable_border_color
+        self.disable_face_color = disable_face_color
+        self.disable_font_color = disable_font_color
+        self.pressed_border_color = pressed_border_color
+        self.pressed_face_color = pressed_face_color
+        self.pressed_font_color = pressed_font_color
         self.font_button = pygame.font.SysFont("FreeSans", 20, bold=True)
         self.txt_x = rect[0] + (rect[2] - self.font_button.size(self.text)[0]) // 2
         self.txt_y = rect[1] + (rect[3] - self.font_button.get_ascent()) // 2
         self.active = True
         self.pressed = False
 
-    def draw_button(self, screen):
+    def draw(self, screen):
         """ TODO """
         if self.active and not self.pressed:
             pygame.draw.rect(screen, self.face_color, self.rect, border_radius=9)
             pygame.draw.rect(screen, self.border_color, self.rect, width=2, border_radius=9)
             btn_txt = self.font_button.render(self.text, True, self.font_color)
+            screen.blit(btn_txt, (self.txt_x, self.txt_y))
+        elif not self.active:
+            pygame.draw.rect(screen, self.face_color, self.rect, border_radius=9)
+            pygame.draw.rect(screen, self.disable_border_color, self.rect, width=2, border_radius=9)
+            btn_txt = self.font_button.render(self.text, True, self.disable_font_color)
+            screen.blit(btn_txt, (self.txt_x, self.txt_y))
+        elif self.pressed:
+            pygame.draw.rect(screen, self.pressed_face_color, self.rect, border_radius=9)
+            pygame.draw.rect(screen, self.pressed_border_color, self.rect, width=2, border_radius=9)
+            btn_txt = self.font_button.render(self.text, True, self.pressed_font_color)
             screen.blit(btn_txt, (self.txt_x, self.txt_y))
 
     def is_pressed(self, wait_to_release=False):
@@ -71,10 +91,22 @@ class Button:
             return self.rect.collidepoint(pygame.mouse.get_pos())
         return False
 
+    def set_status(self, enable):
+        """ TODO """
+        self.active = enable
+
+    def get_status(self):
+        """ TODO """
+        return self.active
+
+    def set_pressed(self, pressed):
+        """ TODO """
+        self.pressed = pressed
+
 
 class AppWindow:
     """ TODO """
-    def __init__(self, inspect):
+    def __init__(self, board, inspect):
         pygame.init()
 
         self.dark_grey = (150, 150, 150)        # TODO - remove it from here!
@@ -146,6 +178,10 @@ class AppWindow:
         self.buttons = {}
         self.animate = False
 
+        for i in range(81):
+            if board[i] != '.':
+                self.clues_defined.append(i)
+
         for row_id in range(9):
             for col_id in range(9):
                 cell_rect = pygame.Rect((col_id * CELL_SIZE + LEFT_MARGIN,
@@ -176,19 +212,27 @@ class AppWindow:
         btn_y = self.keypad_frame[1] + self.keypad_frame[3] + 30
 
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
-        self.buttons["clue"] = Button(btn_rect, "Clue")
+        self.buttons["clue"] = Button(btn_rect, "Clue",
+                                      pressed_border_color=BLACK, pressed_face_color=BLUE, pressed_font_color=WHITE)
+        self.buttons["clue"].set_pressed(True)
 
         btn_y += BUTTON_H + BUTTONS_OFFSET
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
-        self.buttons["pencil_mark"] = Button(btn_rect, "Pencil Mark")
-
-        btn_y += BUTTON_H + 30
-        btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
-        self.buttons["hint"] = Button(btn_rect, "Get Hint")
-
+        self.buttons["pencil_mark"] = Button(btn_rect, "Pencil Mark",
+                                             pressed_border_color=BLACK, pressed_face_color=BLUE, pressed_font_color=WHITE)
         btn_y += BUTTON_H + BUTTONS_OFFSET
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
         self.buttons["accept"] = Button(btn_rect, "Accept")
+        self.buttons["accept"].set_status(False)
+
+        btn_y += BUTTON_H + BUTTONS_OFFSET + 20
+        btn_w = (self.keypad_frame[3] - BUTTONS_OFFSET) // 2
+        btn_rect = pygame.Rect((btn_x, btn_y, btn_w, BUTTON_H))
+        self.buttons["hint"] = Button(btn_rect, "Hint")
+
+        btn_rect = pygame.Rect((btn_x + btn_w + BUTTONS_OFFSET, btn_y, btn_w, BUTTON_H))
+        self.buttons["back"] = Button(btn_rect, "Back")
+        self.buttons["back"].set_status(False)
 
         btn_y += BUTTON_H + BUTTONS_OFFSET
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
@@ -201,7 +245,7 @@ class AppWindow:
     def _draw_buttons(self):
         """ TODO """
         for button in self.buttons.values():
-            button.draw_button(self.screen)
+            button.draw(self.screen)
 
     def _button_pressed(self):
         """ TODO """
@@ -442,10 +486,12 @@ class AppWindow:
     def draw_board(self, board, solver_tool=None, **kwargs):
         """ TODO """
 
+        """
         if solver_tool is None and not self.clues_defined:
             for i in range(81):
                 if board[i] != '.':
                     self.clues_defined.append(i)
+        """
 
         if solver_tool and not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
             return
@@ -476,17 +522,33 @@ class AppWindow:
                     elif ev.type == pygame.KEYDOWN:
                         event = ev.key
 
-                    if event in ("solve", pygame.K_s):
+                    if event in ("clue", pygame.K_c):
+                        self.buttons["clue"].set_pressed(True)
+                        self.buttons["pencil_mark"].set_pressed(False)
+                        self.buttons["clue"].draw(self.screen)
+                        self.buttons['pencil_mark'].draw(self.screen)
+                    elif event in ("pencil_mark", pygame.K_p):
+                        self.buttons["clue"].set_pressed(False)
+                        self.buttons["pencil_mark"].set_pressed(True)
+                        self.buttons["clue"].draw(self.screen)
+                        self.buttons['pencil_mark'].draw(self.screen)
+                    elif event in ("solve", pygame.K_s):
                         self.show_solution_steps = False
                         wait = False
                     elif event in ("hint", pygame.K_h):
                         accept = True
+                        self.buttons["accept"].set_status(True)
+                        self.buttons["back"].set_status(True)
                         self._render_board(board, solver_tool, **kwargs)
                     elif event in ("accept", pygame.K_a):
                         if accept:
                             wait = False
-                    elif event in (pygame.K_b,):
+                        self.buttons["back"].set_status(False)
+                        self.buttons['accept'].set_status(False)
+                    elif event in ("back", pygame.K_b):
                         accept = False
+                        self.buttons["accept"].set_status(False)
+                        self.buttons["back"].set_status(False)
                         self._render_board(self.input_board if self.input_board else board,
                                            "plain_board", options_set=options_set)
                     elif event in ("animate", pygame.K_m):
