@@ -108,8 +108,7 @@ def sudoku_board(config, data, board, in_iterations=False):
             else:
                 output_lines.append(sudoku)
         if config["graphical_mode"] and data["graph_display"]:
-            print(f'\nDupa: {config["is_solved"] = }')
-            data["graph_display"].draw_board(board, solver_tool="end_of_game" if config["is_solved"] else None)       # TODO - fix it!
+            data["graph_display"].draw_board(board, solver_tool="end_of_game" if config["is_solved"] else None)
         else:
             max_opt_len = max((len(board[n]) for n in range(81)))
             frm_sqr = " {:>" + str(max_opt_len) + "}"

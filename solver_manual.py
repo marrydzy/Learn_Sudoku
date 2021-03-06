@@ -38,7 +38,7 @@ def _open_singles(board, window, options_set=False):
             if len(missing_value) != 1:
                 raise DeadEndException
             board[open_cells[0]] = missing_value.pop()
-            if window and window.draw_board(board, "open_singles", options_set=False,
+            if window and window.draw_board(board, "open_singles", options_set=options_set,
                                             singles=open_cells, new_clue=open_cells[0]):
                 window.clues_found.append(open_cells[0])
 
@@ -129,7 +129,7 @@ def _naked_singles(board, window, options_set=False):
             clue = board[naked_single]
             to_remove = [(clue, cell) for cell in ALL_NBRS[naked_single] if clue in board[cell]]
             _remove_options(board, to_remove)
-            if window and window.draw_board(board, "naked_singles", options_set=True, new_clue=naked_single,
+            if window and window.draw_board(board, "naked_singles", options_set=options_set, new_clue=naked_single,
                                             remove=to_remove, naked_singles=naked_singles):
                 window.clues_found.append(naked_single)
         return True
@@ -139,7 +139,7 @@ def _naked_singles(board, window, options_set=False):
                 cell_opts = get_options(board, cell)
                 if len(cell_opts) == 1:
                     board[cell] = cell_opts.pop()
-                    if window and window.draw_board(board, "naked_singles", options_set=False,
+                    if window and window.draw_board(board, "naked_singles", options_set=options_set,
                                                     singles=[cell], new_clue=cell):
                         window.clues_found.append(cell)
                     return True
@@ -227,7 +227,7 @@ def _hidden_pairs(board, window):
                     _remove_options(board, to_remove)
                     if window:
                         window.draw_board(board, "hidden_pairs", remove=to_remove,
-                                          subset=in_cells, house=cells)
+                                          subset=in_cells, house=cells, options_set=True)
                     return True
         return False
 
@@ -268,7 +268,7 @@ def _hidden_triplets(board, window):
                     _remove_options(board, to_remove)
                     if window:
                         window.draw_board(board, "hidden_triplets", remove=to_remove,
-                                          subset=triplet_cells, house=cells)
+                                          subset=triplet_cells, house=cells, options_set=True)
                     return True
         return False
 
@@ -310,7 +310,7 @@ def _naked_twins(board, window):
                     _remove_options(board, to_remove)
                     if window:
                         window.draw_board(board, "naked_twins", remove=to_remove, subset=in_cells, house=cells,
-                                          naked_singles=naked_singles)
+                                          naked_singles=naked_singles, options_set=True)
                     return True
         return False
 
@@ -348,7 +348,8 @@ def _omissions(board, window):
                         if window:
                             claims = [(to_remove[0][0], cell) for cell in cells]
                             window.draw_board(board, "omissions", claims=claims, remove=to_remove,
-                                              singles=naked_singles, house=cells, other_cells=other_cells)
+                                              singles=naked_singles, house=cells, other_cells=other_cells,
+                                              options_set=True)
                         return True
         return False
 
@@ -370,7 +371,8 @@ def _omissions(board, window):
                     if window:
                         claims = [(to_remove[0][0], cell) for cell in cells]
                         window.draw_board(board, "omissions", claims=claims, remove=to_remove,
-                                          singles=naked_singles, house=cells, other_cells=other_cells)
+                                          singles=naked_singles, house=cells, other_cells=other_cells,
+                                          options_set=True)
                     return True
         return False
 
@@ -417,7 +419,8 @@ def _y_wings(board, window):
                 _remove_options(board, to_remove)
                 if window:
                     window.draw_board(board, "y_wings", y_wing=wing, singles=naked_singles, remove=to_remove,
-                                      other_cells=set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]]))
+                                      other_cells=set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]]),
+                                      options_set=True)
                 return True
         return False
 

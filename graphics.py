@@ -181,6 +181,7 @@ class AppWindow:
         self.keypad = {}
         self.buttons = {}
         self.animate = False
+        self.board_updated = False
 
         for i in range(81):
             if board[i] != '.':
@@ -212,11 +213,46 @@ class AppWindow:
         self.wait = True
         self.dupa_counter = 0
 
+    def clue_pressed(self):
+        """ TODO """
+        self.buttons["clue"].set_pressed(True)
+        self.buttons["clue"].draw(self.screen)
+        self.buttons["pencil_mark"].set_pressed(False)
+        self.buttons['pencil_mark'].draw(self.screen)
+
+    def pencil_mark_pressed(self):
+        """ TODO """
+        self.buttons["pencil_mark"].set_pressed(True)
+        self.buttons['pencil_mark'].draw(self.screen)
+        self.buttons["clue"].set_pressed(False)
+        self.buttons["clue"].draw(self.screen)
+
     def accept_pressed(self):
         """ TODO """
-        self.wait = False
         self.buttons["back"].set_status(False)
         self.buttons['accept'].set_status(False)
+        self.board_updated = True
+        self.wait = False
+
+    def hint_pressed(self):
+        """ TODO """
+        self.buttons["accept"].set_status(True)
+        self.buttons["back"].set_status(True)
+
+    def solve_pressed(self):
+        """ TODO """
+        self.show_solution_steps = False
+        self.wait = False
+
+    def back_pressed(self):
+        """ TODO """
+        self.buttons["accept"].set_status(False)
+        self.buttons["back"].set_status(False)
+
+    def animate_pressed(self):
+        """ TODO """
+        self.animate = True
+        self.wait = False
 
     def _set_buttons(self):
         """ TODO """
@@ -225,17 +261,19 @@ class AppWindow:
 
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
         self.buttons["clue"] = Button(btn_rect, "Clue",
-                                      pressed_border_color=(51, 204, 204),      # TODO
+                                      pressed_border_color=BLUE,
                                       pressed_face_color=BLUE,
-                                      pressed_font_color=WHITE)
+                                      pressed_font_color=WHITE,
+                                      call_back_function=self.clue_pressed)
         self.buttons["clue"].set_pressed(True)
 
         btn_y += BUTTON_H + BUTTONS_OFFSET
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
         self.buttons["pencil_mark"] = Button(btn_rect, "Pencil Mark",
-                                             pressed_border_color=(51, 204, 204),       # TODO
+                                             pressed_border_color=BLUE,
                                              pressed_face_color=BLUE,
-                                             pressed_font_color=WHITE)
+                                             pressed_font_color=WHITE,
+                                             call_back_function=self.pencil_mark_pressed)
 
         btn_y += BUTTON_H + BUTTONS_OFFSET
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
@@ -245,19 +283,19 @@ class AppWindow:
         btn_y += BUTTON_H + BUTTONS_OFFSET + 20
         btn_w = (self.keypad_frame[3] - BUTTONS_OFFSET) // 2
         btn_rect = pygame.Rect((btn_x, btn_y, btn_w, BUTTON_H))
-        self.buttons["hint"] = Button(btn_rect, "Hint")
+        self.buttons["hint"] = Button(btn_rect, "Hint", call_back_function=self.hint_pressed)
 
         btn_rect = pygame.Rect((btn_x + btn_w + BUTTONS_OFFSET, btn_y, btn_w, BUTTON_H))
-        self.buttons["back"] = Button(btn_rect, "Back")
+        self.buttons["back"] = Button(btn_rect, "Back", call_back_function=self.back_pressed)
         self.buttons["back"].set_status(False)
 
         btn_y += BUTTON_H + BUTTONS_OFFSET
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
-        self.buttons["animate"] = Button(btn_rect, "Animate")
+        self.buttons["animate"] = Button(btn_rect, "Animate", call_back_function=self.animate_pressed)
 
         btn_y += BUTTON_H + BUTTONS_OFFSET
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
-        self.buttons["solve"] = Button(btn_rect, "Auto Solve")
+        self.buttons["solve"] = Button(btn_rect, "Auto Solve", call_back_function=self.solve_pressed)
 
     def _draw_buttons(self):
         """ TODO """
@@ -471,6 +509,7 @@ class AppWindow:
                     elif not options_set:
                         self._render_clue(board[cell_id], cell_pos, BLUE)
                     else:
+                        # print(f'{self.input_board = }')
                         if len(self.input_board[cell_id]) == 1 and cell_id in self.clues_found:
                             self._highlight_clue(cell_id, cell_pos, **kwargs)
                             self._render_clue(self.input_board[cell_id], cell_pos,
@@ -503,38 +542,31 @@ class AppWindow:
     def draw_board(self, board, solver_tool=None, **kwargs):
         """ TODO """
 
-        # if not solver_tool:
-        #     self.dupa_counter += 1
-        #     if self.dupa_counter == 2:
-        #         raise Exception
-        if solver_tool == "end_of_game":
-            print('\nEnd of game')
-
-        # TODO
-        if solver_tool and solver_tool != "end_of_game" and not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
-            return
-        if solver_tool == "end_of_game":
+        if not solver_tool:
             self.input_board = board.copy()
+        elif solver_tool == "end_of_game":
+            self.input_board = board.copy()
+            self.animate = False
             for i in range(81):
                 if i not in self.clues_defined and i not in self.clues_found:
                     self.clues_found.append(i)
-            self.animate = False
+        elif not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
+            return
 
         start = time.time()     # TODO
-
         options_set = kwargs["options_set"] if "options_set" in kwargs else False
         self._draw_keypad()
         self._render_board(self.input_board if self.input_board else board, "plain_board" if solver_tool else None,
                            ptions_set=options_set)
 
-        accept = True
+        self.board_updated = False
         self.wait = True if solver_tool else False
-        cell_selected = None
 
         if self.animate:
+            self.board_updated = True
             self._render_board(board, solver_tool, **kwargs)
             pygame.display.update()
-            time.sleep(1)
+            time.sleep(.5)     # TODO: change it to > 1
         else:
             while self.wait:
                 event = None
@@ -547,41 +579,22 @@ class AppWindow:
                         event = ev.key
 
                     if event in ("clue", pygame.K_c):
-                        self.buttons["clue"].set_pressed(True)
-                        self.buttons["pencil_mark"].set_pressed(False)
-                        self.buttons["clue"].draw(self.screen)
-                        self.buttons['pencil_mark'].draw(self.screen)
+                        pass
                     elif event in ("pencil_mark", pygame.K_p):
-                        self.buttons["clue"].set_pressed(False)
-                        self.buttons["pencil_mark"].set_pressed(True)
-                        self.buttons["clue"].draw(self.screen)
-                        self.buttons['pencil_mark'].draw(self.screen)
+                        pass
                     elif event in ("solve", pygame.K_s):
-                        self.show_solution_steps = False
-                        self.wait = False
+                        pass
                     elif event in ("hint", pygame.K_h):
-                        accept = True
-                        self.buttons["accept"].set_status(True)
-                        self.buttons["back"].set_status(True)
                         self._render_board(board, solver_tool, **kwargs)
                     elif event in ("accept", pygame.K_a):
-                        # print('Dupa_2')
-                        # raise Exception
                         pass
-                        # if accept:
-                        #     self.wait = False
-                        # self.buttons["back"].set_status(False)
-                        # self.buttons['accept'].set_status(False)
                     elif event in ("back", pygame.K_b):
-                        accept = False
-                        self.buttons["accept"].set_status(False)
-                        self.buttons["back"].set_status(False)
-                        self._render_board(self.input_board if self.input_board else board,
-                                           "plain_board", options_set=options_set)
+                        self._render_board(self.input_board, "plain_board", options_set=options_set)
                     elif event in ("animate", pygame.K_m):
-                        accept = True
-                        self.animate = True
-                        self.wait = False
+                        self.board_updated = True
+                        self._render_board(board, solver_tool, **kwargs)
+                        pygame.display.update()
+                        time.sleep(.5)  # TODO: change it to > 1
                     elif event in ("quit", pygame.K_q):
                         pygame.quit()
                         sys.exit(0)
@@ -600,14 +613,14 @@ class AppWindow:
                     """
                 pygame.display.update()
 
-        if accept:
+        if self.board_updated:
             self.input_board = board.copy()
-        elif self.input_board:
+        elif solver_tool:
             for i in range(81):
                 board[i] = self.input_board[i]
         self.time_in += time.time() - start
 
-        return accept
+        return self.board_updated
 
     def quit(self):
         """ TODO """
