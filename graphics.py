@@ -49,7 +49,8 @@ class Button:
     def __init__(self, rect, text,
                  border_color=DARKGREY, face_color=WHITE, font_color=BLACK,
                  disable_border_color=LIGHTGREY, disable_face_color=WHITE, disable_font_color=LIGHTGREY,
-                 pressed_border_color=DARKGREY, pressed_face_color=WHITE, pressed_font_color=BLACK):
+                 pressed_border_color=DARKGREY, pressed_face_color=WHITE, pressed_font_color=BLACK,
+                 call_back_function=None):
         self.rect = rect
         self.text = text
         self.border_color = border_color
@@ -61,6 +62,7 @@ class Button:
         self.pressed_border_color = pressed_border_color
         self.pressed_face_color = pressed_face_color
         self.pressed_font_color = pressed_font_color
+        self.call_back_function = call_back_function
         self.font_button = pygame.font.SysFont("FreeSans", 20, bold=True)
         self.txt_x = rect[0] + (rect[2] - self.font_button.size(self.text)[0]) // 2
         self.txt_y = rect[1] + (rect[3] - self.font_button.get_ascent()) // 2
@@ -87,8 +89,10 @@ class Button:
 
     def is_pressed(self, wait_to_release=False):
         """ TODO """
-        if not wait_to_release:
-            return self.rect.collidepoint(pygame.mouse.get_pos())
+        if self.active and not wait_to_release and self.rect.collidepoint(pygame.mouse.get_pos()):
+            if self.call_back_function:
+                self.call_back_function()
+            return True
         return False
 
     def set_status(self, enable):
@@ -205,6 +209,14 @@ class AppWindow:
         self.keypad_frame = pygame.Rect((x_offset, y_offset, keyboard_w, keyboard_h))
 
         self._set_buttons()
+        self.wait = True
+        self.dupa_counter = 0
+
+    def accept_pressed(self):
+        """ TODO """
+        self.wait = False
+        self.buttons["back"].set_status(False)
+        self.buttons['accept'].set_status(False)
 
     def _set_buttons(self):
         """ TODO """
@@ -213,16 +225,21 @@ class AppWindow:
 
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
         self.buttons["clue"] = Button(btn_rect, "Clue",
-                                      pressed_border_color=BLACK, pressed_face_color=BLUE, pressed_font_color=WHITE)
+                                      pressed_border_color=(51, 204, 204),      # TODO
+                                      pressed_face_color=BLUE,
+                                      pressed_font_color=WHITE)
         self.buttons["clue"].set_pressed(True)
 
         btn_y += BUTTON_H + BUTTONS_OFFSET
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
         self.buttons["pencil_mark"] = Button(btn_rect, "Pencil Mark",
-                                             pressed_border_color=BLACK, pressed_face_color=BLUE, pressed_font_color=WHITE)
+                                             pressed_border_color=(51, 204, 204),       # TODO
+                                             pressed_face_color=BLUE,
+                                             pressed_font_color=WHITE)
+
         btn_y += BUTTON_H + BUTTONS_OFFSET
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
-        self.buttons["accept"] = Button(btn_rect, "Accept")
+        self.buttons["accept"] = Button(btn_rect, "Accept", call_back_function=self.accept_pressed)
         self.buttons["accept"].set_status(False)
 
         btn_y += BUTTON_H + BUTTONS_OFFSET + 20
@@ -486,25 +503,32 @@ class AppWindow:
     def draw_board(self, board, solver_tool=None, **kwargs):
         """ TODO """
 
-        """
-        if solver_tool is None and not self.clues_defined:
-            for i in range(81):
-                if board[i] != '.':
-                    self.clues_defined.append(i)
-        """
+        # if not solver_tool:
+        #     self.dupa_counter += 1
+        #     if self.dupa_counter == 2:
+        #         raise Exception
+        if solver_tool == "end_of_game":
+            print('\nEnd of game')
 
-        if solver_tool and not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
+        # TODO
+        if solver_tool and solver_tool != "end_of_game" and not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
             return
+        if solver_tool == "end_of_game":
+            self.input_board = board.copy()
+            for i in range(81):
+                if i not in self.clues_defined and i not in self.clues_found:
+                    self.clues_found.append(i)
+            self.animate = False
 
         start = time.time()     # TODO
 
-        options_set = kwargs["options_set"] if "options_set" in kwargs else True
+        options_set = kwargs["options_set"] if "options_set" in kwargs else False
         self._draw_keypad()
         self._render_board(self.input_board if self.input_board else board, "plain_board" if solver_tool else None,
                            ptions_set=options_set)
 
         accept = True
-        wait = True
+        self.wait = True if solver_tool else False
         cell_selected = None
 
         if self.animate:
@@ -512,7 +536,7 @@ class AppWindow:
             pygame.display.update()
             time.sleep(1)
         else:
-            while wait:
+            while self.wait:
                 event = None
                 for ev in pygame.event.get():
                     if ev.type == pygame.QUIT:
@@ -534,17 +558,20 @@ class AppWindow:
                         self.buttons['pencil_mark'].draw(self.screen)
                     elif event in ("solve", pygame.K_s):
                         self.show_solution_steps = False
-                        wait = False
+                        self.wait = False
                     elif event in ("hint", pygame.K_h):
                         accept = True
                         self.buttons["accept"].set_status(True)
                         self.buttons["back"].set_status(True)
                         self._render_board(board, solver_tool, **kwargs)
                     elif event in ("accept", pygame.K_a):
-                        if accept:
-                            wait = False
-                        self.buttons["back"].set_status(False)
-                        self.buttons['accept'].set_status(False)
+                        # print('Dupa_2')
+                        # raise Exception
+                        pass
+                        # if accept:
+                        #     self.wait = False
+                        # self.buttons["back"].set_status(False)
+                        # self.buttons['accept'].set_status(False)
                     elif event in ("back", pygame.K_b):
                         accept = False
                         self.buttons["accept"].set_status(False)
@@ -554,7 +581,7 @@ class AppWindow:
                     elif event in ("animate", pygame.K_m):
                         accept = True
                         self.animate = True
-                        wait = False
+                        self.wait = False
                     elif event in ("quit", pygame.K_q):
                         pygame.quit()
                         sys.exit(0)

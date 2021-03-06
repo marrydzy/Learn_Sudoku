@@ -24,7 +24,8 @@ screen_messages = {
     "y_wings": "'y-wings' technique",
     "scrub_pencil_marks": "WTF",
     "unique_values": "WTF",
-    "observe": "Dupa Jaś"
+    "observe": "Dupa Jaś",
+    "end_of_game": "End of game",
 }
 
 DEBUG = False
@@ -107,7 +108,8 @@ def sudoku_board(config, data, board, in_iterations=False):
             else:
                 output_lines.append(sudoku)
         if config["graphical_mode"] and data["graph_display"]:
-            data["graph_display"].draw_board(board)       # TODO - fix it!
+            print(f'\nDupa: {config["is_solved"] = }')
+            data["graph_display"].draw_board(board, solver_tool="end_of_game" if config["is_solved"] else None)       # TODO - fix it!
         else:
             max_opt_len = max((len(board[n]) for n in range(81)))
             frm_sqr = " {:>" + str(max_opt_len) + "}"
