@@ -87,7 +87,7 @@ class Button:
             btn_txt = self.font_button.render(self.text, True, self.pressed_font_color)
             screen.blit(btn_txt, (self.txt_x, self.txt_y))
 
-    def is_pressed(self, wait_to_release=False):
+    def being_pressed(self, wait_to_release=False):
         """ TODO """
         if self.active and not wait_to_release and self.rect.collidepoint(pygame.mouse.get_pos()):
             if self.call_back_function:
@@ -99,13 +99,17 @@ class Button:
         """ TODO """
         self.active = enable
 
-    def get_status(self):
+    def is_active(self):
         """ TODO """
         return self.active
 
     def set_pressed(self, pressed):
         """ TODO """
         self.pressed = pressed
+
+    def is_pressed(self):
+        """ TODO """
+        return self.pressed
 
 
 class AppWindow:
@@ -180,6 +184,7 @@ class AppWindow:
         self.board_cells = {}
         self.keypad = {}
         self.buttons = {}
+        self.actions = {}
         self.animate = False
         self.board_updated = False
 
@@ -213,31 +218,40 @@ class AppWindow:
         self.wait = True
         self.dupa_counter = 0
 
-    def clue_pressed(self):
+    def clue_pressed(self, *args, **kwargs):
         """ TODO """
-        self.buttons["clue"].set_pressed(True)
-        self.buttons["clue"].draw(self.screen)
-        self.buttons["pencil_mark"].set_pressed(False)
-        self.buttons['pencil_mark'].draw(self.screen)
+        if self.buttons[pygame.K_c].is_active() and not self.buttons[pygame.K_c].is_pressed():
+            self.buttons[pygame.K_c].set_pressed(True)
+            self.buttons[pygame.K_c].draw(self.screen)
+            self.buttons[pygame.K_p].set_pressed(False)
+            self.buttons[pygame.K_p].draw(self.screen)
 
-    def pencil_mark_pressed(self):
+    def pencil_mark_pressed(self, *args, **kwargs):
         """ TODO """
-        self.buttons["pencil_mark"].set_pressed(True)
-        self.buttons['pencil_mark'].draw(self.screen)
-        self.buttons["clue"].set_pressed(False)
-        self.buttons["clue"].draw(self.screen)
+        if self.buttons[pygame.K_p].is_active() and not self.buttons[pygame.K_p].is_pressed():
+            self.buttons[pygame.K_p].set_pressed(True)
+            self.buttons[pygame.K_p].draw(self.screen)
+            self.buttons[pygame.K_c].set_pressed(False)
+            self.buttons[pygame.K_c].draw(self.screen)
 
-    def accept_pressed(self):
+    def accept_pressed(self, *args, **kwargs):
         """ TODO """
-        self.buttons["back"].set_status(False)
-        self.buttons['accept'].set_status(False)
-        self.board_updated = True
-        self.wait = False
+        if self.buttons[pygame.K_a].is_active():
+            self.buttons["back"].set_status(False)
+            self.buttons[pygame.K_a].set_status(False)
+            self.buttons[pygame.K_c].set_status(True)
+            self.buttons[pygame.K_p].set_status(True)
+            self.board_updated = True
+            self.wait = False
 
-    def hint_pressed(self):
+    def hint_pressed(self, board, solver_tool, **kwargs):
         """ TODO """
-        self.buttons["accept"].set_status(True)
-        self.buttons["back"].set_status(True)
+        if self.buttons[pygame.K_h].is_active():
+            self.buttons[pygame.K_a].set_status(True)
+            self.buttons["back"].set_status(True)
+            self.buttons[pygame.K_c].set_status(False)
+            self.buttons[pygame.K_p].set_status(False)
+            self._render_board(board, solver_tool, **kwargs)
 
     def solve_pressed(self):
         """ TODO """
@@ -246,8 +260,10 @@ class AppWindow:
 
     def back_pressed(self):
         """ TODO """
-        self.buttons["accept"].set_status(False)
+        self.buttons[pygame.K_a].set_status(False)
         self.buttons["back"].set_status(False)
+        self.buttons[pygame.K_c].set_status(True)
+        self.buttons[pygame.K_p].set_status(True)
 
     def animate_pressed(self):
         """ TODO """
@@ -260,30 +276,32 @@ class AppWindow:
         btn_y = self.keypad_frame[1] + self.keypad_frame[3] + 30
 
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
-        self.buttons["clue"] = Button(btn_rect, "Clue",
-                                      pressed_border_color=BLUE,
-                                      pressed_face_color=BLUE,
-                                      pressed_font_color=WHITE,
-                                      call_back_function=self.clue_pressed)
-        self.buttons["clue"].set_pressed(True)
+        self.buttons[pygame.K_c] = Button(btn_rect, "Clue",
+                                          pressed_border_color=BLUE,
+                                          pressed_face_color=BLUE,
+                                          pressed_font_color=WHITE)
+        self.buttons[pygame.K_c].set_pressed(True)
+        self.actions[pygame.K_c] = self.clue_pressed
 
         btn_y += BUTTON_H + BUTTONS_OFFSET
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
-        self.buttons["pencil_mark"] = Button(btn_rect, "Pencil Mark",
-                                             pressed_border_color=BLUE,
-                                             pressed_face_color=BLUE,
-                                             pressed_font_color=WHITE,
-                                             call_back_function=self.pencil_mark_pressed)
+        self.buttons[pygame.K_p] = Button(btn_rect, "Pencil Mark",
+                                          pressed_border_color=BLUE,
+                                          pressed_face_color=BLUE,
+                                          pressed_font_color=WHITE)
+        self.actions[pygame.K_p] = self.pencil_mark_pressed
 
         btn_y += BUTTON_H + BUTTONS_OFFSET
         btn_rect = pygame.Rect((btn_x, btn_y, self.keypad_frame[3], BUTTON_H))
-        self.buttons["accept"] = Button(btn_rect, "Accept", call_back_function=self.accept_pressed)
-        self.buttons["accept"].set_status(False)
+        self.buttons[pygame.K_a] = Button(btn_rect, "Accept")
+        self.buttons[pygame.K_a].set_status(False)
+        self.actions[pygame.K_a] = self.accept_pressed
 
         btn_y += BUTTON_H + BUTTONS_OFFSET + 20
         btn_w = (self.keypad_frame[3] - BUTTONS_OFFSET) // 2
         btn_rect = pygame.Rect((btn_x, btn_y, btn_w, BUTTON_H))
-        self.buttons["hint"] = Button(btn_rect, "Hint", call_back_function=self.hint_pressed)
+        self.buttons[pygame.K_h] = Button(btn_rect, "Hint")
+        self.actions[pygame.K_h] = self.hint_pressed
 
         btn_rect = pygame.Rect((btn_x + btn_w + BUTTONS_OFFSET, btn_y, btn_w, BUTTON_H))
         self.buttons["back"] = Button(btn_rect, "Back", call_back_function=self.back_pressed)
@@ -305,7 +323,7 @@ class AppWindow:
     def _button_pressed(self):
         """ TODO """
         for key, button in self.buttons.items():
-            if button.is_pressed():
+            if button.being_pressed():
                 return key
         return None
 
@@ -578,15 +596,7 @@ class AppWindow:
                     elif ev.type == pygame.KEYDOWN:
                         event = ev.key
 
-                    if event in ("clue", pygame.K_c):
-                        pass
-                    elif event in ("pencil_mark", pygame.K_p):
-                        pass
-                    elif event in ("solve", pygame.K_s):
-                        pass
-                    elif event in ("hint", pygame.K_h):
-                        self._render_board(board, solver_tool, **kwargs)
-                    elif event in ("accept", pygame.K_a):
+                    if event in ("solve", pygame.K_s):
                         pass
                     elif event in ("back", pygame.K_b):
                         self._render_board(self.input_board, "plain_board", options_set=options_set)
@@ -598,6 +608,8 @@ class AppWindow:
                     elif event in ("quit", pygame.K_q):
                         pygame.quit()
                         sys.exit(0)
+                    elif event in self.actions:
+                        self.actions[event](board, solver_tool, **kwargs)
 
                     """
                         elif not accept:
