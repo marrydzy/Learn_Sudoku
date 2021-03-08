@@ -25,7 +25,7 @@ screen_messages = {
     "scrub_pencil_marks": "WTF",
     "unique_values": "WTF",
     "observe": "Dupa Jaś",
-    "end_of_game": "End of game",
+    "end_of_game": "Sudoku solved!",
 }
 
 DEBUG = False
