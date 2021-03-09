@@ -22,6 +22,10 @@ def _remove_options(board, to_remove):
             naked_singles.append(cell)
 
 
+def set_manually():
+    pass
+
+
 def _open_singles(board, window, options_set=False):
     """ 'Open Singles' technique (see: https://www.learn-sudoku.com/open-singles.html)
         The technique is applicable only in the initial phase of sudoku solving process when
