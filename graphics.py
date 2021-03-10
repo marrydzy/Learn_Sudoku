@@ -26,6 +26,7 @@ BUTTONS_OFFSET = 10
 # RGB colors:
 BLACK = (0, 0, 0)
 BLUE = (51, 102, 153)
+CORAL = (255, 127, 80)
 WHITE = (255, 255, 255)
 GREY = (160, 160, 160)
 MAGENTA = (255, 0, 255)
@@ -148,6 +149,7 @@ class AppWindow:
         self.inspect = inspect
         self.method = {
             # "manual_solution": "m",     # TODO - fix it (remove manual solution)
+            "conflict": "u",            # TODO manage properly!
             "open_singles": "g",
             "visual_elimination": "v",
             "naked_singles": "n",
@@ -187,6 +189,10 @@ class AppWindow:
         self.actions = {}
         self.animate = False
         self.board_updated = False
+        self.clue_entered = None
+        self.conflicting_cells = None
+        self.clue_house = None
+        self.previous_cell_value = None
 
         for i in range(81):
             if board[i] != '.':
@@ -304,10 +310,8 @@ class AppWindow:
         """ TODO """
         cell_id -= 1000
         if cell_id not in self.clues_defined and self.selected_key:
-            self.input_board[cell_id] = self.selected_key
-            self.clues_found.append(cell_id)      # TODO
+            self.clue_entered = (cell_id, self.selected_key)
             self.wait = False
-            # self._render_board(self.input_board, "plain_board", options_set=False, new_clue=cell_id)    # TODO
 
     def _set_buttons(self):
         """ TODO """
@@ -568,6 +572,7 @@ class AppWindow:
         options_set = kwargs["options_set"] if "options_set" in kwargs else True
         house = kwargs["house"] if "house" in kwargs else None
         greyed_out = kwargs["greyed_out"] if "greyed_out" in kwargs else None
+        conflicting_cells = kwargs["conflicting_cells"] if "conflicting_cells" in kwargs else None
         other_cells = kwargs["other_cells"] if "other_cells" in kwargs else None
         active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
 
@@ -587,6 +592,10 @@ class AppWindow:
                 if greyed_out and cell_id in greyed_out:
                     pygame.draw.rect(
                         self.screen, SILVER,
+                        (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+                if conflicting_cells and cell_id in conflicting_cells:
+                    pygame.draw.rect(
+                        self.screen, CORAL,
                         (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
 
                 if board[cell_id] != '.':
@@ -651,13 +660,29 @@ class AppWindow:
         start = time.time()     # TODO
         options_set = kwargs["options_set"] if "options_set" in kwargs else False
         self._draw_keypad()
+        if self.previous_cell_value:
+            self.input_board[self.previous_cell_value[0]] = self.input_board[self.conflicting_cells[0]]
+            self.clues_found.append(self.previous_cell_value[0])
         self._render_board(self.input_board if self.input_board else board, "plain_board" if solver_tool else None,
-                           ptions_set=options_set)
+                           ptions_set=options_set, conflicting_cells=self.conflicting_cells, house=self.clue_house)
+        if self.previous_cell_value:
+            self.input_board[self.previous_cell_value[0]] = self.previous_cell_value[1]
+            self.clues_found.pop()
+            self.previous_cell_value = None
+
+        if self.conflicting_cells:
+            self.display_info(screen_messages["conflicting_values"])
+            self.conflicting_cells = None
+            self.clue_house = None
         if solver_tool == "end_of_game":
             self.display_info(screen_messages[solver_tool])
 
         self.board_updated = False
         self.wait = True if solver_tool else False
+
+        # TODO - temporary check only!
+        # if solver_tool == "hidden_singles":
+            # self.wait = False
 
         if self.animate:
             self.board_updated = True
@@ -679,18 +704,6 @@ class AppWindow:
                     if event in self.actions:
                         self.actions[event](event, board, solver_tool, **kwargs)
 
-                    """
-                        elif not accept:
-                            cell_id = self._get_cell_id(pygame.mouse.get_pos())
-                            if cell_id is not None:
-                                self._render_board(self.input_board if self.input_board else board,
-                                                   "plain_board", options_set=options_set)
-                                cell_selected = cell_id if cell_selected != cell_id else None
-                                if cell_selected is not None:
-                                    self.input_board[cell_id] = '5'   # TODO
-                                    self._render_board(self.input_board if self.input_board else board,
-                                                       "plain_board", options_set=options_set, new_clue=cell_id)
-                    """
                 pygame.display.update()
 
         if self.board_updated:
@@ -700,7 +713,7 @@ class AppWindow:
                 board[i] = self.input_board[i]
         self.time_in += time.time() - start
 
-        return self.board_updated
+        return self.board_updated or self.clue_entered
 
     def quit(self):
         """ TODO """

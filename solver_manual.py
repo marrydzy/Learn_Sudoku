@@ -8,6 +8,7 @@ from collections import defaultdict
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
 from utils import is_clue, is_solved, get_options, DeadEndException
+import pygame
 
 naked_singles = []
 
@@ -22,8 +23,33 @@ def _remove_options(board, to_remove):
             naked_singles.append(cell)
 
 
-def set_manually():
-    pass
+def set_manually(board, window, options_set=False):
+    """ TODO """
+    if window and window.clue_entered:
+        cell_id = window.clue_entered[0]
+        value = window.clue_entered[1]
+        window.clue_entered = None
+        conflicting_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
+        if conflicting_cells:
+            # print(f'{conflicting_cells = }')
+            # board[window.clue_entered[0]] = window.clue_entered[1]
+            # window.set_btn_status(True, (pygame.K_b,))
+            # cell = window.clue_entered[0]
+            # window.clue_entered = None
+            # window.wait = False
+            # window.draw_board(board, "hidden_singles", options_set=options_set,
+            #                   greyed_out=conflicting_cells, new_clue=cell,
+            #                   house=ALL_NBRS[cell])
+            conflicting_cells.append(cell_id)
+            window.conflicting_cells = conflicting_cells
+            window.clue_house = ALL_NBRS[cell_id]
+            window.previous_cell_value = (cell_id, board[cell_id])
+            # print('Dupa Jaś!')
+        else:
+            board[cell_id] = value
+            window.clues_found.append(cell_id)
+            window.set_current_board(board)
+
 
 
 def _open_singles(board, window, options_set=False):
@@ -451,6 +477,7 @@ def manual_solver(board, window, _):
     while True:
         if is_solved(board):
             return True
+        set_manually(board, window, options_set)
         _open_singles(board, window, options_set)
         if _visual_elimination(board, window, options_set):
             continue

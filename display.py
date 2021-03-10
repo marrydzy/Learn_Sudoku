@@ -12,6 +12,7 @@ from tabulate import tabulate
 screen_messages = {
     None: "",
     "plain_board": " ",
+    "conflict": "Conflicting value",
     "open_singles": "'Open Single' technique:",
     "visual_elimination": "'Visual Elimination' technique:",
     "naked_singles": "'Naked Single' technique:",
@@ -26,6 +27,7 @@ screen_messages = {
     "unique_values": "WTF",
     "observe": "Dupa Jaś",
     "end_of_game": "Sudoku solved!",
+    "conflicting_values": "Incorrect value entered!",
 }
 
 DEBUG = False
