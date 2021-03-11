@@ -31,25 +31,14 @@ def set_manually(board, window, options_set=False):
         window.clue_entered = None
         conflicting_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
         if conflicting_cells:
-            # print(f'{conflicting_cells = }')
-            # board[window.clue_entered[0]] = window.clue_entered[1]
-            # window.set_btn_status(True, (pygame.K_b,))
-            # cell = window.clue_entered[0]
-            # window.clue_entered = None
-            # window.wait = False
-            # window.draw_board(board, "hidden_singles", options_set=options_set,
-            #                   greyed_out=conflicting_cells, new_clue=cell,
-            #                   house=ALL_NBRS[cell])
             conflicting_cells.append(cell_id)
             window.conflicting_cells = conflicting_cells
             window.clue_house = ALL_NBRS[cell_id]
             window.previous_cell_value = (cell_id, board[cell_id])
-            # print('Dupa Jaś!')
         else:
             board[cell_id] = value
             window.clues_found.append(cell_id)
             window.set_current_board(board)
-
 
 
 def _open_singles(board, window, options_set=False):
@@ -57,13 +46,10 @@ def _open_singles(board, window, options_set=False):
         The technique is applicable only in the initial phase of sudoku solving process when
         options in empty cells haven't been calculated yet.
     """
-    if options_set:
-        return False
 
     def _set_missing_number(house):
         open_cells = [cell for cell in house if not is_clue(board[cell])]
         if len(open_cells) == 1:
-            _open_singles.clue_found = True
             missing_value = SUDOKU_VALUES_SET.copy() - set(''.join([board[cell] for cell in house]))
             if len(missing_value) != 1:
                 raise DeadEndException
@@ -71,20 +57,15 @@ def _open_singles(board, window, options_set=False):
             if window and window.draw_board(board, "open_singles", options_set=options_set,
                                             singles=open_cells, new_clue=open_cells[0]):
                 window.clues_found.append(open_cells[0])
+                return True
+        return False
 
-    board_updated = False
-    _open_singles.clue_found = True
-    while _open_singles.clue_found:
-        _open_singles.clue_found = False
-        for row in range(9):
-            _set_missing_number(CELLS_IN_ROW[row])
-        for col in range(9):
-            _set_missing_number(CELLS_IN_COL[col])
-        for sqr in range(9):
-            _set_missing_number(CELLS_IN_SQR[sqr])
-        if _open_singles.clue_found:
-            board_updated = True
-    return board_updated
+    if not options_set:
+        for i in range(9):
+            if (_set_missing_number(CELLS_IN_ROW[i]) or _set_missing_number(CELLS_IN_COL[i]) or
+                    _set_missing_number(CELLS_IN_SQR[i])):
+                return True
+    return False
 
 
 def _visual_elimination(board, window, options_set=False):
@@ -478,7 +459,8 @@ def manual_solver(board, window, _):
         if is_solved(board):
             return True
         set_manually(board, window, options_set)
-        _open_singles(board, window, options_set)
+        if _open_singles(board, window, options_set):
+            continue
         if _visual_elimination(board, window, options_set):
             continue
         if _naked_singles(board, window, options_set):

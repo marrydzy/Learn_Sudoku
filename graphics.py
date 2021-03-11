@@ -610,7 +610,6 @@ class AppWindow:
                     elif not options_set:
                         self._render_clue(board[cell_id], cell_pos, BLUE)
                     else:
-                        # print(f'{self.input_board = }')
                         if len(self.input_board[cell_id]) == 1 and cell_id in self.clues_found:
                             self._highlight_clue(cell_id, cell_pos, **kwargs)
                             self._render_clue(self.input_board[cell_id], cell_pos,
@@ -680,10 +679,6 @@ class AppWindow:
         self.board_updated = False
         self.wait = True if solver_tool else False
 
-        # TODO - temporary check only!
-        # if solver_tool == "hidden_singles":
-            # self.wait = False
-
         if self.animate:
             self.board_updated = True
             self._render_board(board, solver_tool, **kwargs)
@@ -697,7 +692,6 @@ class AppWindow:
                         event = self._button_pressed()
                         if event is None:
                             event = self._get_cell_id(pygame.mouse.get_pos())
-                        # print(f'{event = }')
                     elif ev.type == pygame.KEYDOWN:
                         event = ev.key
 
