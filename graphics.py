@@ -184,6 +184,15 @@ class AppWindow:
         self.clues_defined = []
         self.board_cells = {}
         self.keypad = {}
+        self.keypad_keys = {pygame.K_1: 1,
+                            pygame.K_2: 2,
+                            pygame.K_3: 3,
+                            pygame.K_4: 4,
+                            pygame.K_5: 5,
+                            pygame.K_6: 6,
+                            pygame.K_7: 7,
+                            pygame.K_8: 8,
+                            pygame.K_9: 9}
         self.selected_key = None
         self.buttons = {}
         self.actions = {}
@@ -693,7 +702,10 @@ class AppWindow:
                         if event is None:
                             event = self._get_cell_id(pygame.mouse.get_pos())
                     elif ev.type == pygame.KEYDOWN:
-                        event = ev.key
+                        if ev.key in self.keypad_keys:
+                            event = self.keypad_keys[ev.key]
+                        else:
+                            event = ev.key
 
                     if event in self.actions:
                         self.actions[event](event, board, solver_tool, **kwargs)

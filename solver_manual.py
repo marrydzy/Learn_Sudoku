@@ -23,7 +23,7 @@ def _remove_options(board, to_remove):
             naked_singles.append(cell)
 
 
-def set_manually(board, window, options_set=False):
+def set_manually(board, window):
     """ TODO """
     if window and window.clue_entered:
         cell_id = window.clue_entered[0]
@@ -35,6 +35,7 @@ def set_manually(board, window, options_set=False):
             window.conflicting_cells = conflicting_cells
             window.clue_house = ALL_NBRS[cell_id]
             window.previous_cell_value = (cell_id, board[cell_id])
+            window.set_btn_status(True, (pygame.K_b, ))
         else:
             board[cell_id] = value
             window.clues_found.append(cell_id)
@@ -458,7 +459,7 @@ def manual_solver(board, window, _):
     while True:
         if is_solved(board):
             return True
-        set_manually(board, window, options_set)
+        set_manually(board, window)
         if _open_singles(board, window, options_set):
             continue
         if _visual_elimination(board, window, options_set):

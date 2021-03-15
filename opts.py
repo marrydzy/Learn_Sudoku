@@ -171,7 +171,7 @@ def set_solver_options(config, data):
         "-i",
         "--input",
         type=str,
-        default=os.path.join(os.path.abspath(os.getcwd()), 'puzzles'),
+        default=os.path.join(os.path.abspath(os.getcwd()), 'puzzles/2021_01'),
         help="path to sudoku input files folder"
     )
     parser.add_argument(
