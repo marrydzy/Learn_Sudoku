@@ -29,17 +29,23 @@ def set_manually(board, window):
         cell_id = window.clue_entered[0]
         value = window.clue_entered[1]
         window.clue_entered = None
-        conflicting_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
-        if conflicting_cells:
-            conflicting_cells.append(cell_id)
-            window.conflicting_cells = conflicting_cells
-            window.clue_house = ALL_NBRS[cell_id]
-            window.previous_cell_value = (cell_id, board[cell_id])
-            window.set_btn_status(True, (pygame.K_b, ))
-        else:
-            board[cell_id] = value
-            window.clues_found.append(cell_id)
+
+        if board[cell_id] == value:
+            board[cell_id] = "."    # TODO! calculate options if options set!
+            window.clues_found.remove(cell_id)
             window.set_current_board(board)
+        else:
+            conflicting_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
+            if conflicting_cells:
+                conflicting_cells.append(cell_id)
+                window.conflicting_cells = conflicting_cells
+                window.clue_house = ALL_NBRS[cell_id]
+                window.previous_cell_value = (cell_id, board[cell_id])
+                window.set_btn_status(True, (pygame.K_b, ))
+            else:
+                board[cell_id] = value
+                window.clues_found.append(cell_id)
+                window.set_current_board(board)
 
 
 def _open_singles(board, window, options_set=False):

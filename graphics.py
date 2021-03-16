@@ -65,7 +65,7 @@ class Button:
         self.pressed_border_color = pressed_border_color
         self.pressed_face_color = pressed_face_color
         self.pressed_font_color = pressed_font_color
-        self.font_button = pygame.font.SysFont("FreeSans", 20, bold=True)
+        self.font_button = pygame.font.SysFont("FreeSans", 20, bold=True)   # TODO - parametrize font size
         self.txt_x = rect[0] + (rect[2] - self.font_button.size(self.text)[0]) // 2
         self.txt_y = rect[1] + (rect[3] - self.font_button.get_ascent()) // 2
         self.active = True
@@ -305,10 +305,20 @@ class AppWindow:
 
     def _keyboard_digit_pressed(self, btn_id, *args, **kwargs):
         """ TODO """
-        self.selected_key = str(btn_id)
-        for i in range(1, 10):
-            self.buttons[i].set_pressed(True if i == btn_id else False)
-            self.buttons[i].draw(self.screen)
+        if str(btn_id) == self.selected_key:
+            self.selected_key = None
+            self.buttons[btn_id].set_pressed(False)
+            self.buttons[btn_id].draw(self.screen)
+        else:
+            if self.selected_key:
+                self.buttons[int(self.selected_key)].set_pressed(False)
+                self.buttons[int(self.selected_key)].draw(self.screen)
+            self.selected_key = str(btn_id)
+            self.buttons[btn_id].set_pressed(True)
+            self.buttons[btn_id].draw(self.screen)
+            # for i in range(1, 10):
+            #     self.buttons[i].set_pressed(True if i == btn_id else False)
+            #     self.buttons[i].draw(self.screen)
 
     def _quit_pressed(self, *args, **kwargs):
         """ TODO """
@@ -708,6 +718,7 @@ class AppWindow:
                             event = ev.key
 
                     if event in self.actions:
+                        print(f'{event = }')
                         self.actions[event](event, board, solver_tool, **kwargs)
 
                 pygame.display.update()
@@ -718,7 +729,6 @@ class AppWindow:
             for i in range(81):
                 board[i] = self.input_board[i]
         self.time_in += time.time() - start
-
         return self.board_updated or self.clue_entered
 
     def quit(self):
