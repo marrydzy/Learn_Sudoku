@@ -48,6 +48,30 @@ ANIMATION_STEP_TIME = 0.2
 KEYBOARD_DIGITS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
 
 
+def _set_keypad_keys():
+    """ TBD """
+    keypad_keys = {pygame.K_1: 1,
+                   pygame.K_2: 2,
+                   pygame.K_3: 3,
+                   pygame.K_4: 4,
+                   pygame.K_5: 5,
+                   pygame.K_6: 6,
+                   pygame.K_7: 7,
+                   pygame.K_8: 8,
+                   pygame.K_9: 9,
+                   pygame.K_KP1: 1,
+                   pygame.K_KP2: 2,
+                   pygame.K_KP3: 3,
+                   pygame.K_KP4: 4,
+                   pygame.K_KP5: 5,
+                   pygame.K_KP6: 6,
+                   pygame.K_KP7: 7,
+                   pygame.K_KP8: 8,
+                   pygame.K_KP9: 9,
+                   }
+    return keypad_keys
+
+
 class Button:
     """ TODO """
     def __init__(self, rect, text,
@@ -184,16 +208,9 @@ class AppWindow:
         self.clues_defined = []
         self.board_cells = {}
         self.keypad = {}
-        self.keypad_keys = {pygame.K_1: 1,
-                            pygame.K_2: 2,
-                            pygame.K_3: 3,
-                            pygame.K_4: 4,
-                            pygame.K_5: 5,
-                            pygame.K_6: 6,
-                            pygame.K_7: 7,
-                            pygame.K_8: 8,
-                            pygame.K_9: 9}
+        self.keypad_keys = _set_keypad_keys()
         self.selected_key = None
+        self.selected_cell = None
         self.buttons = {}
         self.actions = {}
         self.animate = False
@@ -214,19 +231,7 @@ class AppWindow:
                                          CELL_SIZE, CELL_SIZE))
                 self.board_cells[row_id * 9 + col_id] = cell_rect
 
-        x_offset = LEFT_MARGIN + 9 * CELL_SIZE + KEYPAD_LEFT_MARGIN
-
-        """
-        for row in range(3):
-            for col in range(3):
-                digit = 3 * row + col + 1
-                btn_x = x_offset + col * (KEYPAD_DIGIT_W + KEYPAD_DIGIT_OFFSET)
-                btn_y = KEYPAD_TOP_MARGIN + row * (KEYPAD_DIGIT_H + KEYPAD_DIGIT_OFFSET)
-                btn_rect = pygame.Rect((btn_x, btn_y, KEYPAD_DIGIT_W, KEYPAD_DIGIT_H))
-                self.keypad[digit] = btn_rect
-        """
-
-        x_offset -= 20
+        x_offset = LEFT_MARGIN + 9 * CELL_SIZE + KEYPAD_LEFT_MARGIN - 20
         y_offset = KEYPAD_TOP_MARGIN - 20
         keyboard_w = 3 * (KEYPAD_DIGIT_W + KEYPAD_DIGIT_OFFSET) - KEYPAD_DIGIT_OFFSET + 40
         keyboard_h = 3 * (KEYPAD_DIGIT_H + KEYPAD_DIGIT_OFFSET) - KEYPAD_DIGIT_OFFSET + 40
@@ -305,20 +310,22 @@ class AppWindow:
 
     def _keyboard_digit_pressed(self, btn_id, *args, **kwargs):
         """ TODO """
-        if str(btn_id) == self.selected_key:
-            self.selected_key = None
-            self.buttons[btn_id].set_pressed(False)
-            self.buttons[btn_id].draw(self.screen)
+        if self.selected_cell:
+            self.clue_entered = (self.selected_cell, str(btn_id))
+            self.wait = False
         else:
-            if self.selected_key:
-                self.buttons[int(self.selected_key)].set_pressed(False)
-                self.buttons[int(self.selected_key)].draw(self.screen)
-            self.selected_key = str(btn_id)
-            self.buttons[btn_id].set_pressed(True)
-            self.buttons[btn_id].draw(self.screen)
-            # for i in range(1, 10):
-            #     self.buttons[i].set_pressed(True if i == btn_id else False)
-            #     self.buttons[i].draw(self.screen)
+            if str(btn_id) == self.selected_key:
+                self.selected_key = None
+                self.buttons[btn_id].set_pressed(False)
+                self.buttons[btn_id].draw(self.screen)
+            else:
+                if self.selected_key:
+                    self.buttons[int(self.selected_key)].set_pressed(False)
+                    self.buttons[int(self.selected_key)].draw(self.screen)
+                self.selected_key = str(btn_id)
+                self.buttons[btn_id].set_pressed(True)
+                self.buttons[btn_id].draw(self.screen)
+        self.selected_cell = None
 
     def _quit_pressed(self, *args, **kwargs):
         """ TODO """
@@ -328,9 +335,17 @@ class AppWindow:
     def _cell_pressed(self, cell_id, *args, **kwargs):
         """ TODO """
         cell_id -= 1000
-        if cell_id not in self.clues_defined and self.selected_key:
-            self.clue_entered = (cell_id, self.selected_key)
-            self.wait = False
+        if cell_id not in self.clues_defined:
+            if self.selected_key:
+                self.clue_entered = (cell_id, self.selected_key)
+                self.wait = False
+            else:
+                if cell_id == self.selected_cell:
+                    self.selected_cell = None
+                else:
+                    self.selected_cell = cell_id
+                self._render_board(self.input_board, "plain_board")
+                pygame.display.update()
 
     def _set_buttons(self):
         """ TODO """
@@ -604,6 +619,10 @@ class AppWindow:
                             row_id * CELL_SIZE + TOP_MARGIN)
                 pygame.draw.rect(self.screen, WHITE,
                                  (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+                if cell_id == self.selected_cell:
+                    pygame.draw.rect(
+                        self.screen, LIGHTGREEN,
+                        (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
                 if house and cell_id in house:
                     pygame.draw.rect(
                         self.screen, C_HOUSE,   # TODO
@@ -682,7 +701,7 @@ class AppWindow:
             self.input_board[self.previous_cell_value[0]] = self.input_board[self.conflicting_cells[0]]
             self.clues_found.append(self.previous_cell_value[0])
         self._render_board(self.input_board if self.input_board else board, "plain_board" if solver_tool else None,
-                           ptions_set=options_set, conflicting_cells=self.conflicting_cells, house=self.clue_house)
+                           options_set=options_set, conflicting_cells=self.conflicting_cells, house=self.clue_house)
         if self.previous_cell_value:
             self.input_board[self.previous_cell_value[0]] = self.previous_cell_value[1]
             self.clues_found.pop()
@@ -706,20 +725,19 @@ class AppWindow:
         else:
             while self.wait:
                 event = None
-                for ev in pygame.event.get():
-                    if ev.type == pygame.MOUSEBUTTONDOWN:
-                        event = self._button_pressed()
-                        if event is None:
-                            event = self._get_cell_id(pygame.mouse.get_pos())
-                    elif ev.type == pygame.KEYDOWN:
-                        if ev.key in self.keypad_keys:
-                            event = self.keypad_keys[ev.key]
-                        else:
-                            event = ev.key
+                ev = pygame.event.poll()
+                if ev.type == pygame.MOUSEBUTTONDOWN:
+                    event = self._button_pressed()
+                    if event is None:
+                        event = self._get_cell_id(pygame.mouse.get_pos())
+                elif ev.type == pygame.KEYDOWN:
+                    if ev.key in self.keypad_keys:
+                        event = self.keypad_keys[ev.key]
+                    else:
+                        event = ev.key
 
-                    if event in self.actions:
-                        print(f'{event = }')
-                        self.actions[event](event, board, solver_tool, **kwargs)
+                if event in self.actions:
+                    self.actions[event](event, board, solver_tool, **kwargs)
 
                 pygame.display.update()
 
