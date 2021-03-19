@@ -219,6 +219,7 @@ class AppWindow:
         self.conflicting_cells = None
         self.clue_house = None
         self.previous_cell_value = None
+        self.show_options = []
 
         for i in range(81):
             if board[i] != '.':
@@ -480,6 +481,10 @@ class AppWindow:
         x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
         sword = kwargs["sword"] if "sword" in kwargs else None
 
+        # TODO
+        if subset and cell_id in subset:
+            self.show_options.append(cell_id)
+
         if iterate is not None and cell_id == iterate:
             pygame.draw.rect(
                 self.screen, LIENGHTPINK,
@@ -609,6 +614,7 @@ class AppWindow:
         conflicting_cells = kwargs["conflicting_cells"] if "conflicting_cells" in kwargs else None
         other_cells = kwargs["other_cells"] if "other_cells" in kwargs else None
         active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
+        subset = kwargs["subset"] if "subset" in kwargs else None
 
         self.display_info(screen_messages[solver_tool])
 
@@ -643,7 +649,9 @@ class AppWindow:
                             self.screen, C_OTHER_CELLS,   # TODO
                             (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
 
-                    if solver_tool is None or cell_id in self.clues_defined or (active_clue and active_clue == cell_id):
+                    if solver_tool is None or cell_id in self.clues_defined:
+                        self._render_clue(board[cell_id], cell_pos, BLACK)
+                    elif active_clue is not None and active_clue == cell_id:        # TODO
                         self._render_clue(board[cell_id], cell_pos, BLACK)
                     elif not options_set:
                         self._render_clue(board[cell_id], cell_pos, BLUE)
@@ -652,7 +660,7 @@ class AppWindow:
                             self._highlight_clue(cell_id, cell_pos, **kwargs)
                             self._render_clue(self.input_board[cell_id], cell_pos,
                                               BLUE if cell_id in self.clues_found else BLACK)
-                        else:
+                        elif cell_id in self.show_options or (subset and house and cell_id in house):     # TODO - fix it!
                             if solver_tool != "plain_board":
                                 self._highlight_options(cell_id, board[cell_id], cell_pos, **kwargs)
                             self._render_options(cell_id, cell_pos)

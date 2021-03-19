@@ -177,27 +177,31 @@ def _hidden_singles(board, window, options_set=False):
             in_cells = []
             greyed_out = []
             to_remove = []
+            show_options = window.show_options if window else list()
             for cell in house:
-                if not options_set and board[cell] == ".":
+                # if not options_set and board[cell] == ".":
+                if board[cell] == ".":
                     cell_opts = get_options(board, cell)
                     if option in cell_opts:
                         in_cells.append(cell)
                     else:
                         greyed_out.append(cell)
-                if options_set and option in board[cell]:
-                    in_cells.append(cell)
+                elif options_set and len(board[cell]) > 1:
+                    if option in board[cell]:
+                        in_cells.append(cell)
+                    elif cell not in show_options:
+                        greyed_out.append(cell)
 
             if len(in_cells) == 1:
-                board[in_cells[0]] = option
-                # if window:    TODO!
-                #     window.set_current_board(board)     # to properly display the hidden single
+                clue_id = in_cells[0]
+                board[clue_id] = option
                 if options_set:
-                    to_remove = [(option, cell) for cell in ALL_NBRS[in_cells[0]] if option in board[cell]]
+                    to_remove = [(option, cell) for cell in ALL_NBRS[clue_id] if option in board[cell]]
                     _remove_options(board, to_remove)
                 if window and window.draw_board(board, "hidden_singles", options_set=options_set,
-                                                singles=[in_cells[0]], new_clue=in_cells[0],
+                                                singles=[in_cells[0]], new_clue=clue_id,
                                                 house=house, greyed_out=greyed_out, remove=to_remove):
-                    window.clues_found.append(in_cells[0])
+                    window.clues_found.append(clue_id)
                 return True
         return False
 
