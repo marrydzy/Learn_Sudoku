@@ -179,7 +179,6 @@ def _hidden_singles(board, window, options_set=False):
             to_remove = []
             show_options = window.show_options if window else list()
             for cell in house:
-                # if not options_set and board[cell] == ".":
                 if board[cell] == ".":
                     cell_opts = get_options(board, cell)
                     if option in cell_opts:
