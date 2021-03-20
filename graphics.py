@@ -35,11 +35,11 @@ CYAN = (0, 255, 255)
 SILVER = (192, 192, 192)
 LIGHTGREEN = (190, 255, 190)
 LIENGHTPINK = (255, 182, 193)
+LIGHTYELLOW = (255, 255, 224)
 GAINSBORO = (230, 230, 230)
 DARKGREY = (150, 150, 150)
 LIGHTGREY = (200, 200, 200)
 
-C_HOUSE = (255, 255, 225)
 C_OTHER_CELLS = (255, 250, 190)
 Y_WING_ROOT = (255, 153, 51)
 Y_WING_LEAF = (255, 153, 51)  
@@ -295,7 +295,7 @@ class AppWindow:
         self.set_btn_status(False, (pygame.K_a, pygame.K_b))
         self.set_btn_status(True, (pygame.K_c, pygame.K_p))
         self.set_keyboard_status(True)
-        self._render_board(self.input_board, "plain_board", options_set=kwargs["options_set"])
+        self._render_board(self.input_board, "plain_board")     # options_set=kwargs["options_set"])
 
     def _animate_pressed(self, btn_id, board, solver_tool, **kwargs):
         """ actions on pressing 'Animate' button """
@@ -472,8 +472,10 @@ class AppWindow:
     def _highlight_options(self, cell_id, new_value, pos, **kwargs):
         """ Highlight pencil marks, as applicable """
 
+        house = kwargs["house"] if "house" in kwargs else None
         remove = kwargs["remove"] if "remove" in kwargs else None
         subset = kwargs["subset"] if "subset" in kwargs else None
+        other_cells = kwargs["other_cells"] if "other_cells" in kwargs else None
         claims = kwargs["claims"] if "claims" in kwargs else None
         iterate = kwargs["iterate"] if "iterate" in kwargs else None
         y_wing = kwargs["y_wing"] if "y_wing" in kwargs else None
@@ -482,7 +484,11 @@ class AppWindow:
         sword = kwargs["sword"] if "sword" in kwargs else None
 
         # TODO
-        if subset and cell_id in subset:
+        if (other_cells and cell_id in other_cells) or \
+                (other_cells and house and cell_id in house) or \
+                (subset and cell_id in subset) or \
+                (subset and house and cell_id in house) or \
+                (y_wing and cell_id in y_wing[1:]):
             self.show_options.append(cell_id)
 
         if iterate is not None and cell_id == iterate:
@@ -608,62 +614,50 @@ class AppWindow:
 
     def _render_board(self, board, solver_tool, **kwargs):
         """ render board (TODO) """
-        options_set = kwargs["options_set"] if "options_set" in kwargs else True
+        # options_set = kwargs["options_set"] if "options_set" in kwargs else True
         house = kwargs["house"] if "house" in kwargs else None
         greyed_out = kwargs["greyed_out"] if "greyed_out" in kwargs else None
         conflicting_cells = kwargs["conflicting_cells"] if "conflicting_cells" in kwargs else None
         other_cells = kwargs["other_cells"] if "other_cells" in kwargs else None
         active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
         subset = kwargs["subset"] if "subset" in kwargs else None
+        y_wing = kwargs["y_wing"] if "y_wing" in kwargs else None
+
 
         self.display_info(screen_messages[solver_tool])
 
         for row_id in range(9):
             for col_id in range(9):
                 cell_id = row_id * 9 + col_id
-                cell_pos = (col_id * CELL_SIZE + LEFT_MARGIN,
-                            row_id * CELL_SIZE + TOP_MARGIN)
-                pygame.draw.rect(self.screen, WHITE,
-                                 (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
-                if cell_id == self.selected_cell:
-                    pygame.draw.rect(
-                        self.screen, LIGHTGREEN,
-                        (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+                cell_pos = (col_id * CELL_SIZE + LEFT_MARGIN, row_id * CELL_SIZE + TOP_MARGIN)
+                cell_rect = (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1)
+                cell_color = WHITE
                 if house and cell_id in house:
-                    pygame.draw.rect(
-                        self.screen, C_HOUSE,   # TODO
-                        (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+                    cell_color = LIGHTYELLOW
                 if greyed_out and cell_id in greyed_out:
-                    pygame.draw.rect(
-                        self.screen, SILVER,
-                        (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+                    cell_color = SILVER
                 if conflicting_cells and cell_id in conflicting_cells:
-                    pygame.draw.rect(
-                        self.screen, CORAL,
-                        (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+                    cell_color = CORAL
+                if other_cells and cell_id in other_cells:
+                    cell_color = C_OTHER_CELLS
+                if cell_id == active_clue or cell_id == self.selected_cell:
+                    cell_color = LIGHTGREEN
+                pygame.draw.rect(self.screen, cell_color, cell_rect)
 
                 if board[cell_id] != '.':
-                    self._highlight_clue(cell_id, cell_pos, **kwargs)
-                    if other_cells and cell_id in other_cells:
-                        pygame.draw.rect(
-                            self.screen, C_OTHER_CELLS,   # TODO
-                            (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
-
-                    if solver_tool is None or cell_id in self.clues_defined:
+                    if solver_tool is None or cell_id in self.clues_defined or cell_id == active_clue:
                         self._render_clue(board[cell_id], cell_pos, BLACK)
-                    elif active_clue is not None and active_clue == cell_id:        # TODO
-                        self._render_clue(board[cell_id], cell_pos, BLACK)
-                    elif not options_set:
+                    elif cell_id in self.clues_found:
                         self._render_clue(board[cell_id], cell_pos, BLUE)
-                    else:
-                        if len(self.input_board[cell_id]) == 1 and cell_id in self.clues_found:
-                            self._highlight_clue(cell_id, cell_pos, **kwargs)
-                            self._render_clue(self.input_board[cell_id], cell_pos,
-                                              BLUE if cell_id in self.clues_found else BLACK)
-                        elif cell_id in self.show_options or (subset and house and cell_id in house):     # TODO - fix it!
-                            if solver_tool != "plain_board":
-                                self._highlight_options(cell_id, board[cell_id], cell_pos, **kwargs)
-                            self._render_options(cell_id, cell_pos)
+                    elif cell_id in self.show_options or \
+                            (other_cells and cell_id in other_cells) or \
+                            (other_cells and house and cell_id in house) or \
+                            (subset and cell_id in subset) or \
+                            (subset and house and cell_id in house) or \
+                            (y_wing and cell_id in y_wing[1:]):
+                        if solver_tool != "plain_board":
+                            self._highlight_options(cell_id, board[cell_id], cell_pos, **kwargs)
+                        self._render_options(cell_id, cell_pos)
 
         for i in range(10):
             line_thickness = 5 if i % 3 == 0 else 1
@@ -675,7 +669,6 @@ class AppWindow:
                               TOP_MARGIN + 9 * CELL_SIZE), line_thickness)
         self._draw_board_features(**kwargs)
         self._draw_buttons()
-        return None
 
     def _get_cell_id(self, mouse_pos):
         """ TODO """
@@ -703,13 +696,13 @@ class AppWindow:
             return
 
         start = time.time()     # TODO
-        options_set = kwargs["options_set"] if "options_set" in kwargs else False
+        # options_set = kwargs["options_set"] if "options_set" in kwargs else False
         self._draw_keypad()
         if self.previous_cell_value:
             self.input_board[self.previous_cell_value[0]] = self.input_board[self.conflicting_cells[0]]
             self.clues_found.append(self.previous_cell_value[0])
         self._render_board(self.input_board if self.input_board else board, "plain_board" if solver_tool else None,
-                           options_set=options_set, conflicting_cells=self.conflicting_cells, house=self.clue_house)
+                           conflicting_cells=self.conflicting_cells, house=self.clue_house)
         if self.previous_cell_value:
             self.input_board[self.previous_cell_value[0]] = self.previous_cell_value[1]
             self.clues_found.pop()
