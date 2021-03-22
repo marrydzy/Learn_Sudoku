@@ -132,8 +132,8 @@ def _visual_elimination(board, window, options_set=False):
 def _naked_singles(board, window, options_set=False):
     """ 'Naked Singles' technique (see: https://www.learn-sudoku.com/lone-singles.html)
         In the initial phase of sudoku solving when options of all unsolved cells are not set yet,
-        After finding a clue The function returns to the main solver loop to allow trying 'simpler'
-        methods ('open singles' and then 'visual elimination'
+        after finding a clue the function returns to the main solver loop to allow trying 'simpler'
+        methods ('open singles' and then 'visual elimination').
         When options for all unsolved cells are already set the function continues solving naked singles until
         the 'naked_singles' list is empty (at this stage of sudoku solving it is the 'simplest' method)
     """
@@ -211,7 +211,7 @@ def _hidden_singles(board, window, options_set=False):
     return False
 
 
-def _hidden_pairs(board, window):
+def _hidden_pair(board, window):
     """A Hidden Pair is basically just a “buried” Naked Pair.
     It occurs when two pencil marks appear in exactly two cells within
     the same house (row, column, or block).
@@ -243,7 +243,7 @@ def _hidden_pairs(board, window):
                     _remove_options(board, to_remove)
                     if window:
                         window.draw_board(board, "hidden_pairs", remove=to_remove,
-                                          subset=in_cells, house=cells, options_set=True)
+                                          claims=in_cells, house=cells)
                     return True
         return False
 
@@ -259,7 +259,7 @@ def _hidden_pairs(board, window):
     return False
 
 
-def _hidden_triplets(board, window):
+def _hidden_triplet(board, window):
     """When three given pencil marks appear in only three cells
     in any given row, column, or block, all other pencil marks may be removed
     from those cells.
@@ -284,7 +284,7 @@ def _hidden_triplets(board, window):
                     _remove_options(board, to_remove)
                     if window:
                         window.draw_board(board, "hidden_triplets", remove=to_remove,
-                                          subset=triplet_cells, house=cells, options_set=True)
+                                          claims=triplet_cells, house=cells)
                     return True
         return False
 
@@ -325,8 +325,7 @@ def _naked_twins(board, window):
                 if to_remove:
                     _remove_options(board, to_remove)
                     if window:
-                        window.draw_board(board, "naked_twins", remove=to_remove, subset=in_cells, house=cells,
-                                          naked_singles=naked_singles, options_set=True)
+                        window.draw_board(board, "naked_twins", remove=to_remove, claims=in_cells, house=cells)
                     return True
         return False
 
@@ -357,15 +356,14 @@ def _omissions(board, window):
                 unsolved = {cell for cell in cells if len(board[cell]) > 1}
                 squares = {CELL_SQR[cell] for cell in unsolved if value in board[cell]}
                 if len(squares) == 1:
-                    other_cells = set(CELLS_IN_SQR[squares.pop()]) - set(cells)
-                    to_remove = [(value, cell) for cell in other_cells if value in board[cell]]
+                    impacted_cells = set(CELLS_IN_SQR[squares.pop()]) - set(cells)
+                    to_remove = [(value, cell) for cell in impacted_cells if value in board[cell]]
                     if to_remove:
                         _remove_options(board, to_remove)
                         if window:
                             claims = [(to_remove[0][0], cell) for cell in cells]
                             window.draw_board(board, "omissions", claims=claims, remove=to_remove,
-                                              singles=naked_singles, house=cells, other_cells=other_cells,
-                                              options_set=True)
+                                              house=cells, impacted_cells=impacted_cells)
                         return True
         return False
 
@@ -376,19 +374,18 @@ def _omissions(board, window):
             in_rows = set(CELL_ROW[cell] for cell in unsolved if value in board[cell])
             in_cols = set(CELL_COL[cell] for cell in unsolved if value in board[cell])
             if len(in_rows) == 1 or len(in_cols) == 1:
-                other_cells = set()
+                impacted_cells = set()
                 if len(in_rows) == 1:
-                    other_cells = set(CELLS_IN_ROW[in_rows.pop()]) - set(cells)
+                    impacted_cells = set(CELLS_IN_ROW[in_rows.pop()]) - set(cells)
                 elif len(in_cols) == 1:
-                    other_cells = set(CELLS_IN_COL[in_cols.pop()]) - set(cells)
-                to_remove = [(value, cell) for cell in other_cells if value in board[cell]]
+                    impacted_cells = set(CELLS_IN_COL[in_cols.pop()]) - set(cells)
+                to_remove = [(value, cell) for cell in impacted_cells if value in board[cell]]
                 if to_remove:
                     _remove_options(board, to_remove)
                     if window:
                         claims = [(to_remove[0][0], cell) for cell in cells]
                         window.draw_board(board, "omissions", claims=claims, remove=to_remove,
-                                          singles=naked_singles, house=cells, other_cells=other_cells,
-                                          options_set=True)
+                                          house=cells, impacted_cells=impacted_cells)
                     return True
         return False
 
@@ -435,8 +432,7 @@ def _y_wings(board, window):
                 _remove_options(board, to_remove)
                 if window:
                     window.draw_board(board, "y_wings", y_wing=wing, remove=to_remove,
-                                      other_cells=set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]]),
-                                      options_set=True)
+                                      impacted_cells=set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]]))
                 return True
         return False
 
@@ -475,7 +471,7 @@ def manual_solver(board, window, _):
         if not options_set:
             _init_options(board, window)
             options_set = True
-        if _hidden_pairs(board, window):
+        if _hidden_pair(board, window):
             continue
         if _naked_twins(board, window):
             continue
@@ -483,8 +479,7 @@ def manual_solver(board, window, _):
             continue
         if _y_wings(board, window):
             continue
-        if _hidden_triplets(board, window):
+        if _hidden_triplet(board, window):
             continue
 
         return True
-
