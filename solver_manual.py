@@ -10,7 +10,32 @@ from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
 from utils import is_clue, is_solved, get_options, DeadEndException
 import pygame
 
-naked_singles = []
+
+class SolverStatus:
+    """ class to store data needed for recovering of puzzle
+    status prior to applying a method """
+    def __init__(self):
+        self.naked_singles = set()
+        self.singles = set()
+        self.clues = []
+        self.options = set()
+
+    def capture(self, window):
+        if window:
+            self.singles = self.naked_singles.copy()
+            self.clues = window.clues_found.copy()
+            self.options = window.show_options.copy()
+
+    def restore(self, board, window):
+        if window:
+            self.naked_singles = self.singles
+            window.clues_found = self.clues
+            window.show_options = self.options
+            for i in range(81):
+                board[i] = window.input_board[i]
+
+
+solver_status = SolverStatus()
 
 
 def _remove_options(board, to_remove):
@@ -19,54 +44,40 @@ def _remove_options(board, to_remove):
         tmp = board[cell]
         board[cell] = board[cell].replace(option, "")
         if not board[cell]:
-            print(f'\n{to_remove = } {cell = } initial board[cell]: {tmp}\n')
             raise DeadEndException
         elif len(board[cell]) == 1:
-            naked_singles.append(cell)
+            solver_status.naked_singles.add(cell)
 
 
 def set_manually(board, window, options_set):
     """ TODO """
-    # print('Dupa_2 -> in set_manually')
     if window and window.clue_entered:
         cell_id = window.clue_entered[0]
         value = window.clue_entered[1]
         window.clue_entered = None
-        # print(f'in set_manually: {cell_id = }, {value = }')
-        # print(f'{window.last_added = }')
 
         if board[cell_id] == value and cell_id in window.clues_found:
-            # print(f'in set_manually: removing existing clue!')
             board[cell_id] = "."
             board[cell_id] = ''.join(get_options(board, cell_id))
             if len(board[cell_id]) == 1:
-                naked_singles.append(cell_id)
-            # print(f'{cell_id = } {board[cell_id] = }\n')
-            # print(f'{window.clues_found = }')
-            try:        # TODO!!! simplify it!!!
-                while True:
-                    window.clues_found.remove(cell_id)
-            except ValueError:
-                pass
-            # print(f'{window.clues_found = }')
+                solver_status.naked_singles.add(cell_id)
+            window.clues_found.remove(cell_id)
             window.set_current_board(board)
         else:
             conflicting_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
             if conflicting_cells:
-                # print('in set_manually: conflicting cells!')
                 conflicting_cells.append(cell_id)
                 window.conflicting_cells = conflicting_cells
                 window.clue_house = ALL_NBRS[cell_id]
                 window.previous_cell_value = (cell_id, board[cell_id])
                 window.set_btn_status(True, (pygame.K_b, ))
             else:
-                # print('in set_manually: entering the clue')
                 board[cell_id] = value
-                window.clues_found.append(cell_id)
+                window.clues_found.add(cell_id)
+                if cell_id in solver_status.naked_singles:
+                    solver_status.naked_singles.remove(cell_id)
                 if options_set:
-                    # window.input_board[cell_id] = value
                     to_remove = [(value, cell) for cell in ALL_NBRS[cell_id] if value in board[cell]]
-                    # print(f'{to_remove = }')
                     _remove_options(board, to_remove)
                 window.set_current_board(board)
         return True
@@ -86,9 +97,12 @@ def _open_singles(board, window, options_set=False):
             if len(missing_value) != 1:
                 raise DeadEndException
             board[open_cells[0]] = missing_value.pop()
-            if window and window.draw_board(board, "open_singles", new_clue=open_cells[0]):
-                window.clues_found.append(open_cells[0])
-                return True
+            if window:
+                if window.draw_board(board, "open_singles", new_clue=open_cells[0]):
+                    window.clues_found.add(open_cells[0])
+                else:
+                    solver_status.restore(board, window)
+            return True
         return False
 
     if not options_set:
@@ -143,8 +157,10 @@ def _visual_elimination(board, window, options_set=False):
                     house = [cell for offset in range(3) for cell in cols_rows[3*band + offset]]
                     if window.draw_board(board, "visual_elimination", house=house, new_clue=clues[0],
                                          greyed_out=greyed_out):
-                        window.clues_found.append(clues[0])
-                    return True
+                        window.clues_found.add(clues[0])
+                    else:
+                        solver_status.restore(board, window)
+                return True
         return False
 
     for value in SUDOKU_VALUES_LIST:
@@ -163,24 +179,19 @@ def _naked_singles(board, window, options_set=False):
         the 'naked_singles' list is empty (at this stage of sudoku solving it is the 'simplest' method)
     """
     if options_set:
-        if not naked_singles:
-            # print('leaving naked_singles with False')
+        if not solver_status.naked_singles:
             return False
-        while naked_singles:
-            print(f'{naked_singles = }')
-            naked_single = naked_singles.pop()
+        else:
+            naked_single = solver_status.naked_singles.pop()
             clue = board[naked_single]
-            print(f'{clue = }')
             to_remove = [(clue, cell) for cell in ALL_NBRS[naked_single] if clue in board[cell]]
             _remove_options(board, to_remove)
-            if window and window.draw_board(board, "naked_singles", new_clue=naked_single, remove=to_remove):
-                window.clues_found.append(naked_single)
-            if naked_single not in window.clues_found:      # TODO!!! Fix if not window
-                naked_singles.append(naked_single)
-            print(f'{window.clues_found = }')
-            print(f'{naked_singles = }')
-        # print('leaving naked_singles with True')
-        return True
+            if window:
+                if window.draw_board(board, "naked_singles", new_clue=naked_single, remove=to_remove):
+                    window.clues_found.add(naked_single)
+                else:
+                    solver_status.restore(board, window)
+            return True
     else:
         for cell in range(81):
             if board[cell] == ".":
@@ -188,7 +199,7 @@ def _naked_singles(board, window, options_set=False):
                 if len(cell_opts) == 1:
                     board[cell] = cell_opts.pop()
                     if window and window.draw_board(board, "naked_singles", new_clue=cell):
-                        window.clues_found.append(cell)
+                        window.clues_found.add(cell)
                     return True
         return False
 
@@ -226,9 +237,12 @@ def _hidden_singles(board, window, options_set=False):
                 if options_set:
                     to_remove = [(option, cell) for cell in ALL_NBRS[clue_id] if option in board[cell]]
                     _remove_options(board, to_remove)
-                if window and window.draw_board(board, "hidden_singles", new_clue=clue_id,
+                if window:
+                    if window.draw_board(board, "hidden_singles", new_clue=clue_id,
                                                 house=house, greyed_out=greyed_out, remove=to_remove):
-                    window.clues_found.append(clue_id)
+                        window.clues_found.add(clue_id)
+                    else:
+                        solver_status.restore(board, window)
                 return True
         return False
 
@@ -275,8 +289,10 @@ def _hidden_pair(board, window):
                 if to_remove:
                     _remove_options(board, to_remove)
                     if window:
-                        window.draw_board(board, "hidden_pairs", remove=to_remove,
-                                          claims=in_cells, house=cells)
+                        if window.draw_board(board, "hidden_pairs", remove=to_remove, claims=in_cells, house=cells):
+                            pass
+                        else:
+                            solver_status.restore(board, window)
                     return True
         return False
 
@@ -316,8 +332,11 @@ def _hidden_triplet(board, window):
                 if to_remove:
                     _remove_options(board, to_remove)
                     if window:
-                        window.draw_board(board, "hidden_triplets", remove=to_remove,
-                                          claims=triplet_cells, house=cells)
+                        if window.draw_board(board, "hidden_triplets", remove=to_remove,
+                                             claims=triplet_cells, house=cells):
+                            pass
+                        else:
+                            solver_status.restore(board, window)
                     return True
         return False
 
@@ -355,8 +374,10 @@ def _hidden_quad(board, window):
                 if to_remove:
                     _remove_options(board, to_remove)
                     if window:
-                        window.draw_board(board, "hidden_quads", remove=to_remove,
-                                          claims=quad_cells, house=cells)
+                        if window.draw_board(board, "hidden_quads", remove=to_remove, claims=quad_cells, house=cells):
+                            pass
+                        else:
+                            solver_status.restore(board, window)
                     return True
         return False
 
@@ -396,7 +417,10 @@ def _naked_twins(board, window):
                 if to_remove:
                     _remove_options(board, to_remove)
                     if window:
-                        window.draw_board(board, "naked_twins", remove=to_remove, claims=in_cells, house=cells)
+                        if window.draw_board(board, "naked_twins", remove=to_remove, claims=in_cells, house=cells):
+                            pass
+                        else:
+                            solver_status.restore(board, window)
                     return True
         return False
 
@@ -428,7 +452,11 @@ def _naked_triplets(board, window):
                     if to_remove:
                         _remove_options(board, to_remove)
                         if window:
-                            window.draw_board(board, "naked_triplets", remove=to_remove, claims=triplet, house=cells)
+                            if window.draw_board(board, "naked_triplets", remove=to_remove,
+                                                 laims=triplet, house=cells):
+                                psss
+                            else:
+                                solver_status.restore(board, window)
                         return True
         return False
 
@@ -462,7 +490,10 @@ def _naked_quads(board, window):
                     if to_remove:
                         _remove_options(board, to_remove)
                         if window:
-                            window.draw_board(board, "naked_quads", remove=to_remove, claims=quad, house=cells)
+                            if window.draw_board(board, "naked_quads", remove=to_remove, claims=quad, house=cells):
+                                pass
+                            else:
+                                solver_status.restore(board, window)
                         return True
         return False
 
@@ -501,8 +532,11 @@ def _omissions(board, window):
                         _remove_options(board, to_remove)
                         if window:
                             claims = [(to_remove[0][0], cell) for cell in cells]
-                            window.draw_board(board, "omissions", claims=claims, remove=to_remove,
-                                              house=cells, impacted_cells=impacted_cells)
+                            if window.draw_board(board, "omissions", claims=claims, remove=to_remove,
+                                                 house=cells, impacted_cells=impacted_cells):
+                                pass
+                            else:
+                                solver_status.restore(board, window)
                         return True
         return False
 
@@ -523,8 +557,11 @@ def _omissions(board, window):
                     _remove_options(board, to_remove)
                     if window:
                         claims = [(to_remove[0][0], cell) for cell in cells]
-                        window.draw_board(board, "omissions", claims=claims, remove=to_remove,
-                                          house=cells, impacted_cells=impacted_cells)
+                        if window.draw_board(board, "omissions", claims=claims, remove=to_remove,
+                                             house=cells, impacted_cells=impacted_cells):
+                            pass
+                        else:
+                            solver_status.restore(board, window)
                     return True
         return False
 
@@ -570,8 +607,11 @@ def _y_wings(board, window):
             if to_remove:
                 _remove_options(board, to_remove)
                 if window:
-                    window.draw_board(board, "y_wings", y_wing=wing, remove=to_remove,
-                                      impacted_cells=set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]]))
+                    if window.draw_board(board, "y_wings", y_wing=wing, remove=to_remove,
+                                         impacted_cells=set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]])):
+                        pass
+                    else:
+                        solver_status.restore(board, window)
                 return True
         return False
 
@@ -598,7 +638,7 @@ def manual_solver(board, window, _):
     while True:
         if is_solved(board):
             return True
-        # print('continue')
+        solver_status.capture(window)
         if set_manually(board, window, options_set):
             continue
         if _open_singles(board, window, options_set):

@@ -204,7 +204,7 @@ class AppWindow:
         pygame.display.set_icon(pygame.image.load('demon.png'))     # TODO - fix it!
 
         self.input_board = None
-        self.clues_found = []
+        self.clues_found = set()
         self.clues_defined = []
         self.board_cells = {}
         self.keypad = {}
@@ -220,7 +220,7 @@ class AppWindow:
         self.clue_house = None
         self.previous_cell_value = None
         self.show_options = set()
-        self.last_added = []
+        # self.last_added = []
 
         for i in range(81):
             if board[i] != '.':
@@ -343,7 +343,7 @@ class AppWindow:
         if cell_id not in self.clues_defined:
             if self.selected_key:
                 self.clue_entered = (cell_id, self.selected_key)
-                # print(f'{self.clue_entered = }')
+                # print(f'1: {self.clue_entered = }')
                 self.wait = False
             else:
                 if cell_id == self.selected_cell:
@@ -634,14 +634,14 @@ class AppWindow:
                 self.show_options.add(cell)
             if "y_wing" in kwargs and kwargs["y_wing"] and cell in kwargs["y_wing"][1:]:
                 self.show_options.add(cell)
-            if cell in self.show_options:
-                self.last_added.append(cell)
+            # if cell in self.show_options:
+            #     self.last_added.append(cell)
         return True if cell in self.show_options else False
 
     def _render_board(self, board, solver_tool, **kwargs):
         """ render board (TODO) """
         active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
-        self.last_added.clear()
+        # self.last_added.clear()
         for row_id in range(9):
             for col_id in range(9):
                 cell_id = row_id * 9 + col_id
@@ -655,8 +655,8 @@ class AppWindow:
                         self._render_clue(board[cell_id], cell_pos, BLACK)
                     elif cell_id in self.clues_found and len(board[cell_id]) == 1:
                         self._render_clue(board[cell_id], cell_pos, BLUE)
-                    # elif self._show_pencil_marks(cell_id, **kwargs):
-                    else:
+                    elif self._show_pencil_marks(cell_id, **kwargs):
+                    # else:
                         if solver_tool != "plain_board":
                             self._highlight_options(cell_id, board[cell_id], cell_pos, **kwargs)
                         self._render_options(cell_id, cell_pos)
@@ -694,7 +694,7 @@ class AppWindow:
             self.buttons[pygame.K_s].set_status(False)
             for i in range(81):
                 if i not in self.clues_defined and i not in self.clues_found:
-                    self.clues_found.append(i)
+                    self.clues_found.add(i)
         elif not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
             return
 
@@ -702,12 +702,12 @@ class AppWindow:
         self._draw_keypad()
         if self.previous_cell_value:
             self.input_board[self.previous_cell_value[0]] = self.input_board[self.conflicting_cells[0]]
-            self.clues_found.append(self.previous_cell_value[0])
+            self.clues_found.add(self.previous_cell_value[0])
         self._render_board(self.input_board if self.input_board else board, "plain_board" if solver_tool else None,
                            conflicting_cells=self.conflicting_cells, house=self.clue_house)
         if self.previous_cell_value:
             self.input_board[self.previous_cell_value[0]] = self.previous_cell_value[1]
-            self.clues_found.pop()
+            self.clues_found.remove(self.previous_cell_value[0])
             self.previous_cell_value = None
 
         if self.conflicting_cells:
@@ -746,16 +746,16 @@ class AppWindow:
 
         if self.board_updated:
             self.input_board = board.copy()
-        elif solver_tool:
+        # elif solver_tool:
             # print('Dupa_1: input_board -> board')
             # (f'{bool(self.board_updated or self.clue_entered) = }')
-            for cell in self.last_added:
-                self.show_options.remove(cell)
-            for i in range(81):
-                board[i] = self.input_board[i]
+            # for cell in self.last_added:
+            #     self.show_options.remove(cell)
+            # for i in range(81):
+                # board[i] = self.input_board[i]
             # print(f'{board = }')
         self.time_in += time.time() - start
-        return self.board_updated or self.clue_entered
+        return self.board_updated
 
     def quit(self):
         """ TODO """
