@@ -220,6 +220,7 @@ class AppWindow:
         self.clue_house = None
         self.previous_cell_value = None
         self.show_options = set()
+        self.last_added = []
 
         for i in range(81):
             if board[i] != '.':
@@ -295,6 +296,8 @@ class AppWindow:
         self.set_btn_status(False, (pygame.K_a, pygame.K_b))
         self.set_btn_status(True, (pygame.K_c, pygame.K_p))
         self.set_keyboard_status(True)
+        self.wait = False
+        self.board_updated = False
         self._render_board(self.input_board, "plain_board")     # options_set=kwargs["options_set"])
 
     def _animate_pressed(self, btn_id, board, solver_tool, **kwargs):
@@ -336,9 +339,11 @@ class AppWindow:
     def _cell_pressed(self, cell_id, *args, **kwargs):
         """ TODO """
         cell_id -= 1000
+        # print(f'\n{cell_id = }')
         if cell_id not in self.clues_defined:
             if self.selected_key:
                 self.clue_entered = (cell_id, self.selected_key)
+                # print(f'{self.clue_entered = }')
                 self.wait = False
             else:
                 if cell_id == self.selected_cell:
@@ -622,17 +627,21 @@ class AppWindow:
 
     def _show_pencil_marks(self, cell, **kwargs):
         """ TODO """
-        if "impacted_cells" in kwargs and cell in kwargs["impacted_cells"]:
-            self.show_options.add(cell)
-        if "claims" in kwargs and cell in kwargs["house"]:
-            self.show_options.add(cell)
-        if "y_wing" in kwargs and kwargs["y_wing"] and cell in kwargs["y_wing"][1:]:
-            self.show_options.add(cell)
+        if cell not in self.show_options:
+            if "impacted_cells" in kwargs and cell in kwargs["impacted_cells"]:
+                self.show_options.add(cell)
+            if "claims" in kwargs and cell in kwargs["house"]:
+                self.show_options.add(cell)
+            if "y_wing" in kwargs and kwargs["y_wing"] and cell in kwargs["y_wing"][1:]:
+                self.show_options.add(cell)
+            if cell in self.show_options:
+                self.last_added.append(cell)
         return True if cell in self.show_options else False
 
     def _render_board(self, board, solver_tool, **kwargs):
         """ render board (TODO) """
         active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
+        self.last_added.clear()
         for row_id in range(9):
             for col_id in range(9):
                 cell_id = row_id * 9 + col_id
@@ -644,9 +653,10 @@ class AppWindow:
                 if board[cell_id] != '.':
                     if solver_tool is None or cell_id in self.clues_defined or cell_id == active_clue:
                         self._render_clue(board[cell_id], cell_pos, BLACK)
-                    elif cell_id in self.clues_found:
+                    elif cell_id in self.clues_found and len(board[cell_id]) == 1:
                         self._render_clue(board[cell_id], cell_pos, BLUE)
-                    elif self._show_pencil_marks(cell_id, **kwargs):
+                    # elif self._show_pencil_marks(cell_id, **kwargs):
+                    else:
                         if solver_tool != "plain_board":
                             self._highlight_options(cell_id, board[cell_id], cell_pos, **kwargs)
                         self._render_options(cell_id, cell_pos)
@@ -689,7 +699,6 @@ class AppWindow:
             return
 
         start = time.time()     # TODO
-        # options_set = kwargs["options_set"] if "options_set" in kwargs else False
         self._draw_keypad()
         if self.previous_cell_value:
             self.input_board[self.previous_cell_value[0]] = self.input_board[self.conflicting_cells[0]]
@@ -738,8 +747,13 @@ class AppWindow:
         if self.board_updated:
             self.input_board = board.copy()
         elif solver_tool:
+            # print('Dupa_1: input_board -> board')
+            # (f'{bool(self.board_updated or self.clue_entered) = }')
+            for cell in self.last_added:
+                self.show_options.remove(cell)
             for i in range(81):
                 board[i] = self.input_board[i]
+            # print(f'{board = }')
         self.time_in += time.time() - start
         return self.board_updated or self.clue_entered
 

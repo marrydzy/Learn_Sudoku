@@ -16,36 +16,61 @@ naked_singles = []
 def _remove_options(board, to_remove):
     """ utility function: removes options as per 'to_remove' list """
     for option, cell in to_remove:
+        tmp = board[cell]
         board[cell] = board[cell].replace(option, "")
         if not board[cell]:
+            print(f'\n{to_remove = } {cell = } initial board[cell]: {tmp}\n')
             raise DeadEndException
         elif len(board[cell]) == 1:
             naked_singles.append(cell)
 
 
-def set_manually(board, window):
+def set_manually(board, window, options_set):
     """ TODO """
+    # print('Dupa_2 -> in set_manually')
     if window and window.clue_entered:
         cell_id = window.clue_entered[0]
         value = window.clue_entered[1]
         window.clue_entered = None
+        # print(f'in set_manually: {cell_id = }, {value = }')
+        # print(f'{window.last_added = }')
 
-        if board[cell_id] == value:
-            board[cell_id] = "."    # TODO! calculate options if options set!
-            window.clues_found.remove(cell_id)
+        if board[cell_id] == value and cell_id in window.clues_found:
+            # print(f'in set_manually: removing existing clue!')
+            board[cell_id] = "."
+            board[cell_id] = ''.join(get_options(board, cell_id))
+            if len(board[cell_id]) == 1:
+                naked_singles.append(cell_id)
+            # print(f'{cell_id = } {board[cell_id] = }\n')
+            # print(f'{window.clues_found = }')
+            try:        # TODO!!! simplify it!!!
+                while True:
+                    window.clues_found.remove(cell_id)
+            except ValueError:
+                pass
+            # print(f'{window.clues_found = }')
             window.set_current_board(board)
         else:
             conflicting_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
             if conflicting_cells:
+                # print('in set_manually: conflicting cells!')
                 conflicting_cells.append(cell_id)
                 window.conflicting_cells = conflicting_cells
                 window.clue_house = ALL_NBRS[cell_id]
                 window.previous_cell_value = (cell_id, board[cell_id])
                 window.set_btn_status(True, (pygame.K_b, ))
             else:
+                # print('in set_manually: entering the clue')
                 board[cell_id] = value
                 window.clues_found.append(cell_id)
+                if options_set:
+                    # window.input_board[cell_id] = value
+                    to_remove = [(value, cell) for cell in ALL_NBRS[cell_id] if value in board[cell]]
+                    # print(f'{to_remove = }')
+                    _remove_options(board, to_remove)
                 window.set_current_board(board)
+        return True
+    return False
 
 
 def _open_singles(board, window, options_set=False):
@@ -139,14 +164,22 @@ def _naked_singles(board, window, options_set=False):
     """
     if options_set:
         if not naked_singles:
+            # print('leaving naked_singles with False')
             return False
         while naked_singles:
+            print(f'{naked_singles = }')
             naked_single = naked_singles.pop()
             clue = board[naked_single]
+            print(f'{clue = }')
             to_remove = [(clue, cell) for cell in ALL_NBRS[naked_single] if clue in board[cell]]
             _remove_options(board, to_remove)
             if window and window.draw_board(board, "naked_singles", new_clue=naked_single, remove=to_remove):
                 window.clues_found.append(naked_single)
+            if naked_single not in window.clues_found:      # TODO!!! Fix if not window
+                naked_singles.append(naked_single)
+            print(f'{window.clues_found = }')
+            print(f'{naked_singles = }')
+        # print('leaving naked_singles with True')
         return True
     else:
         for cell in range(81):
@@ -270,7 +303,7 @@ def _hidden_triplet(board, window):
         unsolved = [cell for cell in cells if len(board[cell]) > 1]
         options = set("".join(board[cell] for cell in unsolved))
         if len(unsolved) < 4 or len(options) < 4:
-            return
+            return False
 
         options_dic = {value: {cell for cell in unsolved if value in board[cell]} for value in options}
         for triplet in itertools.combinations(options, 3):
@@ -295,12 +328,50 @@ def _hidden_triplet(board, window):
             return True
         if _find_triplets(CELLS_IN_SQR[i]):
             return True
+    return False
 
+
+def _hidden_quad(board, window):
+    """When three given pencil marks appear in only three cells
+    in any given row, column, or block, all other pencil marks may be removed
+    from those cells.
+    (see https://www.learn-sudoku.com/hidden-triplets.html)
+    """
+
+    def _find_quad(cells):
+        unsolved = [cell for cell in cells if len(board[cell]) > 1]
+        options = set("".join(board[cell] for cell in unsolved))
+        if len(unsolved) < 5 or len(options) < 5:
+            return False
+
+        options_dic = {value: {cell for cell in unsolved if value in board[cell]} for value in options}
+        for quad in itertools.combinations(options, 4):
+            quad_cells = set()
+            for value in quad:
+                quad_cells = quad_cells.union(options_dic[value])
+            if len(quad_cells) == 4:
+                remove_opts = set("".join(board[cell] for cell in quad_cells)) - set(quad)
+                to_remove = [(value, cell) for value in remove_opts for cell in quad_cells]
+                if to_remove:
+                    _remove_options(board, to_remove)
+                    if window:
+                        window.draw_board(board, "hidden_quads", remove=to_remove,
+                                          claims=quad_cells, house=cells)
+                    return True
+        return False
+
+    for i in range(9):
+        if _find_quad(CELLS_IN_ROW[i]):
+            return True
+        if _find_quad(CELLS_IN_COL[i]):
+            return True
+        if _find_quad(CELLS_IN_SQR[i]):
+            return True
     return False
 
 
 def _naked_twins(board, window):
-    """For each 'house' (row, column or square) find twin cells with two options
+    """ For each 'house' (row, column or square) find twin cells with two options
     and remove the values from the list of candidates (options) of the remaining cells
     (see https://www.learn-sudoku.com/naked-pairs.html)
     The method is called only when all unsolved cells have their options set
@@ -336,6 +407,74 @@ def _naked_twins(board, window):
             return True
         if _find_pairs(CELLS_IN_SQR[i]):
             return True
+    return False
+
+
+def _naked_triplets(board, window):
+    """ For each 'house' (row, column or square) find triplets with total of three options
+    and remove the values from the list of candidates (options) of the remaining cells
+    (see https://www.learn-sudoku.com/naked-triplets.html)
+    """
+
+    def _find_triplets(cells):
+        unsolved = {cell for cell in cells if len(board[cell]) > 1}
+        if len(unsolved) > 3:
+            for triplet in itertools.combinations(unsolved, 3):
+                values = list(set("".join(board[cell_id] for cell_id in triplet)))
+                if len(values) == 3:
+                    other_cells = unsolved - set(triplet)
+                    to_remove = [(values[idx], cell) for idx in range(3) for cell in other_cells
+                                 if values[idx] in board[cell]]
+                    if to_remove:
+                        _remove_options(board, to_remove)
+                        if window:
+                            window.draw_board(board, "naked_triplets", remove=to_remove, claims=triplet, house=cells)
+                        return True
+        return False
+
+    for i in range(9):
+        if _find_triplets(CELLS_IN_ROW[i]):
+            return True
+        if _find_triplets(CELLS_IN_COL[i]):
+            return True
+        if _find_triplets(CELLS_IN_SQR[i]):
+            return True
+    # else:
+        # return True if naked_triplets.board_updated else None
+    return False
+
+
+def _naked_quads(board, window):
+    """ For each 'house' (row, column or square) find quads with total of four options
+    and remove the values from the list of candidates (options) of the remaining cells
+    (see https://www.learn-sudoku.com/naked-triplets.html)
+    """
+
+    def _find_quad(cells):
+        unsolved = {cell for cell in cells if len(board[cell]) > 1}
+        if len(unsolved) > 4:
+            for quad in itertools.combinations(unsolved, 4):
+                values = list(set("".join(board[cell_id] for cell_id in quad)))
+                if len(values) == 4:
+                    other_cells = unsolved - set(quad)
+                    to_remove = [(values[idx], cell) for idx in range(4) for cell in other_cells
+                                 if values[idx] in board[cell]]
+                    if to_remove:
+                        _remove_options(board, to_remove)
+                        if window:
+                            window.draw_board(board, "naked_quads", remove=to_remove, claims=quad, house=cells)
+                        return True
+        return False
+
+    for i in range(9):
+        if _find_quad(CELLS_IN_ROW[i]):
+            return True
+        if _find_quad(CELLS_IN_COL[i]):
+            return True
+        if _find_quad(CELLS_IN_SQR[i]):
+            return True
+    # else:
+        # return True if naked_triplets.board_updated else None
     return False
 
 
@@ -459,7 +598,9 @@ def manual_solver(board, window, _):
     while True:
         if is_solved(board):
             return True
-        set_manually(board, window)
+        # print('continue')
+        if set_manually(board, window, options_set):
+            continue
         if _open_singles(board, window, options_set):
             continue
         if _visual_elimination(board, window, options_set):
@@ -479,7 +620,15 @@ def manual_solver(board, window, _):
             continue
         if _y_wings(board, window):
             continue
-        if _hidden_triplet(board, window):
+        hidden_triplet = _hidden_triplet(board, window)
+        if _naked_triplets(board, window):
+            continue
+        elif hidden_triplet:
+            continue
+        hidden_quad = _hidden_quad(board, window)
+        if _naked_quads(board, window):
+            continue
+        elif hidden_quad:
             continue
 
         return True
