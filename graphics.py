@@ -5,6 +5,7 @@ import sys
 import time
 
 from display import screen_messages
+from solver_manual import solver_status as solver_status
 
 # dimensions of sudoku board:
 CELL_SIZE = 66
@@ -26,6 +27,7 @@ BUTTONS_OFFSET = 10
 # RGB colors:
 BLACK = (0, 0, 0)
 BLUE = (51, 102, 153)
+RED = (255, 0, 0)
 CORAL = (255, 127, 80)
 WHITE = (255, 255, 255)
 GREY = (160, 160, 160)
@@ -39,12 +41,14 @@ LIGHTYELLOW = (255, 255, 224)
 GAINSBORO = (230, 230, 230)
 DARKGREY = (150, 150, 150)
 LIGHTGREY = (200, 200, 200)
+LIGHTCORAL = (255, 120, 120)
+
 
 C_OTHER_CELLS = (255, 250, 190)
 Y_WING_ROOT = (255, 153, 51)
 Y_WING_LEAF = (255, 153, 51)  
 
-ANIMATION_STEP_TIME = 0.2
+ANIMATION_STEP_TIME = 0.05
 KEYBOARD_DIGITS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
 
 
@@ -220,7 +224,8 @@ class AppWindow:
         self.clue_house = None
         self.previous_cell_value = None
         self.show_options = set()
-        # self.last_added = []
+        self.show_all_pencil_marks = False
+        self.critical_error = None
 
         for i in range(81):
             if board[i] != '.':
@@ -336,10 +341,30 @@ class AppWindow:
         pygame.quit()
         sys.exit(0)
 
+    def _reset_pressed(self, _, board, *args, **kwargs):
+        """ TODO """
+        solver_status.reset(board, self)
+        self.clues_found.clear()
+        self.show_options.clear()
+        self.critical_error = None
+        self.show_all_pencil_marks = False
+        self.set_btn_status(False, (pygame.K_b, pygame.K_a))
+        self.set_btn_status(True, (pygame.K_c, pygame.K_p, pygame.K_h, pygame.K_m, pygame.K_s))
+        self.set_keyboard_status(True)
+        # self._render_board(self.input_board, "plain_board")
+        # pygame.display.update()
+        self.wait = False
+        self.board_updated = True
+
+    def _pencil_marks(self, *args, **kwargs):
+        """ TODO """
+        self.show_all_pencil_marks = not self.show_all_pencil_marks
+        self._render_board(self.input_board, "plain_board")
+        pygame.display.update()
+
     def _cell_pressed(self, cell_id, *args, **kwargs):
         """ TODO """
         cell_id -= 1000
-        # print(f'\n{cell_id = }')
         if cell_id not in self.clues_defined:
             if self.selected_key:
                 self.clue_entered = (cell_id, self.selected_key)
@@ -426,7 +451,9 @@ class AppWindow:
         for cell_id in range(1000, 1081):
             self.actions[cell_id] = self._cell_pressed
 
-        self.actions[pygame.K_q] = self._quit_pressed       # TODO
+        self.actions[pygame.K_q] = self._quit_pressed       # TODO - add buttons
+        self.actions[pygame.K_r] = self._reset_pressed
+        self.actions[pygame.K_p] = self._pencil_marks
 
     def set_keyboard_status(self, status):
         """ TODO """
@@ -623,10 +650,14 @@ class AppWindow:
         if cell == self.selected_cell or \
                 "new_clue" in kwargs and kwargs["new_clue"] and cell == kwargs["new_clue"]:
             color = LIGHTGREEN
+        if self.critical_error and cell in self.critical_error:
+            color = LIGHTCORAL
         return color
 
     def _show_pencil_marks(self, cell, **kwargs):
         """ TODO """
+        if self.show_all_pencil_marks:
+            return True
         if cell not in self.show_options:
             if "impacted_cells" in kwargs and cell in kwargs["impacted_cells"]:
                 self.show_options.add(cell)
@@ -634,8 +665,6 @@ class AppWindow:
                 self.show_options.add(cell)
             if "y_wing" in kwargs and kwargs["y_wing"] and cell in kwargs["y_wing"][1:]:
                 self.show_options.add(cell)
-            # if cell in self.show_options:
-            #     self.last_added.append(cell)
         return True if cell in self.show_options else False
 
     def _render_board(self, board, solver_tool, **kwargs):
@@ -696,7 +725,7 @@ class AppWindow:
                 if i not in self.clues_defined and i not in self.clues_found:
                     self.clues_found.add(i)
         elif not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
-            return
+            return True
 
         start = time.time()     # TODO
         self._draw_keypad()
@@ -717,11 +746,16 @@ class AppWindow:
         if solver_tool == "end_of_game":
             self.display_info(screen_messages[solver_tool])
 
+        if self.critical_error:
+            self.display_info("DUPA JAŚ !!!")   # TODO - Fix it !!!
+
         self.board_updated = False
         self.wait = True if solver_tool else False
 
         if self.animate:
             self.board_updated = True
+            if self.critical_error:
+                self.animate = False
             self._render_board(board, solver_tool, **kwargs)
             pygame.display.update()
             time.sleep(ANIMATION_STEP_TIME)
@@ -746,14 +780,6 @@ class AppWindow:
 
         if self.board_updated:
             self.input_board = board.copy()
-        # elif solver_tool:
-            # print('Dupa_1: input_board -> board')
-            # (f'{bool(self.board_updated or self.clue_entered) = }')
-            # for cell in self.last_added:
-            #     self.show_options.remove(cell)
-            # for i in range(81):
-                # board[i] = self.input_board[i]
-            # print(f'{board = }')
         self.time_in += time.time() - start
         return self.board_updated
 

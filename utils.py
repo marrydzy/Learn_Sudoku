@@ -51,7 +51,19 @@ class DeadEndException(Exception):
 
 def is_solved(board):
     """ check if the board is solved """
-    return all(board[i] != "." and len(board[i]) == 1 for i in range(81))
+    for row in range(9):
+        clues = set(''.join(board[cell] for cell in CELLS_IN_ROW[row] if is_clue(board[cell])))
+        if clues != SUDOKU_VALUES_SET:
+            return False
+    for col in range(9):
+        clues = set(''.join(board[cell] for cell in CELLS_IN_COL[col] if is_clue(board[cell])))
+        if clues != SUDOKU_VALUES_SET:
+            return False
+    for box in range(9):
+        clues = set(''.join(board[cell] for cell in CELLS_IN_SQR[box] if is_clue(board[cell])))
+        if clues != SUDOKU_VALUES_SET:
+            return False
+    return True
 
 
 def is_clue(value):
@@ -84,7 +96,7 @@ def get_options(board, cell):
 
 def in_options(board, cell_id, value):
     """ check if the value can make correct clue of the cell """
-    options = SUDOKU_VALUES_SET.copy() - set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
+    options = SUDOKU_VALUES_SET.copy() - set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell_id]]))
     return True if value in options else False
 
 
