@@ -351,8 +351,6 @@ class AppWindow:
         self.set_btn_status(False, (pygame.K_b, pygame.K_a))
         self.set_btn_status(True, (pygame.K_c, pygame.K_p, pygame.K_h, pygame.K_m, pygame.K_s))
         self.set_keyboard_status(True)
-        # self._render_board(self.input_board, "plain_board")
-        # pygame.display.update()
         self.wait = False
         self.board_updated = True
 
@@ -712,6 +710,19 @@ class AppWindow:
     def draw_board(self, board, solver_tool=None, **kwargs):
         """ TODO """
 
+        if self.critical_error:
+            self.show_solution_steps = True
+            self.animate = False
+            self.buttons[pygame.K_m].set_pressed(False)
+            self.buttons[pygame.K_s].set_pressed(False)
+            self.set_btn_status(False, (pygame.K_m, pygame.K_s))
+            if "new_clue" in kwargs and len(board[kwargs["new_clue"]]) == 1:
+                self.clues_found.add(kwargs["new_clue"])
+            kwargs["new_clue"] = None
+            self._render_board(board, solver_tool, **kwargs)
+            self.display_info("DUPA JAŚ !!!")  # TODO - Fix it !!!
+            pygame.display.update()
+
         if not solver_tool:
             self.input_board = board.copy()
         elif solver_tool == "end_of_game":
@@ -745,21 +756,18 @@ class AppWindow:
             self.clue_house = None
         if solver_tool == "end_of_game":
             self.display_info(screen_messages[solver_tool])
-
         if self.critical_error:
-            self.display_info("DUPA JAŚ !!!")   # TODO - Fix it !!!
+            self.display_info("DUPA JAŚ !!!")  # TODO - Fix it !!!
 
         self.board_updated = False
         self.wait = True if solver_tool else False
 
         if self.animate:
             self.board_updated = True
-            if self.critical_error:
-                self.animate = False
             self._render_board(board, solver_tool, **kwargs)
             pygame.display.update()
             time.sleep(ANIMATION_STEP_TIME)
-        else:
+        if not self.animate:
             while self.wait:
                 event = None
                 ev = pygame.event.poll()
@@ -772,10 +780,8 @@ class AppWindow:
                         event = self.keypad_keys[ev.key]
                     else:
                         event = ev.key
-
                 if event in self.actions:
                     self.actions[event](event, board, solver_tool, **kwargs)
-
                 pygame.display.update()
 
         if self.board_updated:

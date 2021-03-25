@@ -51,9 +51,11 @@ def _remove_options(board, to_remove, window):
     for option, cell in to_remove:
         board[cell] = board[cell].replace(option, "")
         if not board[cell]:
-            window.critical_error = (cell,)
+            screwed = [cell]
+            # screwed.extend([cell_id for cell_id in ALL_NBRS[cell] if board[cell_id] == option])
+            window.critical_error = tuple(screwed)
             window.show_all_pencil_marks = True
-            print('\nDupa_1')
+            window.set_current_board(board)
         elif len(board[cell]) == 1:
             solver_status.naked_singles.add(cell)
 
@@ -66,10 +68,12 @@ def set_manually(board, window, options_set):
         window.clue_entered = None
 
         if board[cell_id] == value and cell_id in window.clues_found:
-            board[cell_id] = "."
-            board[cell_id] = ''.join(get_options(board, cell_id))
-            if len(board[cell_id]) == 1:
-                solver_status.naked_singles.add(cell_id)
+            if options_set:
+                board[cell_id] = ''.join(get_options(board, cell_id))
+                if len(board[cell_id]) == 1:
+                    solver_status.naked_singles.add(cell_id)
+            else:
+                board[cell_id] = "."
             window.clues_found.remove(cell_id)
             window.set_current_board(board)
         else:
@@ -110,12 +114,11 @@ def _open_singles(board, window, options_set=False):
                     value_cells[board[cell]].append(cell)
                 screwed = [open_cells[0]]
                 for value, cell in value_cells.items():
-                    if len(cell) > 1:
+                    if len(cell) != 1:
                         screwed.extend(cell)
                 window.critical_error = tuple(screwed)
                 window.show_all_pencil_marks = True
-                print(f'\nDupa_2: {missing_value = }')
-                # raise DeadEndException
+                window.set_current_board(board)
             else:
                 board[open_cells[0]] = missing_value.pop()
             if window:
@@ -150,8 +153,9 @@ def _visual_elimination(board, window, options_set=False):
         band = band % 3
         cols_rows = CELLS_IN_COL if vertical else CELLS_IN_ROW
         with_clue = [cell for offset in range(3) for cell in cols_rows[3*band + offset] if board[cell] == value]
-        if len(with_clue) == 2:
+        if len(with_clue) == 2 and CELL_SQR[with_clue[0]] != CELL_SQR[with_clue[1]]:
             squares = [band + 3*offset if vertical else 3*band + offset for offset in range(3)]
+            # print(f'{band = } {vertical = } {squares = } {with_clue = } {CELL_SQR[with_clue[0]] = } {CELL_SQR[with_clue[1]] = }')
             squares.remove(CELL_SQR[with_clue[0]])
             squares.remove(CELL_SQR[with_clue[1]])
             cells = set(CELLS_IN_SQR[squares[0]])
