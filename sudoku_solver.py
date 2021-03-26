@@ -21,6 +21,7 @@ from solver_manual import manual_solver
 import solver_methods
 import display
 import graphics
+import graph_utils
 import sudoku_ocr
 import opts
 import research
@@ -53,7 +54,7 @@ def apply_standard_techniques():
 
     def _erase_pencil_marks():
         if window:
-            window.display_info("Naked Singles")
+            graph_utils.display_info(window, "Naked Singles")
             window.set_current_board(board)
 
         while lone_singles:
@@ -166,7 +167,7 @@ def find_cells_values():
                                          next_cell % 9 + 1, value, board[next_cell], ))
 
         if config["graphical_mode"]:
-            data["graph_display"].display_info("Iterate")
+            graph_utils.display_info(data["graph_display"], "Iterate")
             data["graph_display"].draw_board(board, "iterate", iterate=next_cell)  # TODO - fix it!
 
         if apply_standard_techniques() and find_cells_values():
@@ -202,7 +203,7 @@ def init_board():
     if config['graphical_mode']:
         data["graph_display"] = graphics.AppWindow(board, config["peep"])
         if config['fname']:
-            data["graph_display"].display_info(os.path.abspath(config['fname']))
+            graph_utils.display_info(data["graph_display"], os.path.abspath(config['fname']))
     board_image_stack.clear()
     iter_stack.clear()
 
@@ -252,7 +253,7 @@ def run_solver(progress_bar=None):
     if config['graphical_mode'] and data["graph_display"]:  # TODO - redundatn?
         msg = f'The Sudoku solved in {1000.0 * data["tot_solution_time"]:.2f} ms' if ret_code else \
             "Oops... Failed to find the Sudoku solution"
-        data["graph_display"].display_info(msg)     # TODO
+        graph_utils.display_info(data["graph_display"], msg)     # TODO
     display.sudoku_board(config, data, board)
     # if not ret_code:  TODO
         # print("Dupa!")
