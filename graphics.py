@@ -174,16 +174,15 @@ class AppWindow:
                         }
 
         self.show_solution_steps = True
-        self.inspect = inspect
         self.method = {
-            # "manual_solution": "m",     # TODO - fix it (remove manual solution)
+            # "manual_solution": "m",     # TODO - to be removed
             "conflict": "u",            # TODO manage properly!
             "open_singles": "g",
             "visual_elimination": "v",
             "naked_singles": "n",
             "hidden_singles": "u",
-            "scrub_pencil_marks": "e",  # TODO - fix it!
-            "unique_values": "u",       # TODO - fix it!
+            # "scrub_pencil_marks": "e",  # TODO - to be removed
+            "unique_values": "u",
             "hidden_pairs": "h",
             "naked_twins": "p",
             "omissions": "o",
@@ -197,8 +196,9 @@ class AppWindow:
             "swordfish": "s",
             "iterate": "z",
         }
+        self.peep = inspect if len(inspect) else ''.join(self.method.values())
+        self.inspect = self.peep
         self.time_in = 0
-
         display_width = LEFT_MARGIN + 9 * CELL_SIZE + 2 * KEYPAD_LEFT_MARGIN + \
             3 * KEYPAD_DIGIT_W + 2 * KEYPAD_DIGIT_OFFSET
         display_height = TOP_MARGIN + 9 * CELL_SIZE + BOTTOM_MARGIN
@@ -344,6 +344,7 @@ class AppWindow:
     def _reset_pressed(self, _, board, *args, **kwargs):
         """ TODO """
         solver_status.reset(board, self)
+        self.inspect = self.peep
         self.clues_found.clear()
         self.show_options.clear()
         self.critical_error = None
@@ -481,8 +482,6 @@ class AppWindow:
     def _draw_keypad(self):
         """ TODO """
         pygame.draw.rect(self.screen, self.dark_grey, self.keypad_frame, width=1, border_radius=9)
-        # for i in range(1, 10):
-        #     self._draw_keypad_button(self.keypad[i], i)
 
     def _render_clue(self, clue, pos, color):
         """ Render board clues """
@@ -502,10 +501,7 @@ class AppWindow:
     def _highlight_options(self, cell_id, new_value, pos, **kwargs):
         """ Highlight pencil marks, as applicable """
 
-        # house = kwargs["house"] if "house" in kwargs else None
         remove = kwargs["remove"] if "remove" in kwargs else None
-        # claims = kwargs["claims"] if "claims" in kwargs else None
-        # impacted_cells = kwargs["impacted_cells"] if "impacted_cells" in kwargs else None
         claims = kwargs["claims"] if "claims" in kwargs else None
         iterate = kwargs["iterate"] if "iterate" in kwargs else None
         y_wing = kwargs["y_wing"] if "y_wing" in kwargs else None
@@ -668,7 +664,6 @@ class AppWindow:
     def _render_board(self, board, solver_tool, **kwargs):
         """ render board (TODO) """
         active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
-        # self.last_added.clear()
         for row_id in range(9):
             for col_id in range(9):
                 cell_id = row_id * 9 + col_id
@@ -683,7 +678,6 @@ class AppWindow:
                     elif cell_id in self.clues_found and len(board[cell_id]) == 1:
                         self._render_clue(board[cell_id], cell_pos, BLUE)
                     elif self._show_pencil_marks(cell_id, **kwargs):
-                    # else:
                         if solver_tool != "plain_board":
                             self._highlight_options(cell_id, board[cell_id], cell_pos, **kwargs)
                         self._render_options(cell_id, cell_pos)
@@ -712,10 +706,13 @@ class AppWindow:
 
         if self.critical_error:
             self.show_solution_steps = True
+            self.inspect = ''.join(self.method.values())
             self.animate = False
             self.buttons[pygame.K_m].set_pressed(False)
             self.buttons[pygame.K_s].set_pressed(False)
-            self.set_btn_status(False, (pygame.K_m, pygame.K_s))
+            self.set_btn_status(False, (pygame.K_c, pygame.K_p, pygame.K_a, pygame.K_h, pygame.K_b,
+                                        pygame.K_m, pygame.K_s))
+            self.set_keyboard_status(False)
             if "new_clue" in kwargs and len(board[kwargs["new_clue"]]) == 1:
                 self.clues_found.add(kwargs["new_clue"])
             kwargs["new_clue"] = None
@@ -760,14 +757,15 @@ class AppWindow:
             self.display_info("DUPA JAŚ !!!")  # TODO - Fix it !!!
 
         self.board_updated = False
-        self.wait = True if solver_tool else False
+        self.wait = True if solver_tool else False  # TODO - temporary only!!!
 
         if self.animate:
             self.board_updated = True
             self._render_board(board, solver_tool, **kwargs)
             pygame.display.update()
             time.sleep(ANIMATION_STEP_TIME)
-        if not self.animate:
+        # if not self.animate:
+        else:
             while self.wait:
                 event = None
                 ev = pygame.event.poll()
