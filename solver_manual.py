@@ -8,7 +8,6 @@ from collections import defaultdict
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
 from utils import is_clue, is_solved, get_options
-import pygame
 
 
 class SolverStatus:
@@ -69,7 +68,7 @@ def set_manually(board, window, options_set):
 
         if board[cell_id] == value and cell_id in window.clues_found:
             if options_set:
-                board[cell_id] = ''.join(get_options(board, cell_id))
+                board[cell_id] = ''.join(get_options(cell_id, board, window))
                 if len(board[cell_id]) == 1:
                     solver_status.naked_singles.add(cell_id)
             else:
@@ -83,7 +82,6 @@ def set_manually(board, window, options_set):
                 window.conflicting_cells = conflicting_cells
                 window.clue_house = ALL_NBRS[cell_id]
                 window.previous_cell_value = (cell_id, board[cell_id])
-                window.set_btn_status(True, (pygame.K_b, ))
             else:
                 board[cell_id] = value
                 window.clues_found.add(cell_id)
@@ -104,7 +102,7 @@ def _open_singles(board, window, options_set=False):
     """
 
     def _set_missing_number(house):
-        open_cells = [cell for cell in house if not is_clue(board[cell])]
+        open_cells = [cell for cell in house if not is_clue(cell, board, window)]
         if len(open_cells) == 1:
             missing_value = SUDOKU_VALUES_SET.copy() - set(''.join([board[cell] for cell in house]))
             if len(missing_value) != 1:
@@ -163,7 +161,7 @@ def _visual_elimination(board, window, options_set=False):
                 cells -= set(CELLS_IN_COL[CELL_COL[with_clue[0]]]).union(set(CELLS_IN_COL[CELL_COL[with_clue[1]]]))
             else:
                 cells -= set(CELLS_IN_ROW[CELL_ROW[with_clue[0]]]).union(set(CELLS_IN_ROW[CELL_ROW[with_clue[1]]]))
-            possible_clue_cells = [cell for cell in cells if not is_clue(board[cell])]
+            possible_clue_cells = [cell for cell in cells if not is_clue(cell, board, window)]
             clues = []
             greyed_out = []
             for cell in possible_clue_cells:
@@ -220,7 +218,7 @@ def _naked_singles(board, window, options_set=False):
     else:
         for cell in range(81):
             if board[cell] == ".":
-                cell_opts = get_options(board, cell)
+                cell_opts = get_options(cell, board, window)
                 if len(cell_opts) == 1:
                     board[cell] = cell_opts.pop()
                     if window and window.draw_board(board, "naked_singles", new_clue=cell):
@@ -245,7 +243,7 @@ def _hidden_singles(board, window, options_set=False):
             show_options = window.show_options if window else list()
             for cell in house:
                 if board[cell] == ".":
-                    cell_opts = get_options(board, cell)
+                    cell_opts = get_options(cell, board, window)
                     if option in cell_opts:
                         in_cells.append(cell)
                     else:
@@ -649,21 +647,25 @@ def _y_wings(board, window):
     return False
 
 
-def _init_options(board, window):
+def init_options(board, window):
     """ Initialize options of unsolved cells """
-    for cell in range(81):
-        if board[cell] == ".":
-            nbr_clues = [board[nbr_cell] for nbr_cell in ALL_NBRS[cell] if is_clue(board[nbr_cell])]
-            board[cell] = "".join(value for value in SUDOKU_VALUES_LIST if value not in nbr_clues)
-    if window:
-        window.set_current_board(board)
+    if not solver_status.options_set:
+        for cell in range(81):
+            if board[cell] == ".":
+                nbr_clues = [board[nbr_cell] for nbr_cell in ALL_NBRS[cell] if is_clue(nbr_cell, board, window)]
+                board[cell] = "".join(value for value in SUDOKU_VALUES_LIST if value not in nbr_clues)
+                if len(board[cell]) == 1:
+                    solver_status.naked_singles.add(cell)
+        if window:
+            window.set_current_board(board)
+        solver_status.options_set = True
 
 
 def manual_solver(board, window, _):
     """ TODO - manual solver """
 
     while True:
-        if is_solved(board):
+        if is_solved(board, window):
             return True
         solver_status.capture(window)
         if set_manually(board, window, solver_status.options_set):
@@ -676,9 +678,8 @@ def manual_solver(board, window, _):
             continue
         if _hidden_singles(board, window, solver_status.options_set):
             continue
-        if not solver_status.options_set:
-            _init_options(board, window)
-            solver_status.options_set = True
+
+        init_options(board, window)
         if _hidden_pair(board, window):
             continue
         if _naked_twins(board, window):

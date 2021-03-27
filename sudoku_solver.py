@@ -75,11 +75,11 @@ def apply_standard_techniques():
                                   house=solver_methods.ALL_NBRS[cell])
         return True
 
-    if is_solved(board):
+    window = data["graph_display"] if config['graphical_mode'] else None
+    if is_solved(board, window):
         return True
 
     report_stats = bool(config["method_stats"] and data["current_loop"] == 0)
-    window = data["graph_display"] if config['graphical_mode'] else None
     board_changed = True
 
     while board_changed:
@@ -234,7 +234,7 @@ def run_solver(progress_bar=None):
     # init_cells_options()
 
     ret_code = apply_standard_techniques()
-    if ret_code and not is_solved(board):
+    if ret_code and not is_solved(board, data["graph_display"] if config['graphical_mode'] else None):
         ret_code = find_cells_values()
     data["resolution_time"] = time.time() - start_time
 

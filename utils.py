@@ -49,26 +49,31 @@ class DeadEndException(Exception):
     pass
 
 
-def is_solved(board):
+def is_solved(board, window):
     """ check if the board is solved """
     for row in range(9):
-        clues = set(''.join(board[cell] for cell in CELLS_IN_ROW[row] if is_clue(board[cell])))
+        clues = set(''.join(board[cell] for cell in CELLS_IN_ROW[row] if is_clue(cell, board, window)))
         if clues != SUDOKU_VALUES_SET:
             return False
     for col in range(9):
-        clues = set(''.join(board[cell] for cell in CELLS_IN_COL[col] if is_clue(board[cell])))
+        clues = set(''.join(board[cell] for cell in CELLS_IN_COL[col] if is_clue(cell, board, window)))
         if clues != SUDOKU_VALUES_SET:
             return False
     for box in range(9):
-        clues = set(''.join(board[cell] for cell in CELLS_IN_SQR[box] if is_clue(board[cell])))
+        clues = set(''.join(board[cell] for cell in CELLS_IN_SQR[box] if is_clue(cell, board, window)))
         if clues != SUDOKU_VALUES_SET:
             return False
     return True
 
 
-def is_clue(value):
+def is_clue(cell_id, board, window):
     """ check if the cell has clue (is solved) """
-    return False if value == "." or len(value) != 1 else True
+    if board[cell_id] == "." or len(board[cell_id]) != 1:
+        return False
+    if window:
+        if not (cell_id in window.clues_defined or cell_id in window.clues_found):
+            return False
+    return True
 
 
 def is_single(board, house, value):
@@ -81,14 +86,14 @@ def is_single(board, house, value):
     return None
 
 
-def are_cells_set(board, cells):
-    """ check if all cells are set """
-    return all([True if is_clue(board[cell_id]) else False for cell_id in cells])
+# def are_cells_set(board, cells):
+#     """ check if all cells are set """
+#     return all([True if is_clue(cell_id, board, window) else False for cell_id in cells])
 
 
-def get_options(board, cell):
+def get_options(cell, board, window):
     """ returns set of options of the cell """
-    if is_clue(board[cell]):
+    if is_clue(cell, board, window):
         return set(board[cell])
     else:
         return SUDOKU_VALUES_SET.copy() - set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
