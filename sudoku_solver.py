@@ -86,7 +86,7 @@ def apply_standard_techniques():
         if lone_singles:
             if not _erase_pencil_marks():
                 return False
-        if is_solved(board):
+        if is_solved(board, window):
             return True
 
         for method in methods[1:]:      # TODO - manual solution

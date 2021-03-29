@@ -6,6 +6,8 @@ import time
 import graph_utils
 from display import screen_messages
 
+from solver_manual import solver_status
+
 # RGB colors:
 from graph_utils import BLACK
 from graph_utils import BLUE
@@ -143,7 +145,7 @@ class AppWindow:
         graph_utils.draw_board_features(self, **kwargs)
         for button in self.buttons.values():
             button.draw(self.screen)
-        graph_utils.display_info(self, screen_messages[solver_tool])
+        # graph_utils.display_info(self, screen_messages[solver_tool])
         pygame.display.update()
 
     def draw_board(self, board, solver_tool=None, **kwargs):
@@ -174,13 +176,10 @@ class AppWindow:
             graph_utils.display_info(self, screen_messages["conflicting_values"])
             self.conflicting_cells = None
             self.clue_house = None
-
-        """
-        if solver_tool == "end_of_game":
+        elif solver_tool == "end_of_game":
             graph_utils.display_info(self, screen_messages[solver_tool])
-        if self.critical_error:
+        elif self.critical_error:
             graph_utils.display_info(self, "DUPA JAŚ !!!")  # TODO - Fix it !!!
-        """
 
         self.board_updated = False
         self.wait = True if solver_tool else False  # TODO - temporary only!!!

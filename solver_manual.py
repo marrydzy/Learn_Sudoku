@@ -153,7 +153,6 @@ def _visual_elimination(board, window, options_set=False):
         with_clue = [cell for offset in range(3) for cell in cols_rows[3*band + offset] if board[cell] == value]
         if len(with_clue) == 2 and CELL_SQR[with_clue[0]] != CELL_SQR[with_clue[1]]:
             squares = [band + 3*offset if vertical else 3*band + offset for offset in range(3)]
-            # print(f'{band = } {vertical = } {squares = } {with_clue = } {CELL_SQR[with_clue[0]] = } {CELL_SQR[with_clue[1]] = }')
             squares.remove(CELL_SQR[with_clue[0]])
             squares.remove(CELL_SQR[with_clue[1]])
             cells = set(CELLS_IN_SQR[squares[0]])
@@ -182,7 +181,7 @@ def _visual_elimination(board, window, options_set=False):
                                          greyed_out=greyed_out):
                         window.clues_found.add(clues[0])
                     else:
-                        solver_status.restore(board, window)
+                        solver_status.restore(board, window) # TODO: tutaj jest problem!!!
                 return True
         return False
 
@@ -651,13 +650,15 @@ def init_options(board, window):
     """ Initialize options of unsolved cells """
     if not solver_status.options_set:
         for cell in range(81):
-            if board[cell] == ".":
+            # if board[cell] == ".":
+            if not is_clue(cell, board, window):
                 nbr_clues = [board[nbr_cell] for nbr_cell in ALL_NBRS[cell] if is_clue(nbr_cell, board, window)]
                 board[cell] = "".join(value for value in SUDOKU_VALUES_LIST if value not in nbr_clues)
                 if len(board[cell]) == 1:
                     solver_status.naked_singles.add(cell)
         if window:
             window.set_current_board(board)
+            solver_status.capture(window)
         solver_status.options_set = True
 
 
