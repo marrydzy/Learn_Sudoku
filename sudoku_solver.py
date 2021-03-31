@@ -227,20 +227,21 @@ def run_solver(progress_bar=None):
         if data["current_loop"] == config["repeat"] - 1:
             progress_bar.finish()
 
-    # start_time = time.time()
-    # print('\nDupa')
     # TODO - adding manual solution
-    methods[0](board, data["graph_display"], None)
-    # init_cells_options()
+    if data["graph_display"]:
+        data["graph_display"].solver_loop = data["current_loop"]
+        if data["graph_display"].solved_board is None and "solved_board" in data:
+            data["graph_display"].solved_board = data["solved_board"]
 
-    ret_code = apply_standard_techniques()
-    if ret_code and not is_solved(board, data["graph_display"] if config['graphical_mode'] else None):
-        ret_code = find_cells_values()
+    ret_code = methods[0](board, data["graph_display"], None)
+
+    if not ret_code:
+        ret_code = apply_standard_techniques()
+        if ret_code and not is_solved(board, data["graph_display"] if config['graphical_mode'] else None):
+            ret_code = find_cells_values()
     data["resolution_time"] = time.time() - start_time
 
-    # print(f'initial resolution time: {data["resolution_time"]}')
     if data["graph_display"]:   # TODO
-        # print(f'in display: {data["graph_display"].time_in}')
         data["resolution_time"] -= data["graph_display"].time_in
 
     if data["current_loop"] == 0:
@@ -255,9 +256,6 @@ def run_solver(progress_bar=None):
             "Oops... Failed to find the Sudoku solution"
         graph_utils.display_info(data["graph_display"], msg)     # TODO
     display.sudoku_board(config, data, board)
-    # if not ret_code:  TODO
-        # print("Dupa!")
-        # exit()  # TO-DO
     return ret_code
 
 
@@ -287,6 +285,7 @@ def _solve_sudoku_puzzle():
     if config["repeat"] == 1:
         for data["current_loop"] in range(loop_start, 1):
             ret = run_solver()
+            data["graph_display"].solved_board = 666
             if data["current_loop"] == -1:
                 data["solved_board"] = board.copy()
         display.results(config, data, ret)

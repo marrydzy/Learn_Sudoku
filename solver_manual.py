@@ -76,12 +76,12 @@ def set_manually(board, window, options_set):
             window.clues_found.remove(cell_id)
             window.set_current_board(board)
         else:
-            conflicting_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
-            if conflicting_cells:
-                conflicting_cells.append(cell_id)
-                window.conflicting_cells = conflicting_cells
+            conflicted_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
+            if conflicted_cells:
+                conflicted_cells.append(cell_id)
+                window.conflicted_cells = conflicted_cells
                 window.clue_house = ALL_NBRS[cell_id]
-                window.previous_cell_value = (cell_id, board[cell_id])
+                window.impacting_cell = (cell_id, board[cell_id])
             else:
                 board[cell_id] = value
                 window.clues_found.add(cell_id)
@@ -650,7 +650,6 @@ def init_options(board, window):
     """ Initialize options of unsolved cells """
     if not solver_status.options_set:
         for cell in range(81):
-            # if board[cell] == ".":
             if not is_clue(cell, board, window):
                 nbr_clues = [board[nbr_cell] for nbr_cell in ALL_NBRS[cell] if is_clue(nbr_cell, board, window)]
                 board[cell] = "".join(value for value in SUDOKU_VALUES_LIST if value not in nbr_clues)
@@ -665,9 +664,16 @@ def init_options(board, window):
 def manual_solver(board, window, _):
     """ TODO - manual solver """
 
+    solver_status.options_set = False
+    solver_status.naked_singles.clear()
+    solver_status.singles.clear()
+    solver_status.clues.clear()
+    solver_status.options.clear()
+
     while True:
         if is_solved(board, window):
             return True
+
         solver_status.capture(window)
         if set_manually(board, window, solver_status.options_set):
             continue
@@ -700,4 +706,4 @@ def manual_solver(board, window, _):
         elif hidden_quad:
             continue
 
-        return True
+        return False

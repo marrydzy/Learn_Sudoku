@@ -32,6 +32,7 @@ screen_messages = {
     "observe": "Dupa Jaś",
     "end_of_game": "Sudoku solved!",
     "conflicting_values": "Incorrect value entered!",
+    "critical_error": "DUPA JAŚ !!!",
 }
 
 DEBUG = False
