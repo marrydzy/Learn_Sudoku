@@ -40,6 +40,7 @@ class SolverStatus:
         for cell_id in range(81):
             if cell_id not in window.clues_defined:
                 board[cell_id] = "."
+        window.set_current_board(board)
 
 
 solver_status = SolverStatus()
@@ -672,7 +673,8 @@ def manual_solver(board, window, _):
 
     while True:
         if is_solved(board, window):
-            return True
+            if window and window.draw_board(board, solver_tool="end_of_game"):
+                return True
 
         solver_status.capture(window)
         if set_manually(board, window, solver_status.options_set):
@@ -681,11 +683,11 @@ def manual_solver(board, window, _):
             continue
         if _visual_elimination(board, window, solver_status.options_set):
             continue
+
         if _naked_singles(board, window, solver_status.options_set):
             continue
         if _hidden_singles(board, window, solver_status.options_set):
             continue
-
         init_options(board, window)
         if _hidden_pair(board, window):
             continue

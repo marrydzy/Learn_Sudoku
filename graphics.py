@@ -35,12 +35,12 @@ class AppWindow:
         self.font_options_size = 15
         self.font_button_size = 20
         self.font_text_size = 22
-        self.font_keypad_size = 38
+        self.font_keypad_size = 40
         self.font_clues = pygame.font.SysFont(self.font_type, self.font_clues_size)
         self.font_options = pygame.font.SysFont(self.font_type, self.font_options_size, italic=True)
         self.font_text = pygame.font.SysFont(self.font_type, self.font_text_size, italic=True)
         self.font_buttons = pygame.font.SysFont(self.font_type, self.font_button_size, bold=True)
-        self.font_keypad = pygame.font.SysFont(self.font_type, self.font_keypad_size, bold=True)
+        self.font_keypad = pygame.font.SysFont(self.font_type, self.font_keypad_size, bold=False)
         self.clue_shift_x = (CELL_SIZE - self.font_clues.size('1')[0]) // 2
         self.clue_shift_y = (CELL_SIZE - self.font_clues.get_ascent()) // 2 - 2
         self.option_shift_x = (CELL_SIZE // 3 - self.font_options.size('1')[0]) // 2
@@ -74,6 +74,7 @@ class AppWindow:
         self.show_all_pencil_marks = False
         self.critical_error = None
         self.wait = True
+        
         self.time_in = 0
         self.solver_loop = None
         self.solved_board = None
@@ -103,6 +104,7 @@ class AppWindow:
         self.input_board = board.copy()
         self.animate = False
         graph_utils.set_btn_status(self, False, (pygame.K_m, pygame.K_s))
+        graph_utils.set_btn_status(self, True, (pygame.K_r, ))
         graph_utils.set_btn_state(self, False, (pygame.K_m, pygame.K_s))
 
     def set_current_board(self, board):
@@ -155,7 +157,6 @@ class AppWindow:
                               TOP_MARGIN + 9 * CELL_SIZE), line_thickness)
         graph_utils.draw_board_features(self, **kwargs)
 
-        # pygame.draw.rect(self.screen, LIGHTGREY, self.keypad_frame, border_radius=9)
         pygame.draw.rect(self.screen, GREY, self.keypad_frame, width=2, border_radius=9)
         for button in self.buttons.values():
             button.draw(self.screen)
@@ -165,7 +166,8 @@ class AppWindow:
         """ TODO """
 
         if self.solver_loop == -1:
-            self.show_solution_steps = False
+            # self.show_solution_steps = False
+            return True
 
         if not solver_tool:
             self.input_board = board.copy()
@@ -223,7 +225,6 @@ class AppWindow:
                 if event in self.actions:
                     self.actions[event](self, event, board, solver_tool, **kwargs)
                 pygame.display.update()
-
         if self.board_updated:
             self.input_board = board.copy()
         self.time_in += time.time() - start
