@@ -16,27 +16,30 @@ class SolverStatus:
     def __init__(self):
         self.options_set = False
         self.naked_singles = set()
-        self.singles = set()
-        self.clues = []
-        self.options = set()
+        self.naked_singles_bsln = set()
+        self.clues_found_bsln = []
+        self.show_options_bsln = set()
 
     def capture(self, window):
         if window:
-            self.singles = self.naked_singles.copy()
-            self.clues = window.clues_found.copy()
-            self.options = window.show_options.copy()
+            self.naked_singles_bsln = self.naked_singles.copy()
+            self.clues_found_bsln = window.clues_found.copy()
+            self.show_options_bsln = window.show_options.copy()
 
     def restore(self, board, window):
         if window:
-            self.naked_singles = self.singles
-            window.clues_found = self.clues
-            window.show_options = self.options
+            self.naked_singles = self.naked_singles_bsln.copy()
+            window.clues_found = self.clues_found_bsln.copy()
+            window.show_options = self.show_options_bsln.copy()
             for i in range(81):
                 board[i] = window.input_board[i]
 
     def reset(self, board, window):
         self.options_set = False
         self.naked_singles.clear()
+        self.naked_singles_bsln.clear()
+        self.clues_found_bsln.clear()
+        self.show_options_bsln.clear()
         for cell_id in range(81):
             if cell_id not in window.clues_defined:
                 board[cell_id] = "."
@@ -665,12 +668,7 @@ def init_options(board, window):
 def manual_solver(board, window, _):
     """ TODO - manual solver """
 
-    solver_status.options_set = False
-    solver_status.naked_singles.clear()
-    solver_status.singles.clear()
-    solver_status.clues.clear()
-    solver_status.options.clear()
-
+    solver_status.reset(board, window)
     while True:
         if is_solved(board, window):
             if window and window.draw_board(board, solver_tool="end_of_game"):
