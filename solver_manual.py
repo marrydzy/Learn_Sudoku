@@ -40,10 +40,11 @@ class SolverStatus:
         self.naked_singles_bsln.clear()
         self.clues_found_bsln.clear()
         self.show_options_bsln.clear()
-        for cell_id in range(81):
-            if cell_id not in window.clues_defined:
-                board[cell_id] = "."
-        window.set_current_board(board)
+        if window:
+            for cell_id in range(81):
+                if cell_id not in window.clues_defined:
+                    board[cell_id] = "."
+            window.set_current_board(board)
 
 
 solver_status = SolverStatus()

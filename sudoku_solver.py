@@ -285,7 +285,7 @@ def _solve_sudoku_puzzle():
     if config["repeat"] == 1:
         for data["current_loop"] in range(loop_start, 1):
             ret = run_solver()
-            data["graph_display"].solved_board = 666
+            # data["graph_display"].solved_board = 666
             if data["current_loop"] == -1:
                 data["solved_board"] = board.copy()
         display.results(config, data, ret)
