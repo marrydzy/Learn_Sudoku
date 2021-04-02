@@ -10,7 +10,6 @@ from display import screen_messages
 from graph_utils import BLACK
 from graph_utils import BLUE
 from graph_utils import GREY
-from graph_utils import LIGHTGREY
 from graph_utils import GAINSBORO
 
 from graph_utils import ANIMATION_STEP_TIME
@@ -92,6 +91,7 @@ class AppWindow:
         self.inspect = ''.join(self.method.values())
         self.animate = False
         graph_utils.set_btn_status(self, False)
+        graph_utils.set_btn_status(self, True, (pygame.K_q, pygame.K_r))
         graph_utils.set_keyboard_status(self, False)
         if "new_clue" in kwargs and len(board[kwargs["new_clue"]]) == 1:
             self.clues_found.add(kwargs["new_clue"])

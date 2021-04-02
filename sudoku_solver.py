@@ -98,7 +98,6 @@ def apply_standard_techniques():
                 break
             else:
                 board_changed = False
-
     return True
 
 
@@ -141,6 +140,7 @@ def next_cell_to_resolve():
 def find_cells_values():
     """ resolve the sudoku puzzle by recursively finding values of empty cells """
     next_cell, clue_iterator = next_cell_to_resolve()
+    print('next_cell_to_resolve')
     if next_cell is None:
         return True
 

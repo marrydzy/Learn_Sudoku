@@ -64,22 +64,47 @@ def _remove_options(board, to_remove, window):
             solver_status.naked_singles.add(cell)
 
 
+def _clicked_the_same_clue_found(board, window, options_set):
+    """ Selected keyboard key the same as clicked cell value """
+    cell_id, value, as_clue = window.clue_entered
+    if as_clue:
+        if options_set:
+            board[cell_id] = ''.join(get_options(cell_id, board, window))
+            if len(board[cell_id]) == 1:
+                solver_status.naked_singles.add(cell_id)
+        else:
+            board[cell_id] = "."
+    else:
+        window.show_options.add(cell_id)
+    window.clues_found.remove(cell_id)
+    window.set_current_board(board)
+
+
+def _clicked_other_clue_found(board, window, options_set):
+    """ Selected keyboard key other than clicked cell value """
+    cell_id, value, as_clue = window.clue_entered
+    if cell_id in solver_status.naked_singles:
+        solver_status.naked_singles.remove(cell_id)
+    board[cell_id] = value
+    if not as_clue:
+        window.clues_found.remove(cell_id)
+        solver_status.naked_singles.add(cell_id)
+        window.show_options.add(cell_id)
+    if options_set:
+        for cell in ALL_NBRS[cell_id]:
+            if not is_clue(cell, board, window):
+                board[cell] = ''.join(get_options(cell, board, window))
+                if len(board[cell]) == 1:
+                    solver_status.naked_singles.add(cell)
+    window.set_current_board(board)
+
+
 def set_manually(board, window, options_set):
     """ TODO """
     if window and window.clue_entered:
-        cell_id = window.clue_entered[0]
-        value = window.clue_entered[1]
-        window.clue_entered = None
-
+        cell_id, value, as_clue = window.clue_entered
         if board[cell_id] == value and cell_id in window.clues_found:
-            if options_set:
-                board[cell_id] = ''.join(get_options(cell_id, board, window))
-                if len(board[cell_id]) == 1:
-                    solver_status.naked_singles.add(cell_id)
-            else:
-                board[cell_id] = "."
-            window.clues_found.remove(cell_id)
-            window.set_current_board(board)
+            _clicked_the_same_clue_found(board, window, options_set)
         else:
             conflicted_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
             if conflicted_cells:
@@ -88,14 +113,18 @@ def set_manually(board, window, options_set):
                 window.clue_house = ALL_NBRS[cell_id]
                 window.impacting_cell = (cell_id, board[cell_id])
             else:
-                board[cell_id] = value
-                window.clues_found.add(cell_id)
-                if cell_id in solver_status.naked_singles:
-                    solver_status.naked_singles.remove(cell_id)
-                if options_set:
-                    to_remove = [(value, cell) for cell in ALL_NBRS[cell_id] if value in board[cell]]
-                    _remove_options(board, to_remove, window)
-                window.set_current_board(board)
+                if board[cell_id] != value and cell_id in window.clues_found:
+                    _clicked_other_clue_found(board, window, options_set)
+                else:
+                    board[cell_id] = value
+                    window.clues_found.add(cell_id)
+                    if cell_id in solver_status.naked_singles:
+                        solver_status.naked_singles.remove(cell_id)
+                    if options_set:
+                        to_remove = [(value, cell) for cell in ALL_NBRS[cell_id] if value in board[cell]]
+                        _remove_options(board, to_remove, window)
+                    window.set_current_board(board)
+        window.clue_entered = None
         return True
     return False
 
@@ -696,15 +725,15 @@ def manual_solver(board, window, _):
             continue
         if _y_wings(board, window):
             continue
-        hidden_triplet = _hidden_triplet(board, window)
+        if _hidden_triplet(board, window):
+            continue
         if _naked_triplets(board, window):
             continue
-        elif hidden_triplet:
+        if _hidden_quad(board, window):
             continue
-        hidden_quad = _hidden_quad(board, window)
         if _naked_quads(board, window):
             continue
-        elif hidden_quad:
-            continue
 
+        if not is_solved(board, window):        # TODO: for debugging only!
+            print('\nDupa')
         return False

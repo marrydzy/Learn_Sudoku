@@ -86,17 +86,10 @@ def is_single(board, house, value):
     return None
 
 
-# def are_cells_set(board, cells):
-#     """ check if all cells are set """
-#     return all([True if is_clue(cell_id, board, window) else False for cell_id in cells])
-
-
 def get_options(cell, board, window):
     """ returns set of options of the cell """
-    if is_clue(cell, board, window):
-        return set(board[cell])
-    else:
-        return SUDOKU_VALUES_SET.copy() - set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell]]))
+    return SUDOKU_VALUES_SET.copy() - set(''.join(
+        [board[cell_id] for cell_id in ALL_NBRS[cell] if is_clue(cell_id, board, window)]))
 
 
 def in_options(board, cell_id, value):

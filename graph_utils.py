@@ -320,16 +320,19 @@ def clue_btn_clicked(window, *args, **kwargs):
         window.buttons[pygame.K_p].draw(window.screen)
 
 
-def pencil_mark_btn_clicked(window, *args, **kwargs):
+def pencil_mark_btn_clicked(window, _, board, *args, **kwargs):
     """ action on pressing 'Pencil mark' button """
     if window.buttons[pygame.K_p].is_active() and not window.buttons[pygame.K_p].is_pressed():
         window.buttons[pygame.K_p].set_pressed(True)
         window.buttons[pygame.K_p].draw(window.screen)
         window.buttons[pygame.K_c].set_pressed(False)
         window.buttons[pygame.K_c].draw(window.screen)
+        init_options(board, window)
+        window.wait = False
+        window.board_updated = False
 
 
-def hint_btn_clicked(window, btn_id, board, solver_tool, **kwargs):
+def hint_btn_clicked(window, _, board, solver_tool, **kwargs):
     """ action on pressing 'Hint' button """
     if window.buttons[pygame.K_h].is_active():
         window.buttons[pygame.K_h].set_pressed(True)
@@ -411,12 +414,12 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
 def toggle_pencil_marks_btn_clicked(window, _, board, *args, **kwargs):
     """ action on pressing 'Toggle pencil marks' button - TODO: add the button """
     if not window.buttons[pygame.K_h].is_pressed():
-        init_options(board, window)
+        # init_options(board, window)
         window.show_all_pencil_marks = not window.show_all_pencil_marks
         window.render_board(window.input_board, "plain_board")
         pygame.display.update()
         window.wait = False
-        window.board_updated = True
+        window.board_updated = False
 
 
 def quit_btn_clicked(window, *args, **kwargs):
@@ -451,9 +454,10 @@ def cell_clicked(window, cell_id, *args, **kwargs):
     cell_id -= CELL_ID_OFFSET
     if cell_id not in window.clues_defined:
         if window.selected_key:
-            window.clue_entered = (cell_id, window.selected_key)
+            window.clue_entered = (cell_id, window.selected_key,
+                                   True if window.buttons[pygame.K_c].is_pressed() else False)
             if window.solved_board[cell_id] == window.selected_key:
-                window.appraisal = 'You are a genius !!!'
+                window.appraisal = 'You are a genius !!!'           # TODO !!!
             else:
                 window.appraisal = 'You are an idiot !!!'
             window.wait = False
@@ -533,7 +537,7 @@ def set_buttons(window):
     window.buttons[pygame.K_r] = Button(pygame.K_q, btn_rect, "Reset", window.font_buttons)
     window.actions[pygame.K_r] = reset_btn_clicked
 
-    window.actions[pygame.K_p] = toggle_pencil_marks_btn_clicked  # TODO - add buttons
+    window.actions[pygame.K_o] = toggle_pencil_marks_btn_clicked  # TODO - add buttons
 
 
 def window_size():

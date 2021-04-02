@@ -58,6 +58,7 @@ def unique_values(board, window, lone_singles):
                     lone_singles.append(cell)
                     unsolved_cells.remove(cell)
                     unique_values.clues += 1
+                    # print(f'{cell = } {option = }')
                     found_clues = True
                     break
 
@@ -68,7 +69,7 @@ def unique_values(board, window, lone_singles):
         return
 
     if window:
-        window.display_info("Hidden Singles")
+#         window.display_info("Hidden Singles")
         window.set_current_board(board)
     unique_values.board_updated = False
     for i in range(9):
@@ -76,7 +77,11 @@ def unique_values(board, window, lone_singles):
         _solve_lone_singles(CELLS_IN_COL[i])
         _solve_lone_singles(CELLS_IN_SQR[i])
 
+    if unique_values.board_updated:
+        print('unique_values')
+        # window.draw_board(board, "plain_board")
     return True if unique_values.board_updated else None
+
 
 
 @get_stats
@@ -131,13 +136,15 @@ def hidden_pairs(board, window, _):
                         window.draw_board(board, "hidden_pairs", remove=to_remove, subset=pairs, house=cells)
 
     if window:
-        window.display_info("Hidden Pairs")
+        # ("Hidden Pairs")
         window.set_current_board(board)
     hidden_pairs.board_updated = False
     for i in range(9):
         _find_pairs(CELLS_IN_ROW[i])
         _find_pairs(CELLS_IN_COL[i])
         _find_pairs(CELLS_IN_SQR[i])
+    if hidden_pairs.board_updated:
+        print('hidden pairs')
     return True if hidden_pairs.board_updated else None
 
 
@@ -191,7 +198,7 @@ def naked_twins(board, window, lone_singles):
         return True
 
     if window:
-        window.display_info("Naked Pairs")
+        # window.display_info("Naked Pairs")
         window.set_current_board(board)
     naked_twins.board_updated = False
     for i in range(9):
@@ -202,6 +209,8 @@ def naked_twins(board, window, lone_singles):
         if not _find_pairs(CELLS_IN_SQR[i]):
             break
     else:
+        if naked_twins.board_updated:
+            print('naked twins')
         return True if naked_twins.board_updated else None
     return False
 
@@ -297,7 +306,7 @@ def omissions(board, window, lone_singles):
         return True
 
     if window:
-        window.display_info("Omission")
+        # window.display_info("Omission")
         window.set_current_board(board)
     omissions.board_updated = False
     for i in range(9):
@@ -308,6 +317,8 @@ def omissions(board, window, lone_singles):
         if not _in_block(CELLS_IN_SQR[i]):
             break
     else:
+        if omissions.board_updated:
+            print('omissions')
         return True if omissions.board_updated else None
     return False
 
@@ -351,7 +362,7 @@ def naked_triplets(board, window, lone_singles):
         return True
 
     if window:
-        window.display_info("'Naked Triplets' technique")
+        # window.display_info("'Naked Triplets' technique")
         window.set_current_board(board)
     naked_triplets.board_updated = False
     for i in range(9):
@@ -362,6 +373,8 @@ def naked_triplets(board, window, lone_singles):
         if not _find_triplets(CELLS_IN_SQR[i]):
             break
     else:
+        if naked_triplets.board_updated:
+            print('naked triplets')
         return True if naked_triplets.board_updated else None
 
     return False
@@ -413,13 +426,15 @@ def hidden_triplets(board, window, _):
                                           subset=triplet_cells, house=cells)
 
     if window:
-        window.display_info("Hidden Triplets")
+        # window.display_info("Hidden Triplets")
         window.set_current_board(board)
     hidden_triplets.board_updated = False
     for i in range(9):
         _find_triplets(CELLS_IN_ROW[i])
         _find_triplets(CELLS_IN_COL[i])
         _find_triplets(CELLS_IN_SQR[i])
+    if hidden_triplets.board_updated:
+        print('hidden triplets')
     return True if hidden_triplets.board_updated else None, 0   # TODE
 
 
@@ -467,13 +482,15 @@ def hidden_quads(board, window, _):
                                           subset=quad_cells, house=cells)
 
     if window:
-        window.display_info("Hidden Quads")
+        # window.display_info("Hidden Quads")
         window.set_current_board(board)
     hidden_quads.board_updated = False
     for i in range(9):
         _find_quads(CELLS_IN_ROW[i])
         _find_quads(CELLS_IN_COL[i])
         _find_quads(CELLS_IN_SQR[i])
+    if hidden_quads.board_updated:
+        print('hidden quads')
     return True if hidden_quads.board_updated else None
 
 
@@ -517,7 +534,7 @@ def naked_quads(board, window, lone_singles):
     # naked_quads.solved = 0
     # naked_quads.removed = 0
     if window:
-        window.display_info("Naked Quads")
+        # window.display_info("Naked Quads")
         window.set_current_board(board)
     naked_quads.board_updated = False
     for i in range(9):
@@ -573,7 +590,7 @@ def x_wings(board, window, lone_singles):
     crosses = {}
     to_remove = []
     if window:
-        window.display_info("X-Wings")
+        # window.display_info("X-Wings")
         window.set_current_board(board)
     x_wings.board_updated = False
 
@@ -625,6 +642,8 @@ def x_wings(board, window, lone_singles):
                         other_cells.extend([CELLS_IN_ROW[rows[1]][i] for i in range(9) if i not in cols])
                         window.draw_board(board, "x_wings", remove=to_remove, singles=lone_singles,
                                           x_wing=corners, subset=[value], other_cells=other_cells)
+    if x_wings.board_updated:
+        print('x_wings')
     return True if x_wings.board_updated else None
 
 
@@ -681,13 +700,15 @@ def y_wings(board, window, lone_singles):
         return True
 
     if window:
-        window.display_info("Y-Wing")
+        # window.display_info("Y-Wing")
         window.set_current_board(board)
     y_wings.board_updated = False
     for cell in range(81):
         if len(board[cell]) == 2:
             if not _reduce_xs(_find_wings(cell)):
                 return False
+    if y_wings.board_updated:
+        print('y_wings')
     return True if y_wings.board_updated else None
 
 
@@ -731,7 +752,7 @@ def unique_rectangles(board, window, lone_singles):
         return True
 
     if window:
-        window.display_info("Unique Rectangle")
+        # window.display_info("Unique Rectangle")
         window.set_current_board(board)
     unique_rectangles.board_updated = False
     pairs = {}
@@ -758,6 +779,8 @@ def unique_rectangles(board, window, lone_singles):
                     if not _reduce_rectangle(pair, rect):
                         return False
 
+    if unique_rectangles.board_updated:
+        print('unique rectangles')
     return True if unique_rectangles.board_updated else None
 
 
@@ -871,11 +894,13 @@ def swordfish(board, window, lone_singles):
 
     to_remove = []
     if window:
-        window.display_info("Swordfish")
+        # window.display_info("Swordfish")
         window.set_current_board(board)
     swordfish.board_updated = False
     if not _find_swordfish("by row"):
         return False
     if not _find_swordfish("by column"):
         return False
+    if swordfish.board_updated:
+        print('swordfish')
     return True if swordfish.board_updated else None
