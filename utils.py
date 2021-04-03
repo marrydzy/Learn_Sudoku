@@ -102,7 +102,7 @@ def set_cell_options(cell_id, board, window, solver_status):
 def set_neighbours_options(cell_id, board, window, solver_status):
     """ Set options of the cell neighbours """
     for cell in ALL_NBRS[cell_id]:
-        if not (is_clue(cell, board, window) or cell in window.options_user_set):
+        if not (is_clue(cell, board, window) or cell in window.options_visible):
             board[cell] = ''.join(get_options(cell, board, window))
             if len(board[cell]) == 1:
                 solver_status.naked_singles.add(cell)

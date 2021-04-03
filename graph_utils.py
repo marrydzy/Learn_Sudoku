@@ -127,14 +127,14 @@ def show_pencil_marks(window, cell, **kwargs):
 
     if window.show_all_pencil_marks:
         return True
-    if cell not in window.options_calculated:
+    if cell not in window.options_visible:
         if "impacted_cells" in kwargs and cell in kwargs["impacted_cells"]:
-            window.options_calculated.add(cell)
+            window.options_visible.add(cell)
         if "claims" in kwargs and cell in kwargs["house"]:
-            window.options_calculated.add(cell)
+            window.options_visible.add(cell)
         if "y_wing" in kwargs and kwargs["y_wing"] and cell in kwargs["y_wing"][1:]:
-            window.options_calculated.add(cell)
-    return True if cell in window.options_calculated or cell in window.options_user_set else False
+            window.options_visible.add(cell)
+    return True if cell in window.options_visible else False
 
 
 def render_clue(window, clue, pos, color):
@@ -396,8 +396,7 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     window.show_solution_steps = True
     window.inspect = window.peep
     window.clues_found.clear()
-    window.options_calculated.clear()
-    window.options_user_set.clear()
+    window.options_visible.clear()
     window.critical_error = None
     window.show_all_pencil_marks = False
     set_btn_status(window, True)
@@ -459,9 +458,9 @@ def cell_clicked(window, cell_id, *args, **kwargs):
             window.clue_entered = (cell_id, window.selected_key,
                                    True if window.buttons[pygame.K_c].is_pressed() else False)
             if window.solved_board[cell_id] == window.selected_key:
-                window.appraisal = 'You are a genius !!!'           # TODO !!!
+                window.appraisal = 'Hmmm ... looks OK'           # TODO !!!
             else:
-                window.appraisal = 'You are an idiot !!!'
+                window.appraisal = 'Hmmm ... zobaczymy !!!'
             window.wait = False
         else:
             if cell_id == window.selected_cell:

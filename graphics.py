@@ -60,8 +60,7 @@ class AppWindow:
 
         self.clues_defined = [cell_id for cell_id in range(81) if board[cell_id] != "."]
         self.clues_found = set()
-        self.options_calculated = set()
-        self.options_user_set = set()
+        self.options_visible = set()
         self.selected_key = None
         self.selected_cell = None
         self.show_solution_steps = True
@@ -91,9 +90,9 @@ class AppWindow:
         self.show_solution_steps = True
         self.inspect = ''.join(self.method.values())
         self.animate = False
-        graph_utils.set_btn_status(self, False)
+        # graph_utils.set_btn_status(self, False)       # TODO
         graph_utils.set_btn_status(self, True, (pygame.K_q, pygame.K_r))
-        graph_utils.set_keyboard_status(self, False)
+        # graph_utils.set_keyboard_status(self, False)      # TODO
         if "new_clue" in kwargs and len(board[kwargs["new_clue"]]) == 1:
             self.clues_found.add(kwargs["new_clue"])
         kwargs["new_clue"] = None
