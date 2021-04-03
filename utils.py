@@ -86,10 +86,26 @@ def is_single(board, house, value):
     return None
 
 
-def get_options(cell, board, window):
+def get_options(cell_id, board, window):
     """ returns set of options of the cell """
     return SUDOKU_VALUES_SET.copy() - set(''.join(
-        [board[cell_id] for cell_id in ALL_NBRS[cell] if is_clue(cell_id, board, window)]))
+        [board[cell] for cell in ALL_NBRS[cell_id] if is_clue(cell, board, window)]))
+
+
+def set_cell_options(cell_id, board, window, solver_status):
+    """ Set cell options """
+    board[cell_id] = ''.join(get_options(cell_id, board, window))
+    if len(board[cell_id]) == 1:
+        solver_status.naked_singles.add(cell_id)
+
+
+def set_neighbours_options(cell_id, board, window, solver_status):
+    """ Set options of the cell neighbours """
+    for cell in ALL_NBRS[cell_id]:
+        if not (is_clue(cell, board, window) or cell in window.options_user_set):
+            board[cell] = ''.join(get_options(cell, board, window))
+            if len(board[cell]) == 1:
+                solver_status.naked_singles.add(cell)
 
 
 def in_options(board, cell_id, value):

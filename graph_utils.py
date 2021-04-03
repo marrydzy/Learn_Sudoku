@@ -127,14 +127,14 @@ def show_pencil_marks(window, cell, **kwargs):
 
     if window.show_all_pencil_marks:
         return True
-    if cell not in window.show_options:
+    if cell not in window.options_calculated:
         if "impacted_cells" in kwargs and cell in kwargs["impacted_cells"]:
-            window.show_options.add(cell)
+            window.options_calculated.add(cell)
         if "claims" in kwargs and cell in kwargs["house"]:
-            window.show_options.add(cell)
+            window.options_calculated.add(cell)
         if "y_wing" in kwargs and kwargs["y_wing"] and cell in kwargs["y_wing"][1:]:
-            window.show_options.add(cell)
-    return True if cell in window.show_options else False
+            window.options_calculated.add(cell)
+    return True if cell in window.options_calculated or cell in window.options_user_set else False
 
 
 def render_clue(window, clue, pos, color):
@@ -396,7 +396,8 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     window.show_solution_steps = True
     window.inspect = window.peep
     window.clues_found.clear()
-    window.show_options.clear()
+    window.options_calculated.clear()
+    window.options_user_set.clear()
     window.critical_error = None
     window.show_all_pencil_marks = False
     set_btn_status(window, True)
@@ -432,7 +433,8 @@ def quit_btn_clicked(window, *args, **kwargs):
 def keyboard_btn_clicked(window, btn_id, *args, **kwargs):
     """ action on pressing a keyboard button """
     if window.selected_cell:
-        window.clue_entered = (window.selected_cell, str(btn_id))
+        window.clue_entered = (window.selected_cell, str(btn_id),
+                               True if window.buttons[pygame.K_c].is_pressed() else False)
         window.wait = False
     else:
         if str(btn_id) == window.selected_key:

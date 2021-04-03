@@ -60,7 +60,8 @@ class AppWindow:
 
         self.clues_defined = [cell_id for cell_id in range(81) if board[cell_id] != "."]
         self.clues_found = set()
-        self.show_options = set()
+        self.options_calculated = set()
+        self.options_user_set = set()
         self.selected_key = None
         self.selected_cell = None
         self.show_solution_steps = True

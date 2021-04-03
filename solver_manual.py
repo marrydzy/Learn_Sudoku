@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
-from utils import is_clue, is_solved, get_options
+from utils import is_clue, is_solved, get_options, set_cell_options, set_neighbours_options
 
 
 class SolverStatus:
@@ -18,19 +18,19 @@ class SolverStatus:
         self.naked_singles = set()
         self.naked_singles_bsln = set()
         self.clues_found_bsln = []
-        self.show_options_bsln = set()
+        self.options_calculated_bsln = set()
 
     def capture(self, window):
         if window:
             self.naked_singles_bsln = self.naked_singles.copy()
             self.clues_found_bsln = window.clues_found.copy()
-            self.show_options_bsln = window.show_options.copy()
+            self.options_calculated_bsln = window.options_calculated.copy()
 
     def restore(self, board, window):
         if window:
             self.naked_singles = self.naked_singles_bsln.copy()
             window.clues_found = self.clues_found_bsln.copy()
-            window.show_options = self.show_options_bsln.copy()
+            window.options_calculated = self.options_calculated_bsln.copy()
             for i in range(81):
                 board[i] = window.input_board[i]
 
@@ -39,7 +39,7 @@ class SolverStatus:
         self.naked_singles.clear()
         self.naked_singles_bsln.clear()
         self.clues_found_bsln.clear()
-        self.show_options_bsln.clear()
+        self.options_calculated_bsln.clear()
         if window:
             for cell_id in range(81):
                 if cell_id not in window.clues_defined:
@@ -65,23 +65,24 @@ def _remove_options(board, to_remove, window):
 
 
 def _clicked_the_same_clue_found(board, window, options_set):
-    """ Selected keyboard key the same as clicked cell value """
+    """ Entered key is the same as clicked cell value """
     cell_id, value, as_clue = window.clue_entered
+    window.clues_found.remove(cell_id)
     if as_clue:
         if options_set:
-            board[cell_id] = ''.join(get_options(cell_id, board, window))
-            if len(board[cell_id]) == 1:
-                solver_status.naked_singles.add(cell_id)
+            set_cell_options(cell_id, board, window, solver_status)
         else:
             board[cell_id] = "."
     else:
-        window.show_options.add(cell_id)
-    window.clues_found.remove(cell_id)
+        window.options_user_set.add(cell_id)
+        solver_status.naked_singles.add(cell_id)
+    if options_set:
+        set_neighbours_options(cell_id, board, window, solver_status)
     window.set_current_board(board)
 
 
 def _clicked_other_clue_found(board, window, options_set):
-    """ Selected keyboard key other than clicked cell value """
+    """ Entered key other than clicked cell value """
     cell_id, value, as_clue = window.clue_entered
     if cell_id in solver_status.naked_singles:
         solver_status.naked_singles.remove(cell_id)
@@ -89,14 +90,19 @@ def _clicked_other_clue_found(board, window, options_set):
     if not as_clue:
         window.clues_found.remove(cell_id)
         solver_status.naked_singles.add(cell_id)
-        window.show_options.add(cell_id)
+        window.options_user_set.add(cell_id)
     if options_set:
-        for cell in ALL_NBRS[cell_id]:
-            if not is_clue(cell, board, window):
-                board[cell] = ''.join(get_options(cell, board, window))
-                if len(board[cell]) == 1:
-                    solver_status.naked_singles.add(cell)
+        set_neighbours_options(cell_id, board, window, solver_status)
     window.set_current_board(board)
+
+
+def _as_clue_on_opts_set(board, window, options_set):
+    """ Entering clue to an 'options set' cell with """
+    cell_id, value, as_clue = window.clue_entered
+    board[cell_id] = value
+    window.options_user_set.remove(cell_id)
+    if cell_id in solver_status.naked_singles:
+        solver_status.naked_singles.remove(cell_id)
 
 
 def set_manually(board, window, options_set):
@@ -273,7 +279,7 @@ def _hidden_singles(board, window, options_set=False):
             in_cells = []
             greyed_out = []
             to_remove = []
-            show_options = window.show_options if window else list()
+            options_calculated = window.options_calculated if window else list()
             for cell in house:
                 if board[cell] == ".":
                     cell_opts = get_options(cell, board, window)
@@ -284,7 +290,7 @@ def _hidden_singles(board, window, options_set=False):
                 elif options_set and len(board[cell]) > 1:
                     if option in board[cell]:
                         in_cells.append(cell)
-                    elif cell not in show_options:
+                    elif cell not in options_calculated:
                         greyed_out.append(cell)
 
             if len(in_cells) == 1:
