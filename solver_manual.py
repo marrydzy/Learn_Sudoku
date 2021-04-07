@@ -55,15 +55,10 @@ def _remove_options(board, to_remove, window):
     for option, cell in to_remove:
         board[cell] = board[cell].replace(option, "")
         if not board[cell]:
-            if cell in window.options_visible:
-                board[cell] = get_options(cell, board, window)
-                window.remove_from_visible.add(cell)
-                if board[cell]:
-                    continue
-            screwed = [cell]    # TODO
-            window.critical_error = tuple(screwed)
+            window.critical_error = (cell, )
         elif len(board[cell]) == 1:
             solver_status.naked_singles.add(cell)
+            # window.options_visible.add(cell)
 
 
 def _the_same_as_clue_found(board, window, options_set):
@@ -91,12 +86,12 @@ def _other_than_clue_found(board, window, options_set):
         solver_status.naked_singles.remove(cell_id)
     board[cell_id] = value
     if as_clue:
-        pass
+        is_conflicted = _are_conflicted_cells(cell_id, board, window)
     else:
         window.clues_found.remove(cell_id)
         solver_status.naked_singles.add(cell_id)
         window.options_visible.add(cell_id)
-    if options_set:
+    if not is_conflicted and options_set:
         set_neighbours_options(cell_id, board, window, solver_status)
 
 
@@ -108,16 +103,9 @@ def _as_clue_and_undefined(board, window, options_set):
     if cell_id in solver_status.naked_singles:
         solver_status.naked_singles.remove(cell_id)
     board[cell_id] = value
-    conflicted_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
-    if conflicted_cells:
-        conflicted_cells.append(cell_id)
-        window.conflicted_cells = conflicted_cells
-        window.clue_house = ALL_NBRS[cell_id]
-        window.impacting_cell = (cell_id, board[cell_id])
-    else:
-        window.clues_found.add(cell_id)
-        if options_set:
-            set_neighbours_options(cell_id, board, window, solver_status)
+    window.clues_found.add(cell_id)
+    if not _are_conflicted_cells(cell_id, board, window) and options_set:
+        set_neighbours_options(cell_id, board, window, solver_status)
 
 
 def _as_opt_and_undefined(board, window):
@@ -156,14 +144,16 @@ def _check_board_integrity(board, window):
                         window.wrong_values.add(cell_id)
 
 
-"""
-conflicted_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
-if conflicted_cells:
-    conflicted_cells.append(cell_id)
-    window.conflicted_cells = conflicted_cells
-    window.clue_house = ALL_NBRS[cell_id]
-    window.impacting_cell = (cell_id, board[cell_id])
-"""
+def _are_conflicted_cells(cell_id, board, window):
+    """ Check if the given cell is not in conflict with values of other cells """
+    conflicted_cells = [cell for cell in ALL_NBRS[cell_id] if
+                        is_clue(cell, board, window) and board[cell] == board[cell_id]]
+    if conflicted_cells:
+        conflicted_cells.append(cell_id)
+        window.conflicted_cells = conflicted_cells
+        window.clue_house = ALL_NBRS[cell_id]
+        window.impacting_cell = (cell_id, board[cell_id])
+    return True if conflicted_cells else False
 
 
 def set_manually(board, window, options_set):
@@ -214,7 +204,8 @@ def _open_singles(board, window, options_set=False):
                 for value, cell in value_cells.items():
                     if len(cell) != 1:
                         screwed.extend(cell)
-                window.critical_error = tuple(screwed)      # TODO
+                window.critical_error = tuple(screwed)
+                board[open_cells[0]] == ''.join(value for value in missing_value)
                 window.set_current_board(board)
             else:
                 board[open_cells[0]] = missing_value.pop()
@@ -304,8 +295,9 @@ def _naked_singles(board, window, options_set=False):
             return False
         else:
             naked_single = solver_status.naked_singles.pop()
-            clue = board[naked_single]
-            to_remove = [(clue, cell) for cell in ALL_NBRS[naked_single] if clue in board[cell]]
+            clue = board[naked_single]  # TODO !!!!
+            to_remove = [(clue, cell) for cell in ALL_NBRS[naked_single]
+                         if not is_clue(cell, board, window) and clue in board[cell]]
             _remove_options(board, to_remove, window)
             if window:
                 if window.draw_board(board, "naked_singles", new_clue=naked_single, remove=to_remove):
@@ -773,7 +765,6 @@ def manual_solver(board, window, _):
             continue
         if _visual_elimination(board, window, solver_status.options_set):
             continue
-
         if _naked_singles(board, window, solver_status.options_set):
             continue
         if _hidden_singles(board, window, solver_status.options_set):

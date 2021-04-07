@@ -75,12 +75,11 @@ class AppWindow:
         self.impacting_cell = None
         self.show_all_pencil_marks = False
         self.critical_error = None
+        self.wait = False
 
         self.time_in = 0
         self.solver_loop = None
         self.solved_board = None
-        self.appraisal = None
-        self.tmp = set()
 
         pygame.display.set_caption('SUDOKU PUZZLE')
         pygame.display.set_icon(pygame.image.load('demon.png'))     # TODO - get a better icon
@@ -93,14 +92,20 @@ class AppWindow:
         self.show_solution_steps = True
         self.inspect = ''.join(self.method.values())
         self.animate = False
-        # graph_utils.set_btn_status(self, False)       # TODO
+        self.show_wrong_values = True
+        graph_utils.set_keyboard_status(self, False)
+        graph_utils.set_btn_status(self, False)
         graph_utils.set_btn_status(self, True, (pygame.K_q, pygame.K_r))
-        # graph_utils.set_keyboard_status(self, False)      # TODO
-        if "new_clue" in kwargs and len(board[kwargs["new_clue"]]) == 1:
-            self.clues_found.add(kwargs["new_clue"])
-        kwargs["new_clue"] = None
-        self.render_board(board, solver_tool, **kwargs)
-        graph_utils.display_info(self, "DUPA JAŚ !!!")  # TODO - Fix it !!!
+        if "new_clue" in kwargs:
+            if len(board[kwargs["new_clue"]]) == 1:
+                if kwargs["new_clue"] in self.options_visible:
+                    self.options_visible.remove(kwargs["new_clue"])
+                self.clues_found.add(kwargs["new_clue"])
+            else:
+                self.options_visible.add(kwargs["new_clue"])
+        for cell in self.critical_error:
+            self.options_visible.add(cell)
+        self.set_current_board(board)
 
     def sudoku_solved_event(self, board):
         """ Handle 'Sudoku Solved' event """
@@ -145,8 +150,9 @@ class AppWindow:
                 pygame.draw.rect(self.screen, graph_utils.cell_color(self, cell_id, **kwargs), cell_rect)
 
                 if board[cell_id] != '.':
-                    if solver_tool is None or cell_id in self.clues_defined or cell_id == active_clue \
-                            or cell_id in self.wrong_values and cell_id in self.clues_found:
+                    if (solver_tool is None or cell_id in self.clues_defined or
+                            cell_id == active_clue and not self.critical_error or
+                            cell_id in self.wrong_values and cell_id in self.clues_found and not self.critical_error):
                         graph_utils.render_clue(self, board[cell_id], cell_pos, BLACK)
                     elif cell_id in self.clues_found and len(board[cell_id]) == 1:
                         graph_utils.render_clue(self, board[cell_id], cell_pos, BLUE)
@@ -174,20 +180,18 @@ class AppWindow:
         """ TODO """
 
         if self.solver_loop == -1:
-            # self.show_solution_steps = False
             return True
 
         if not solver_tool:
             self.input_board = board.copy()
-        # elif self.critical_error:
-            # self.critical_error_event(board, solver_tool, **kwargs)
+        elif self.critical_error:
+            self.critical_error_event(board, solver_tool, **kwargs)
         elif solver_tool == "end_of_game":
             self.sudoku_solved_event(board)
         elif not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
             return True
 
         start = time.time()
-        # graph_utils.set_btn_status(self, False if self.wrong_values else True, (pygame.K_m, pygame.K_s, pygame.K_h))
         if self.impacting_cell:
             self.impossible_entry_preproc()
         self.render_board(self.input_board if self.input_board else board,
@@ -195,8 +199,10 @@ class AppWindow:
                           conflicted_cells=self.conflicted_cells, house=self.clue_house)
         if self.impacting_cell:
             self.impossible_entry_postproc()
-            
-        if self.conflicted_cells:
+
+        if self.critical_error:
+            graph_utils.display_info(self, screen_messages["critical_error"])
+        elif self.conflicted_cells:
             graph_utils.display_info(self, screen_messages["conflicting_values"])       # TODO
             self.conflicted_cells = None
             self.clue_house = None
@@ -204,13 +210,8 @@ class AppWindow:
             graph_utils.display_info(self, screen_messages[solver_tool])
         elif self.show_wrong_values:
             graph_utils.display_info(self, "Inconsistent board data")       # TODO
-        elif self.critical_error:
-            graph_utils.display_info(self, screen_messages["critical_error"])
         elif self.buttons[pygame.K_h].is_pressed():
             graph_utils.display_info(self, screen_messages[solver_tool])
-        elif self.appraisal:
-            graph_utils.display_info(self, self.appraisal)
-            self.appraisal = None
         else:
             graph_utils.display_info(self, screen_messages["plain_board"])
 

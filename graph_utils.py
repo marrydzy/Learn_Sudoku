@@ -134,7 +134,6 @@ def show_pencil_marks(window, cell, **kwargs):
             window.options_visible.add(cell)
         if "y_wing" in kwargs and kwargs["y_wing"] and cell in kwargs["y_wing"][1:]:
             window.options_visible.add(cell)
-    # print(f'{window.options_visible = }')
     return True if cell in window.options_visible else False
 
 
@@ -169,8 +168,8 @@ def cell_color(window, cell, **kwargs):
     if cell == window.selected_cell or \
             "new_clue" in kwargs and kwargs["new_clue"] and cell == kwargs["new_clue"]:
         color = LIGHTGREEN
-    # if window.critical_error and cell in window.critical_error:       # TODO
-        # color = LIGHTCORAL
+    if window.critical_error and cell in window.critical_error:
+        color = LIGHTCORAL
     return color
 
 
@@ -340,15 +339,15 @@ def hint_btn_clicked(window, _, board, solver_tool, **kwargs):
     if window.buttons[pygame.K_h].is_active():
         if window.wrong_values:
             window.show_wrong_values = True
-            window.buttons[pygame.K_h].set_status(False)
-            window.wait = False
-        else:
-            window.buttons[pygame.K_h].set_pressed(True)
-            set_btn_status(window, True, (pygame.K_a, pygame.K_b))
-            set_btn_status(window, False, (pygame.K_c, pygame.K_p, pygame.K_m, pygame.K_s))
-            set_keyboard_status(window, False)
-            window.render_board(board, solver_tool, **kwargs)
-            display_info(window, screen_messages[solver_tool])
+            # window.buttons[pygame.K_h].set_status(False)
+            # window.wait = False
+        # else:
+        window.buttons[pygame.K_h].set_pressed(True)
+        set_btn_status(window, True, (pygame.K_a, pygame.K_b))
+        set_btn_status(window, False, (pygame.K_c, pygame.K_p, pygame.K_m, pygame.K_s))
+        set_keyboard_status(window, False)
+        window.render_board(board, solver_tool, **kwargs)
+        display_info(window, screen_messages[solver_tool])
 
 
 def back_btn_clicked(window, btn_id, board, solver_tool, **kwargs):
@@ -407,6 +406,7 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     window.options_visible.clear()
     window.remove_from_visible.clear()
     window.wrong_values.clear()
+    window.show_wrong_values = False
     window.critical_error = None
     window.show_all_pencil_marks = False
     set_btn_status(window, True)
@@ -415,9 +415,10 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     set_btn_state(window, True, (pygame.K_c, ))
     window.selected_key = None
     window.wait = False
-    for i in range(81):     # TODO temporary needed due to mix with old solver
+    for i in range(81):
         if i not in window.clues_defined:
             board[i] = "."
+    window.set_current_board(board)
     window.board_updated = False
 
 
