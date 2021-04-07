@@ -4,7 +4,6 @@ import pygame
 
 from solver_manual import solver_status
 from solver_manual import init_options
-from utils import is_solved
 from display import screen_messages
 
 
@@ -22,6 +21,7 @@ BLACK = (0, 0, 0)
 BLUE = (51, 102, 153)
 CORAL = (255, 127, 80)
 CYAN = (0, 255, 255)
+PINK = (255, 192, 203)
 DARKGREY = (120, 120, 120)
 GAINSBORO = (230, 230, 230)
 GREY = (160, 160, 160)
@@ -32,7 +32,7 @@ SILVER = (192, 192, 192)
 WHITE = (255, 255, 255)
 
 LIGHTGREEN = (190, 255, 190)
-LIENGHTPINK = (255, 182, 193)
+LIGHTPINK = (255, 182, 193)
 LIGHTYELLOW = (255, 255, 224)
 LIGHTGREY = (200, 200, 200)
 LIGHTCORAL = (255, 120, 120)
@@ -134,6 +134,7 @@ def show_pencil_marks(window, cell, **kwargs):
             window.options_visible.add(cell)
         if "y_wing" in kwargs and kwargs["y_wing"] and cell in kwargs["y_wing"][1:]:
             window.options_visible.add(cell)
+    # print(f'{window.options_visible = }')
     return True if cell in window.options_visible else False
 
 
@@ -159,6 +160,8 @@ def cell_color(window, cell, **kwargs):
         color = LIGHTYELLOW
     if "greyed_out" in kwargs and kwargs["greyed_out"] and cell in kwargs["greyed_out"]:
         color = SILVER
+    if window.show_wrong_values and cell in window.wrong_values:
+        color = PINK
     if "conflicted_cells" in kwargs and kwargs["conflicted_cells"] and cell in kwargs["conflicted_cells"]:
         color = LIGHTCORAL
     if "impacted_cells" in kwargs and kwargs["impacted_cells"] and cell in kwargs["impacted_cells"]:
@@ -166,8 +169,8 @@ def cell_color(window, cell, **kwargs):
     if cell == window.selected_cell or \
             "new_clue" in kwargs and kwargs["new_clue"] and cell == kwargs["new_clue"]:
         color = LIGHTGREEN
-    if window.critical_error and cell in window.critical_error:
-        color = LIGHTCORAL
+    # if window.critical_error and cell in window.critical_error:       # TODO
+        # color = LIGHTCORAL
     return color
 
 
@@ -246,7 +249,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
 
     if iterate is not None and cell_id == iterate:
         pygame.draw.rect(
-            window.screen, LIENGHTPINK,
+            window.screen, LIGHTPINK,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
     if y_wing is not None and cell_id == y_wing[1]:
         pygame.draw.rect(
@@ -335,12 +338,17 @@ def pencil_mark_btn_clicked(window, _, board, *args, **kwargs):
 def hint_btn_clicked(window, _, board, solver_tool, **kwargs):
     """ action on pressing 'Hint' button """
     if window.buttons[pygame.K_h].is_active():
-        window.buttons[pygame.K_h].set_pressed(True)
-        set_btn_status(window, True, (pygame.K_a, pygame.K_b))
-        set_btn_status(window, False, (pygame.K_c, pygame.K_p, pygame.K_m, pygame.K_s))
-        set_keyboard_status(window, False)
-        window.render_board(board, solver_tool, **kwargs)
-        display_info(window, screen_messages[solver_tool])
+        if window.wrong_values:
+            window.show_wrong_values = True
+            window.buttons[pygame.K_h].set_status(False)
+            window.wait = False
+        else:
+            window.buttons[pygame.K_h].set_pressed(True)
+            set_btn_status(window, True, (pygame.K_a, pygame.K_b))
+            set_btn_status(window, False, (pygame.K_c, pygame.K_p, pygame.K_m, pygame.K_s))
+            set_keyboard_status(window, False)
+            window.render_board(board, solver_tool, **kwargs)
+            display_info(window, screen_messages[solver_tool])
 
 
 def back_btn_clicked(window, btn_id, board, solver_tool, **kwargs):
@@ -397,6 +405,8 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     window.inspect = window.peep
     window.clues_found.clear()
     window.options_visible.clear()
+    window.remove_from_visible.clear()
+    window.wrong_values.clear()
     window.critical_error = None
     window.show_all_pencil_marks = False
     set_btn_status(window, True)
@@ -457,10 +467,6 @@ def cell_clicked(window, cell_id, *args, **kwargs):
         if window.selected_key:
             window.clue_entered = (cell_id, window.selected_key,
                                    True if window.buttons[pygame.K_c].is_pressed() else False)
-            if window.solved_board[cell_id] == window.selected_key:
-                window.appraisal = 'Hmmm ... looks OK'           # TODO !!!
-            else:
-                window.appraisal = 'Hmmm ... zobaczymy !!!'
             window.wait = False
         else:
             if cell_id == window.selected_cell:
@@ -612,6 +618,7 @@ def set_methods():
             "unique_rectangles": "r",
             "x_wings": "x",
             "swordfish": "s",
+            "scrub_pencil_marks": "c",
             "iterate": "z",
             }
 

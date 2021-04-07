@@ -25,6 +25,7 @@ screen_messages = {
     "naked_quads": "'Naked Quad' technique:",
     "omissions": "'Locked Candidate' technique:",
     "swordfish": "'Swordfish' technique",
+    "x_wings": "'x-wings' technique",
     "y_wings": "'y-wings' technique",
     "scrub_pencil_marks": "WTF",
     "unique_values": "WTF",

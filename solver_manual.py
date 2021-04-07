@@ -55,11 +55,13 @@ def _remove_options(board, to_remove, window):
     for option, cell in to_remove:
         board[cell] = board[cell].replace(option, "")
         if not board[cell]:
-            screwed = [cell]
-            # screwed.extend([cell_id for cell_id in ALL_NBRS[cell] if board[cell_id] == option])
+            if cell in window.options_visible:
+                board[cell] = get_options(cell, board, window)
+                window.remove_from_visible.add(cell)
+                if board[cell]:
+                    continue
+            screwed = [cell]    # TODO
             window.critical_error = tuple(screwed)
-            window.show_all_pencil_marks = True
-            window.set_current_board(board)
         elif len(board[cell]) == 1:
             solver_status.naked_singles.add(cell)
 
@@ -77,6 +79,8 @@ def _the_same_as_clue_found(board, window, options_set):
         window.options_visible.add(cell_id)
         solver_status.naked_singles.add(cell_id)
     if options_set:
+        if cell_id in window.wrong_values:
+            window.wrong_values.remove(cell_id)
         set_neighbours_options(cell_id, board, window, solver_status)
 
 
@@ -86,7 +90,9 @@ def _other_than_clue_found(board, window, options_set):
     if cell_id in solver_status.naked_singles:
         solver_status.naked_singles.remove(cell_id)
     board[cell_id] = value
-    if not as_clue:
+    if as_clue:
+        pass
+    else:
         window.clues_found.remove(cell_id)
         solver_status.naked_singles.add(cell_id)
         window.options_visible.add(cell_id)
@@ -94,7 +100,7 @@ def _other_than_clue_found(board, window, options_set):
         set_neighbours_options(cell_id, board, window, solver_status)
 
 
-def _as_clue_and_undefined(board, window):
+def _as_clue_and_undefined(board, window, options_set):
     """ Entering clue in undefined cell """
     cell_id, value, as_clue = window.clue_entered
     if cell_id in window.options_visible:
@@ -102,7 +108,16 @@ def _as_clue_and_undefined(board, window):
     if cell_id in solver_status.naked_singles:
         solver_status.naked_singles.remove(cell_id)
     board[cell_id] = value
-    window.clues_found.add(cell_id)
+    conflicted_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
+    if conflicted_cells:
+        conflicted_cells.append(cell_id)
+        window.conflicted_cells = conflicted_cells
+        window.clue_house = ALL_NBRS[cell_id]
+        window.impacting_cell = (cell_id, board[cell_id])
+    else:
+        window.clues_found.add(cell_id)
+        if options_set:
+            set_neighbours_options(cell_id, board, window, solver_status)
 
 
 def _as_opt_and_undefined(board, window):
@@ -126,6 +141,21 @@ def _as_opt_and_undefined(board, window):
         solver_status.naked_singles.add(cell_id)
 
 
+def _check_board_integrity(board, window):
+    """ Check integrity of the current board, mark cells with
+    wrong value or options set as 'wrong_values' """
+    if window.solved_board:
+        window.wrong_values.clear()
+        for cell_id in range(81):
+            if cell_id not in window.clues_defined:
+                if cell_id in window.clues_found:
+                    if board[cell_id] != window.solved_board[cell_id]:
+                        window.wrong_values.add(cell_id)
+                elif cell_id in window.options_visible:
+                    if window.solved_board[cell_id] not in set(board[cell_id]):
+                        window.wrong_values.add(cell_id)
+
+
 """
 conflicted_cells = [cell for cell in ALL_NBRS[cell_id] if board[cell] == value]
 if conflicted_cells:
@@ -138,6 +168,11 @@ if conflicted_cells:
 
 def set_manually(board, window, options_set):
     """ TODO """
+    if window.remove_from_visible and window.board_updated:
+        for cell in window.tmp:
+            window.options_visible.remove(cell)
+    window.remove_from_visible.clear()
+
     if window and window.clue_entered:
         cell_id, value, as_clue = window.clue_entered
         if cell_id in window.clues_found:
@@ -147,11 +182,15 @@ def set_manually(board, window, options_set):
                 _other_than_clue_found(board, window, options_set)
         else:
             if as_clue:
-                _as_clue_and_undefined(board, window)
+                _as_clue_and_undefined(board, window, options_set)
             else:
                 _as_opt_and_undefined(board, window)
+        _check_board_integrity(board, window)
         window.set_current_board(board)
         window.clue_entered = None
+        if not window.wrong_values:
+            window.show_wrong_values = False
+            window.wrong_values_removed()
         return True
     return False
 
@@ -175,8 +214,7 @@ def _open_singles(board, window, options_set=False):
                 for value, cell in value_cells.items():
                     if len(cell) != 1:
                         screwed.extend(cell)
-                window.critical_error = tuple(screwed)
-                window.show_all_pencil_marks = True
+                window.critical_error = tuple(screwed)      # TODO
                 window.set_current_board(board)
             else:
                 board[open_cells[0]] = missing_value.pop()
@@ -492,9 +530,6 @@ def _naked_twins(board, window):
         for values, in_cells in pairs.items():
             if len(in_cells) > 2:
                 window.critical_error = tuple(in_cells)
-                window.show_all_pencil_marks = True
-                print('\nDupa_3')
-                # raise DeadEndException
             elif len(in_cells) == 2:
                 unsolved.remove(in_cells[0])
                 unsolved.remove(in_cells[1])

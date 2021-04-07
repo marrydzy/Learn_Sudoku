@@ -100,12 +100,27 @@ def set_cell_options(cell_id, board, window, solver_status):
 
 
 def set_neighbours_options(cell_id, board, window, solver_status):
-    """ Set options of the cell neighbours """
-    for cell in ALL_NBRS[cell_id]:
-        if not (is_clue(cell, board, window) or cell in window.options_visible):
-            board[cell] = ''.join(get_options(cell, board, window))
-            if len(board[cell]) == 1:
-                solver_status.naked_singles.add(cell)
+    """ Set options of the cell neighbours.
+    For 'visible' options:
+        - remove all options that are not allowed
+        - if the set is empty, set allowed options and remove the cell
+          from the set with 'visible' options """
+    if cell_id not in window.wrong_values:
+        for cell in ALL_NBRS[cell_id]:
+            if not is_clue(cell, board, window):
+                if cell in window.options_visible:
+                    updated_opts = set(board[cell]) & get_options(cell, board, window)
+                    if updated_opts:
+                        board[cell] = ''.join(updated_opts)
+                    else:
+                        board[cell] = ''.join(get_options(cell, board, window))
+                        window.options_visible.remove(cell)
+                else:
+                    board[cell] = ''.join(get_options(cell, board, window))
+                if len(board[cell]) > 1 and cell in solver_status.naked_singles:
+                    solver_status.naked_singles.remove(cell)
+                if len(board[cell]) == 1:
+                    solver_status.naked_singles.add(cell)
 
 
 def in_options(board, cell_id, value):
