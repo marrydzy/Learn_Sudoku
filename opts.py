@@ -253,7 +253,7 @@ def set_solver_options(config, data):
         "--peep",
         type=str,
         help="have a look at working of the selected solving techniques",
-        default=""  # "mgvnuhoyirjqxspt"
+        default=""  # "mgvnuhoyirjqxsptb"
     )
     parser.add_argument(
         "-s",

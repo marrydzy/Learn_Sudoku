@@ -19,6 +19,7 @@ class SolverStatus:
         self.naked_singles_bsln = set()
         self.clues_found_bsln = []
         self.options_calculated_bsln = set()
+        self.conflicted_cells = []
 
     def capture(self, window):
         if window:
@@ -58,7 +59,6 @@ def _remove_options(board, to_remove, window):
             window.critical_error = (cell, )
         elif len(board[cell]) == 1:
             solver_status.naked_singles.add(cell)
-            # window.options_visible.add(cell)
 
 
 def _the_same_as_clue_found(board, window, options_set):
@@ -91,7 +91,7 @@ def _other_than_clue_found(board, window, options_set):
         window.clues_found.remove(cell_id)
         solver_status.naked_singles.add(cell_id)
         window.options_visible.add(cell_id)
-    if not is_conflicted and options_set:
+    if not is_conflicted and options_set:       # TODO - check if needed
         set_neighbours_options(cell_id, board, window, solver_status)
 
 
@@ -104,7 +104,7 @@ def _as_clue_and_undefined(board, window, options_set):
         solver_status.naked_singles.remove(cell_id)
     board[cell_id] = value
     window.clues_found.add(cell_id)
-    if not _are_conflicted_cells(cell_id, board, window) and options_set:
+    if not _are_conflicted_cells(cell_id, board, window) and options_set:   # TODO - check if needed
         set_neighbours_options(cell_id, board, window, solver_status)
 
 
@@ -146,14 +146,14 @@ def _check_board_integrity(board, window):
 
 def _are_conflicted_cells(cell_id, board, window):
     """ Check if the given cell is not in conflict with values of other cells """
-    conflicted_cells = [cell for cell in ALL_NBRS[cell_id] if
-                        is_clue(cell, board, window) and board[cell] == board[cell_id]]
-    if conflicted_cells:
-        conflicted_cells.append(cell_id)
-        window.conflicted_cells = conflicted_cells
-        window.clue_house = ALL_NBRS[cell_id]
-        window.impacting_cell = (cell_id, board[cell_id])
-    return True if conflicted_cells else False
+    solver_status.conflicted_cells = [cell for cell in ALL_NBRS[cell_id] if
+                                      is_clue(cell, board, window) and board[cell] == board[cell_id]]
+    if solver_status.conflicted_cells:
+        solver_status.conflicted_cells.append(cell_id)
+        window.entered_conflicted_value = True
+        return True
+        # window.clue_house = ALL_NBRS[cell_id]
+    return False
 
 
 def set_manually(board, window, options_set):
@@ -163,7 +163,7 @@ def set_manually(board, window, options_set):
             window.options_visible.remove(cell)
     window.remove_from_visible.clear()
 
-    if window and window.clue_entered:
+    while window and window.clue_entered:
         cell_id, value, as_clue = window.clue_entered
         if cell_id in window.clues_found:
             if board[cell_id] == value:
@@ -176,11 +176,22 @@ def set_manually(board, window, options_set):
             else:
                 _as_opt_and_undefined(board, window)
         _check_board_integrity(board, window)
-        window.set_current_board(board)
         window.clue_entered = None
+
+        if solver_status.conflicted_cells:
+            cell_house = ALL_NBRS[solver_status.conflicted_cells[-1]]
+            if window.draw_board(board, "plain_board",
+                                 conflicted_cells=solver_status.conflicted_cells,
+                                 cell_house=cell_house):
+                window.set_current_board(board)     # TODO - ????
+            if window.clue_entered:
+                continue
+
         if not window.wrong_values:
             window.show_wrong_values = False
             window.wrong_values_removed()
+        solver_status.conflicted_cells.clear()
+        window.entered_conflicted_value = False     # TODO - ???
         return True
     return False
 
@@ -194,7 +205,8 @@ def _open_singles(board, window, options_set=False):
     def _set_missing_number(house):
         open_cells = [cell for cell in house if not is_clue(cell, board, window)]
         if len(open_cells) == 1:
-            missing_value = SUDOKU_VALUES_SET.copy() - set(''.join([board[cell] for cell in house]))
+            missing_value = SUDOKU_VALUES_SET.copy() - set(
+                ''.join(board[cell] for cell in house if is_clue(cell, board, window)))
             if len(missing_value) != 1:
                 board[open_cells[0]] = ''.join(missing_value)
                 value_cells = defaultdict(list)
@@ -205,8 +217,7 @@ def _open_singles(board, window, options_set=False):
                     if len(cell) != 1:
                         screwed.extend(cell)
                 window.critical_error = tuple(screwed)
-                board[open_cells[0]] == ''.join(value for value in missing_value)
-                window.set_current_board(board)
+                board[open_cells[0]] = ''.join(value for value in missing_value)
             else:
                 board[open_cells[0]] = missing_value.pop()
             if window:
@@ -580,8 +591,6 @@ def _naked_triplets(board, window):
             return True
         if _find_triplets(CELLS_IN_SQR[i]):
             return True
-    # else:
-        # return True if naked_triplets.board_updated else None
     return False
 
 
@@ -617,8 +626,6 @@ def _naked_quads(board, window):
             return True
         if _find_quad(CELLS_IN_SQR[i]):
             return True
-    # else:
-        # return True if naked_triplets.board_updated else None
     return False
 
 
@@ -759,8 +766,19 @@ def manual_solver(board, window, _):
                 return True
 
         solver_status.capture(window)
+        print(f'\ninto draw_board with {window.calculate_next_clue = }')
+        window.draw_board(board, "plain_board")
+        print(f'out of draw_board with {window.calculate_next_clue = }')
         if set_manually(board, window, solver_status.options_set):
+            print('out of set_manually')
             continue
+        if not window.calculate_next_clue:
+            print('jumping to the beginning')
+            continue
+        elif window.show_solution_steps:
+            window.calculate_next_clue = False
+
+        print(f'going to the solver methods with {window.calculate_next_clue = }')
         if _open_singles(board, window, solver_status.options_set):
             continue
         if _visual_elimination(board, window, solver_status.options_set):

@@ -337,7 +337,7 @@ def pencil_mark_btn_clicked(window, _, board, *args, **kwargs):
 def hint_btn_clicked(window, _, board, solver_tool, **kwargs):
     """ action on pressing 'Hint' button """
     if window.buttons[pygame.K_h].is_active():
-        if window.wrong_values:
+        if window.wrong_values:     # TODO - decide how to handle it!
             window.show_wrong_values = True
             # window.buttons[pygame.K_h].set_status(False)
             # window.wait = False
@@ -346,8 +346,8 @@ def hint_btn_clicked(window, _, board, solver_tool, **kwargs):
         set_btn_status(window, True, (pygame.K_a, pygame.K_b))
         set_btn_status(window, False, (pygame.K_c, pygame.K_p, pygame.K_m, pygame.K_s))
         set_keyboard_status(window, False)
-        window.render_board(board, solver_tool, **kwargs)
-        display_info(window, screen_messages[solver_tool])
+        window.calculate_next_clue = True
+        window.wait = False
 
 
 def back_btn_clicked(window, btn_id, board, solver_tool, **kwargs):
@@ -382,6 +382,7 @@ def solve_btn_clicked(window, *args, **kwargs):
     window.show_solution_steps = False
     window.board_updated = True
     window.wait = False
+    window.calculate_next_clue = True
 
 
 def animate_btn_clicked(window, btn_id, board, solver_tool, **kwargs):
@@ -621,6 +622,7 @@ def set_methods():
             "swordfish": "s",
             "scrub_pencil_marks": "c",
             "iterate": "z",
+            "plain_board": "b",
             }
 
 

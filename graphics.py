@@ -70,12 +70,11 @@ class AppWindow:
         self.animate = False
         self.board_updated = False
         self.clue_entered = None
-        self.conflicted_cells = None
-        self.clue_house = None
-        self.impacting_cell = None
+        self.entered_conflicted_value = False
         self.show_all_pencil_marks = False
         self.critical_error = None
         self.wait = False
+        self.calculate_next_clue = False
 
         self.time_in = 0
         self.solver_loop = None
@@ -89,23 +88,26 @@ class AppWindow:
 
     def critical_error_event(self, board, solver_tool, **kwargs):
         """ Handle 'Critical Error' event """
-        self.show_solution_steps = True
-        self.inspect = ''.join(self.method.values())
-        self.animate = False
-        self.show_wrong_values = True
-        graph_utils.set_keyboard_status(self, False)
-        graph_utils.set_btn_status(self, False)
-        graph_utils.set_btn_status(self, True, (pygame.K_q, pygame.K_r))
-        if "new_clue" in kwargs:
-            if len(board[kwargs["new_clue"]]) == 1:
-                if kwargs["new_clue"] in self.options_visible:
-                    self.options_visible.remove(kwargs["new_clue"])
-                self.clues_found.add(kwargs["new_clue"])
-            else:
-                self.options_visible.add(kwargs["new_clue"])
-        for cell in self.critical_error:
-            self.options_visible.add(cell)
-        self.set_current_board(board)
+        # print(f'\n{self.critical_error = }\n')
+        # raise Exception
+        if self.buttons[pygame.K_h].is_pressed() or self.buttons[pygame.K_m].is_pressed() or self.buttons[pygame.K_s].is_pressed():
+            self.show_solution_steps = True
+            self.inspect = ''.join(self.method.values())
+            self.animate = False
+            self.show_wrong_values = True
+            graph_utils.set_keyboard_status(self, False)
+            graph_utils.set_btn_status(self, False)
+            graph_utils.set_btn_status(self, True, (pygame.K_q, pygame.K_r))
+            if "new_clue" in kwargs:
+                if len(board[kwargs["new_clue"]]) == 1:
+                    if kwargs["new_clue"] in self.options_visible:
+                        self.options_visible.remove(kwargs["new_clue"])
+                    self.clues_found.add(kwargs["new_clue"])
+                else:
+                    self.options_visible.add(kwargs["new_clue"])
+            for cell in self.critical_error:
+                self.options_visible.add(cell)
+            self.set_current_board(board)
 
     def sudoku_solved_event(self, board):
         """ Handle 'Sudoku Solved' event """
@@ -119,21 +121,25 @@ class AppWindow:
         """ Save copy of the current board (before applying a tool)  """
         self.input_board = board.copy()
 
-    def impossible_entry_preproc(self):
-        """ Prepare to show impossible clue """
-        graph_utils.set_btn_status(self, True, (pygame.K_b,))
-        cell_id = self.impacting_cell[0]
-        value_entered = self.input_board[self.conflicted_cells[0]]
-        self.input_board[cell_id] = value_entered
-        self.clues_found.add(cell_id)
+    def handle_input_events(self):
+        """ handle input events before entering the display loop  """
+        show_event = False
+        if self.entered_conflicted_value:
+            graph_utils.set_btn_status(self, False, (pygame.K_m, pygame.K_s))
+            graph_utils.set_btn_status(self, True, (pygame.K_b,))
+            show_event = True
+        return show_event
 
     def impossible_entry_postproc(self):
         """ Clean up after showing conflicted cells """
+        pass
+        """
         cell_id = self.impacting_cell[0]
         original_value = self.impacting_cell[1]
         self.input_board[cell_id] = original_value
         self.clues_found.remove(cell_id)
         self.impacting_cell = None
+        """
 
     def wrong_values_removed(self):
         """ TODO """
@@ -178,34 +184,31 @@ class AppWindow:
 
     def draw_board(self, board, solver_tool=None, **kwargs):
         """ TODO """
-
         if self.solver_loop == -1:
+            self.calculate_next_clue = True
             return True
 
         if not solver_tool:
-            self.input_board = board.copy()
+            self.input_board = board.copy()     # TODO - check if it should be done each time in draw_board
         elif self.critical_error:
             self.critical_error_event(board, solver_tool, **kwargs)
         elif solver_tool == "end_of_game":
             self.sudoku_solved_event(board)
         elif not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
+            self.calculate_next_clue = True
+            print(f'{self.calculate_next_clue = } out of {solver_tool = }')
             return True
 
-        start = time.time()
-        if self.impacting_cell:
-            self.impossible_entry_preproc()
-        self.render_board(self.input_board if self.input_board else board,
-                          "plain_board" if solver_tool else None,
-                          conflicted_cells=self.conflicted_cells, house=self.clue_house)
-        if self.impacting_cell:
-            self.impossible_entry_postproc()
+        start = time.time()             # TODO - get rid of it!!!
+
+        self.handle_input_events()
+        self.render_board(board, solver_tool, **kwargs)
 
         if self.critical_error:
             graph_utils.display_info(self, screen_messages["critical_error"])
-        elif self.conflicted_cells:
+        elif self.entered_conflicted_value:
             graph_utils.display_info(self, screen_messages["conflicting_values"])       # TODO
-            self.conflicted_cells = None
-            self.clue_house = None
+            self.entered_conflicted_value = None
         elif solver_tool == "end_of_game":
             graph_utils.display_info(self, screen_messages[solver_tool])
         elif self.show_wrong_values:
@@ -223,6 +226,7 @@ class AppWindow:
             self.render_board(board, solver_tool, **kwargs)
             pygame.display.update()
             time.sleep(ANIMATION_STEP_TIME)
+            self.calculate_next_clue = True
         else:
             while self.wait:
                 event = None
