@@ -4,6 +4,7 @@ import pygame
 
 from solver_manual import solver_status
 from solver_manual import init_options
+from utils import ALL_NBRS
 from display import screen_messages
 
 
@@ -143,9 +144,8 @@ def render_clue(window, clue, pos, color):
     window.screen.blit(digit, (pos[0] + window.clue_shift_x, pos[1] + window.clue_shift_y))
 
 
-def render_options(window, cell_id, pos):
+def render_options(window, options, pos):
     """ Render cell options (pencil marks) """
-    options = window.input_board[cell_id]
     for value in options:
         digit = window.font_options.render(value, True, BLACK)
         window.screen.blit(digit, (pos[0] + window.option_offsets[value][0] + window.option_shift_x,
@@ -159,7 +159,7 @@ def cell_color(window, cell, **kwargs):
         color = LIGHTYELLOW
     if "greyed_out" in kwargs and kwargs["greyed_out"] and cell in kwargs["greyed_out"]:
         color = SILVER
-    if window.show_wrong_values and cell in window.wrong_values:
+    if "wrong_values" in kwargs and cell in kwargs["wrong_values"]:
         color = PINK
     if "conflicted_cells" in kwargs and kwargs["conflicted_cells"] and cell in kwargs["conflicted_cells"]:
         color = LIGHTCORAL
@@ -330,15 +330,13 @@ def pencil_mark_btn_clicked(window, _, board, *args, **kwargs):
         window.buttons[pygame.K_c].set_pressed(False)
         window.buttons[pygame.K_c].draw(window.screen)
         init_options(board, window)
-        window.wait = False
-        window.board_updated = False
 
 
 def hint_btn_clicked(window, _, board, solver_tool, **kwargs):
     """ action on pressing 'Hint' button """
     if window.buttons[pygame.K_h].is_active():
-        if window.wrong_values:     # TODO - decide how to handle it!
-            window.show_wrong_values = True
+        # if window.wrong_values:     # TODO - decide how to handle it!
+            # window.show_wrong_values = True
             # window.buttons[pygame.K_h].set_status(False)
             # window.wait = False
         # else:
@@ -405,9 +403,8 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     window.inspect = window.peep
     window.clues_found.clear()
     window.options_visible.clear()
-    window.remove_from_visible.clear()
     window.wrong_values.clear()
-    window.show_wrong_values = False
+    window.show_wrong_values = True
     window.critical_error = None
     window.show_all_pencil_marks = False
     set_btn_status(window, True)
@@ -646,3 +643,5 @@ def set_keyboard_status(window, status):
     """ Set status (active/inactive) of all keyboard keys """
     for id in range(1, 10):
         window.buttons[id].set_status(status)
+
+

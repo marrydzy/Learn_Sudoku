@@ -62,11 +62,10 @@ class AppWindow:
         self.clues_found = set()
         self.wrong_values = set()
         self.options_visible = set()
-        self.remove_from_visible = set()
         self.selected_key = None
         self.selected_cell = None
         self.show_solution_steps = True
-        self.show_wrong_values = False
+        self.show_wrong_values = True
         self.animate = False
         self.board_updated = False
         self.clue_entered = None
@@ -165,7 +164,7 @@ class AppWindow:
                     elif graph_utils.show_pencil_marks(self, cell_id, **kwargs):
                         if solver_tool != "plain_board":
                             graph_utils.highlight_options(self, cell_id, board[cell_id], cell_pos, **kwargs)
-                        graph_utils.render_options(self, cell_id, cell_pos)
+                        graph_utils.render_options(self, board[cell_id], cell_pos)
 
         for i in range(10):
             line_thickness = 5 if i % 3 == 0 else 1
@@ -195,8 +194,6 @@ class AppWindow:
         elif solver_tool == "end_of_game":
             self.sudoku_solved_event(board)
         elif not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
-            self.calculate_next_clue = True
-            print(f'{self.calculate_next_clue = } out of {solver_tool = }')
             return True
 
         start = time.time()             # TODO - get rid of it!!!
@@ -207,12 +204,12 @@ class AppWindow:
         if self.critical_error:
             graph_utils.display_info(self, screen_messages["critical_error"])
         elif self.entered_conflicted_value:
-            graph_utils.display_info(self, screen_messages["conflicting_values"])       # TODO
+            graph_utils.display_info(self, screen_messages["conflicting_values"])
             self.entered_conflicted_value = None
         elif solver_tool == "end_of_game":
             graph_utils.display_info(self, screen_messages[solver_tool])
-        elif self.show_wrong_values:
-            graph_utils.display_info(self, "Inconsistent board data")       # TODO
+        elif self.show_wrong_values and self.wrong_values:
+            graph_utils.display_info(self, screen_messages["wrong_values"])
         elif self.buttons[pygame.K_h].is_pressed():
             graph_utils.display_info(self, screen_messages[solver_tool])
         else:

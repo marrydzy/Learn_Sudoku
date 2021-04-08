@@ -32,7 +32,8 @@ screen_messages = {
     "unique_rectangles": "WTF",
     "observe": "Dupa Jaś",
     "end_of_game": "Sudoku solved!",
-    "conflicting_values": "Incorrect value entered!",
+    "conflicting_values": "The entered value conflicts with other cells",
+    "wrong_values": "Incorrect value entered!",
     "critical_error": "DUPA JAŚ !!!",
 }
 
