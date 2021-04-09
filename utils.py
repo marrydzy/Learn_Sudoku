@@ -10,8 +10,8 @@ from pathlib import Path
 from display import error_message, did_you_mean_message
 
 
-def block_cells(k):
-    """ return tuple of cells in k'th square """
+def box_cells(k):
+    """ return tuple of cells in k-th square """
     cells = []
     row = (k // 3) * 3
     col = (k % 3) * 3
@@ -34,7 +34,7 @@ def neighbour_cells(cell):
 
 CELLS_IN_ROW = tuple(tuple(n for n in range(i * 9, (i + 1) * 9)) for i in range(9))
 CELLS_IN_COL = tuple(tuple(n for n in range(i, 81, 9)) for i in range(9))
-CELLS_IN_SQR = tuple(block_cells(i) for i in range(9))
+CELLS_IN_SQR = tuple(box_cells(i) for i in range(9))
 
 ALL_NBRS = tuple(neighbour_cells(i) for i in range(81))
 SUDOKU_VALUES_LIST = list('123456789')

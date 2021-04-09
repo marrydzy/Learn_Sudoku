@@ -4,11 +4,11 @@ import pygame
 
 from solver_manual import solver_status
 from solver_manual import init_options
-from utils import ALL_NBRS
-from display import screen_messages
 
 
 ANIMATION_STEP_TIME = 0.05
+BUTTON_PRESS_TIME = 0.15
+
 CELL_ID_OFFSET = 1000
 
 # dimensions of sudoku board:
@@ -101,6 +101,17 @@ class Button:
             pygame.draw.rect(screen, self.pressed_border_color, self.rect, width=2, border_radius=9)
             btn_txt = self.font.render(self.text, True, self.pressed_font_color)
             screen.blit(btn_txt, (self.txt_x, self.txt_y))
+
+    def press_and_deactivate(self, screen):
+        if self.active and not self.pressed:
+            self.pressed = True
+            self.draw(screen)
+            pygame.display.update()
+            time.sleep(BUTTON_PRESS_TIME)
+            self.pressed = False
+            self.active = False
+            self.draw(screen)
+            pygame.display.update()
 
     def being_pressed(self, wait_to_release=False):
         """ TODO """
@@ -335,12 +346,7 @@ def pencil_mark_btn_clicked(window, _, board, *args, **kwargs):
 def hint_btn_clicked(window, _, board, solver_tool, **kwargs):
     """ action on pressing 'Hint' button """
     if window.buttons[pygame.K_h].is_active():
-        # if window.wrong_values:     # TODO - decide how to handle it!
-            # window.show_wrong_values = True
-            # window.buttons[pygame.K_h].set_status(False)
-            # window.wait = False
-        # else:
-        window.buttons[pygame.K_h].set_pressed(True)
+        window.buttons[pygame.K_h].press_and_deactivate(window.screen)
         set_btn_status(window, True, (pygame.K_a, pygame.K_b))
         set_btn_status(window, False, (pygame.K_c, pygame.K_p, pygame.K_m, pygame.K_s))
         set_keyboard_status(window, False)
@@ -350,15 +356,17 @@ def hint_btn_clicked(window, _, board, solver_tool, **kwargs):
 
 def back_btn_clicked(window, btn_id, board, solver_tool, **kwargs):
     """ action on clicking 'Back' button """
-    window.buttons[pygame.K_h].set_pressed(False)
-    set_btn_status(window, False, (pygame.K_a, pygame.K_b))
-    set_btn_status(window, True, (pygame.K_c, pygame.K_p, pygame.K_m, pygame.K_s))
-    set_keyboard_status(window, True)
-    window.wait = False
-    window.board_updated = False
-    window.render_board(window.input_board, "plain_board")  # options_set=kwargs["options_set"])
-    display_info(window, "")
-    pygame.display.update()
+    # window.buttons[pygame.K_h].set_pressed(False)
+    if window.buttons[pygame.K_b].is_active():
+        window.buttons[pygame.K_b].press_and_deactivate(window.screen)
+        set_btn_status(window, False, (pygame.K_a, pygame.K_b))
+        set_btn_status(window, True, (pygame.K_c, pygame.K_p, pygame.K_h, pygame.K_m, pygame.K_s))
+        set_keyboard_status(window, True)
+        window.wait = False
+        window.board_updated = False
+        # window.render_board(window.input_board, "plain_board")  # options_set=kwargs["options_set"])
+        # display_info(window, "")
+        # pygame.display.update()
 
 
 def accept_btn_clicked(window, *args, **kwargs):
@@ -366,7 +374,7 @@ def accept_btn_clicked(window, *args, **kwargs):
     if window.buttons[pygame.K_a].is_active():
         window.buttons[pygame.K_h].set_pressed(False)
         set_btn_status(window, False, (pygame.K_b, pygame.K_a))
-        set_btn_status(window, True, (pygame.K_c, pygame.K_p, pygame.K_m, pygame.K_s))
+        set_btn_status(window, True, (pygame.K_c, pygame.K_p, pygame.K_h, pygame.K_m, pygame.K_s))
         set_keyboard_status(window, True)
         window.board_updated = True
         window.wait = False
@@ -492,21 +500,23 @@ def set_buttons(window):
     window.actions[pygame.K_p] = pencil_mark_btn_clicked
 
     btn_y += BUTTON_H + BUTTONS_OFFSET + 20
-    btn_w = (window.keypad_frame[3] - BUTTONS_OFFSET) // 2
-    btn_rect = pygame.Rect((btn_x, btn_y, btn_w, BUTTON_H))
+    # btn_w = (window.keypad_frame[3] - BUTTONS_OFFSET) // 2
+    # btn_rect = pygame.Rect((btn_x, btn_y, btn_w, BUTTON_H))
+    btn_rect = pygame.Rect((btn_x, btn_y, window.keypad_frame[3], BUTTON_H))
     window.buttons[pygame.K_h] = Button(pygame.K_h, btn_rect, "Hint", window.font_buttons)
     window.actions[pygame.K_h] = hint_btn_clicked
+
+    btn_y += BUTTON_H + BUTTONS_OFFSET
+    btn_w = (window.keypad_frame[3] - BUTTONS_OFFSET) // 2
+    btn_rect = pygame.Rect((btn_x, btn_y, btn_w, BUTTON_H))
+    window.buttons[pygame.K_a] = Button(pygame.K_a, btn_rect, "Accept", window.font_buttons)
+    window.buttons[pygame.K_a].set_status(False)
+    window.actions[pygame.K_a] = accept_btn_clicked
 
     btn_rect = pygame.Rect((btn_x + btn_w + BUTTONS_OFFSET, btn_y, btn_w, BUTTON_H))
     window.buttons[pygame.K_b] = Button(pygame.K_b, btn_rect, "Back", window.font_buttons)
     window.buttons[pygame.K_b].set_status(False)
     window.actions[pygame.K_b] = back_btn_clicked
-
-    btn_y += BUTTON_H + BUTTONS_OFFSET
-    btn_rect = pygame.Rect((btn_x, btn_y, window.keypad_frame[3], BUTTON_H))
-    window.buttons[pygame.K_a] = Button(pygame.K_a, btn_rect, "Accept", window.font_buttons)
-    window.buttons[pygame.K_a].set_status(False)
-    window.actions[pygame.K_a] = accept_btn_clicked
 
     btn_y += BUTTON_H + BUTTONS_OFFSET
     btn_rect = pygame.Rect((btn_x, btn_y, window.keypad_frame[3], BUTTON_H))

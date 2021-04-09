@@ -212,7 +212,10 @@ class AppWindow:
             graph_utils.display_info(self, screen_messages["wrong_values"])
         elif self.buttons[pygame.K_h].is_pressed():
             graph_utils.display_info(self, screen_messages[solver_tool])
+        elif solver_tool != "plain_board":
+            graph_utils.display_info(self, screen_messages[solver_tool])
         else:
+            # print("plain_board")
             graph_utils.display_info(self, screen_messages["plain_board"])
 
         self.board_updated = False
