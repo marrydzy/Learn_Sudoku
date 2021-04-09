@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import argparse
 
-from utils import set_puzzle_imput_file, check_file
+from utils import set_puzzle_input_file, check_file
 
 
 def _set_config_defaults(args, config, data):
@@ -41,7 +41,7 @@ def _set_config_defaults(args, config, data):
     config["stats"] = False
     config["ocr"] = False   # checking integrity of OCR scan - no solver output
 
-    set_puzzle_imput_file(args.sudoku, config, data)
+    set_puzzle_input_file(args.sudoku, config, data)
     data["error_data"] = config["cnn_model"]        # TODO
     check_file(config["cnn_model"], data, additional_info="CNN model")
 

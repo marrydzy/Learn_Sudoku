@@ -7,8 +7,9 @@ from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
-from utils import is_clue, is_solved, get_options, set_cell_options, set_neighbours_options
+from utils import is_clue, is_solved, get_options, init_options, set_cell_options, set_neighbours_options
 from pygame import K_h
+
 
 class SolverStatus:
     """ class to store data needed for recovering of puzzle
@@ -16,32 +17,32 @@ class SolverStatus:
     def __init__(self):
         self.options_set = False
         self.naked_singles = set()
-        self.naked_singles_bsln = set()
-        self.clues_found_bsln = []
-        self.options_calculated_bsln = set()
+        self.naked_singles_baseline = set()
+        self.clues_found_baseline = []
+        self.options_visible_baseline = set()
         self.conflicted_cells = []
 
     def capture_baseline(self, board, window):
         window.set_current_board(board)
         if window:
-            self.naked_singles_bsln = self.naked_singles.copy()
-            self.clues_found_bsln = window.clues_found.copy()
-            self.options_calculated_bsln = window.options_visible.copy()
+            self.naked_singles_baseline = self.naked_singles.copy()
+            self.clues_found_baseline = window.clues_found.copy()
+            self.options_visible_baseline = window.options_visible.copy()
 
     def restore_baseline(self, board, window):
         if window:
-            self.naked_singles = self.naked_singles_bsln.copy()
-            window.clues_found = self.clues_found_bsln.copy()
-            window.options_visible = self.options_calculated_bsln.copy()
-            for i in range(81):
-                board[i] = window.input_board[i]
+            self.naked_singles = self.naked_singles_baseline.copy()
+            window.clues_found = self.clues_found_baseline.copy()
+            window.options_visible = self.options_visible_baseline.copy()
+            for cell_id in range(81):
+                board[cell_id] = window.input_board[cell_id]
 
     def reset(self, board, window):
         self.options_set = False
         self.naked_singles.clear()
-        self.naked_singles_bsln.clear()
-        self.clues_found_bsln.clear()
-        self.options_calculated_bsln.clear()
+        self.naked_singles_baseline.clear()
+        self.clues_found_baseline.clear()
+        self.options_visible_baseline.clear()
         if window:
             for cell_id in range(81):
                 if cell_id not in window.clues_defined:
@@ -207,7 +208,7 @@ def _set_manually(board, window):
     return False
 
 
-def _open_singles(board, window, options_set=False):
+def _open_singles(board, window):
     """ 'Open Singles' technique (see: https://www.learn-sudoku.com/open-singles.html)
         The technique is applicable only in the initial phase of sudoku solving process when
         options in empty cells haven't been calculated yet.
@@ -239,7 +240,7 @@ def _open_singles(board, window, options_set=False):
             return True
         return False
 
-    if not options_set:
+    if not solver_status.options_set:
         for i in range(9):
             if (_set_missing_number(CELLS_IN_ROW[i]) or _set_missing_number(CELLS_IN_COL[i]) or
                     _set_missing_number(CELLS_IN_SQR[i])):
@@ -247,16 +248,13 @@ def _open_singles(board, window, options_set=False):
     return False
 
 
-def _visual_elimination(board, window, options_set=False):
+def _visual_elimination(board, window):
     """ 'Visual Elimination' techniques (see: https://www.learn-sudoku.com/visual-elimination.html)
         The technique is applicable only in the initial phase of sudoku solving process when
         options in empty cells haven't been calculated yet.
         After finding a clue The function returns to the main solver loop to allow trying 'simpler'
         'open singles' method
     """
-    if options_set:
-        return False
-
     def _check_zone(value, band):
         """ Look for lone singles in the band (vertical or horizontal stack of squares) """
         vertical = True if band < 3 else False
@@ -293,18 +291,19 @@ def _visual_elimination(board, window, options_set=False):
                                          greyed_out=greyed_out):
                         window.clues_found.add(clues[0])
                     else:
-                        solver_status.restore_baseline(board, window) # TODO: tutaj jest problem!!!
+                        solver_status.restore_baseline(board, window)
                 return True
         return False
 
-    for value in SUDOKU_VALUES_LIST:
-        for zone in range(6):
-            if _check_zone(value, zone):
-                return True
+    if not solver_status.options_set:
+        for digit in SUDOKU_VALUES_LIST:
+            for zone in range(6):
+                if _check_zone(digit, zone):
+                    return True
     return False
 
 
-def _naked_singles(board, window, options_set=False):
+def _naked_singles(board, window):
     """ 'Naked Singles' technique (see: https://www.learn-sudoku.com/lone-singles.html)
         In the initial phase of sudoku solving when options of all unsolved cells are not set yet,
         after finding a clue the function returns to the main solver loop to allow trying 'simpler'
@@ -312,7 +311,7 @@ def _naked_singles(board, window, options_set=False):
         When options for all unsolved cells are already set the function continues solving naked singles until
         the 'naked_singles' list is empty (at this stage of sudoku solving it is the 'simplest' method)
     """
-    if options_set:
+    if solver_status.options_set:
         if not solver_status.naked_singles:
             return False
         else:
@@ -339,12 +338,12 @@ def _naked_singles(board, window, options_set=False):
         return False
 
 
-def _hidden_singles(board, window, options_set=False):
+def _hidden_singles(board, window):
     """ 'Hidden Singles' technique (see: https://www.learn-sudoku.com/hidden-singles.html) """
 
     def _find_unique_positions(house):
         """ Find unique positions of missing clues within the house and 'solve' the cells """
-        if options_set:
+        if solver_status.options_set:
             house_options = set(''.join(board[cell_id] for cell_id in house if len(board[cell_id]) > 1))
         else:
             house_options = SUDOKU_VALUES_SET.copy() - set(''.join([board[cell_id] for cell_id in house]))
@@ -360,7 +359,7 @@ def _hidden_singles(board, window, options_set=False):
                         in_cells.append(cell)
                     else:
                         greyed_out.append(cell)
-                elif options_set and len(board[cell]) > 1:
+                elif solver_status.options_set and len(board[cell]) > 1:
                     if option in board[cell]:
                         in_cells.append(cell)
                     elif cell not in options_visible:
@@ -369,7 +368,7 @@ def _hidden_singles(board, window, options_set=False):
             if len(in_cells) == 1:
                 clue_id = in_cells[0]
                 board[clue_id] = option
-                if options_set:
+                if solver_status.options_set:
                     to_remove = [(option, cell) for cell in ALL_NBRS[clue_id] if option in board[cell]]
                     _remove_options(board, to_remove, window)
                 if window:
@@ -431,7 +430,7 @@ def _hidden_pair(board, window):
                     return True
         return False
 
-    init_options(board, window)
+    init_options(board, window, solver_status)
     for i in range(9):
         if _find_pairs(CELLS_IN_ROW[i]):
             return True
@@ -476,7 +475,7 @@ def _hidden_triplet(board, window):
                     return True
         return False
 
-    init_options(board, window)
+    init_options(board, window, solver_status)
     for i in range(9):
         if _find_triplets(CELLS_IN_ROW[i]):
             return True
@@ -518,7 +517,7 @@ def _hidden_quad(board, window):
                     return True
         return False
 
-    init_options(board, window)
+    init_options(board, window, solver_status)
     for i in range(9):
         if _find_quad(CELLS_IN_ROW[i]):
             return True
@@ -562,7 +561,7 @@ def _naked_twins(board, window):
                     return True
         return False
 
-    init_options(board, window)
+    init_options(board, window, solver_status)
     for i in range(9):
         if _find_pairs(CELLS_IN_ROW[i]):
             return True
@@ -599,7 +598,7 @@ def _naked_triplets(board, window):
                         return True
         return False
 
-    init_options(board, window)
+    init_options(board, window, solver_status)
     for i in range(9):
         if _find_triplets(CELLS_IN_ROW[i]):
             return True
@@ -635,7 +634,7 @@ def _naked_quads(board, window):
                         return True
         return False
 
-    init_options(board, window)
+    init_options(board, window, solver_status)
     for i in range(9):
         if _find_quad(CELLS_IN_ROW[i]):
             return True
@@ -702,7 +701,7 @@ def _omissions(board, window):
                     return True
         return False
 
-    init_options(board, window)
+    init_options(board, window, solver_status)
     for i in range(9):
         if _in_row_col(CELLS_IN_ROW[i]):
             return True
@@ -753,33 +752,18 @@ def _y_wings(board, window):
                 return True
         return False
 
-    init_options(board, window)
+    init_options(board, window, solver_status)
     for cell in range(81):
         if len(board[cell]) == 2 and _reduce_xs(_find_wings(cell)):
             return True
     return False
 
 
-def init_options(board, window):
-    """ Initialize options of unsolved cells """
-    if not solver_status.options_set:
-        for cell in range(81):
-            if not is_clue(cell, board, window):
-                nbr_clues = [board[nbr_cell] for nbr_cell in ALL_NBRS[cell] if is_clue(nbr_cell, board, window)]
-                board[cell] = "".join(value for value in SUDOKU_VALUES_LIST if value not in nbr_clues)
-                if len(board[cell]) == 1:
-                    solver_status.naked_singles.add(cell)
-        if window:
-            window.set_current_board(board)
-            solver_status.capture_baseline(board, window)
-        solver_status.options_set = True
-
-
 def manual_solver(board, window, _):
     """ Main solver loop:
-     - The algorithm draws current board and waits until an event
-     - Each _method function returns True when the board is updated, False otherwise
-     - Interactive vs. step-wise execution is controlled by 'window.calculate_next_clue' member """
+     - The algorithm draws current board and waits until a predefined event happens
+     - Each '_method' function returns True if the board is updated, False otherwise
+     - Interactive vs. step-wise execution is controlled by 'window.calculate_next_clue' parameter """
 
     solver_status.reset(board, window)
     while True:
@@ -795,13 +779,13 @@ def manual_solver(board, window, _):
         elif window.show_solution_steps:
             window.calculate_next_clue = False
 
-        if _open_singles(board, window, solver_status.options_set):
+        if _open_singles(board, window):
             continue
-        if _visual_elimination(board, window, solver_status.options_set):
+        if _visual_elimination(board, window):
             continue
-        if _naked_singles(board, window, solver_status.options_set):
+        if _naked_singles(board, window):
             continue
-        if _hidden_singles(board, window, solver_status.options_set):
+        if _hidden_singles(board, window):
             continue
         if _hidden_pair(board, window):
             continue
@@ -821,5 +805,5 @@ def manual_solver(board, window, _):
             continue
 
         if not is_solved(board, window):        # TODO: for debugging only!
-            print('\nDupa')
+            print('\nLeaving manual_solver')
         return False

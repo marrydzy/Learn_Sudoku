@@ -92,6 +92,21 @@ def get_options(cell_id, board, window):
         [board[cell] for cell in ALL_NBRS[cell_id] if is_clue(cell, board, window)]))
 
 
+def init_options(board, window, solver_status):
+    """ Initialize options of unsolved cells """
+    if not solver_status.options_set:
+        for cell in range(81):
+            if not is_clue(cell, board, window):
+                nbr_clues = [board[nbr_cell] for nbr_cell in ALL_NBRS[cell] if is_clue(nbr_cell, board, window)]
+                board[cell] = "".join(value for value in SUDOKU_VALUES_LIST if value not in nbr_clues)
+                if len(board[cell]) == 1:
+                    solver_status.naked_singles.add(cell)
+        if window:
+            window.set_current_board(board)
+            solver_status.capture_baseline(board, window)
+        solver_status.options_set = True
+
+
 def set_cell_options(cell_id, board, window, solver_status):
     """ Set cell options """
     board[cell_id] = ''.join(get_options(cell_id, board, window))
@@ -141,7 +156,7 @@ def check_file(pathname, data, additional_info=""):
         sys.exit(-1)
 
 
-def set_puzzle_imput_file(puzzle, config, data):
+def set_puzzle_input_file(puzzle, config, data):
     """ Resolving sudoku puzzle definition filename
     Glossary:
     fname, filename, file_name - file name with or without extension
@@ -175,8 +190,8 @@ def set_puzzle_imput_file(puzzle, config, data):
     """
 
     def _assign_puzzle_input_file(fname):
-        _, extension = os.path.splitext(fname)
-        if extension.lower() == '.txt':
+        _, ext = os.path.splitext(fname)
+        if ext.lower() == '.txt':
             config["fname"] = fname
         else:
             config["image"] = fname
@@ -186,8 +201,7 @@ def set_puzzle_imput_file(puzzle, config, data):
         images = glob.glob(image_fnames)
         if images:
             images = sorted(images, key=os.path.getmtime, reverse=True)
-            puzzle = images[0]
-            _assign_puzzle_input_file(puzzle)
+            _assign_puzzle_input_file(images[0])
             return True
         data["error_data"] = os.path.join(str(Path.home()), 'Pictures', 'Webcam')
         error_message("webcam_empty", data)

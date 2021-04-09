@@ -6,7 +6,7 @@ import time
 import itertools
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
-from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
+from utils import ALL_NBRS, SUDOKU_VALUES_SET
 
 
 def get_stats(func):
