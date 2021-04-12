@@ -5,10 +5,11 @@
 import itertools
 from collections import defaultdict
 
+# from icecream import ic
+
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
 from utils import is_clue, is_solved, get_options, init_options, set_cell_options, set_neighbours_options
-from pygame import K_h
 
 
 class SolverStatus:
@@ -87,7 +88,6 @@ def _other_than_clue_found(board, window, options_set):
     board[cell_id] = value
     if as_clue:
         window.clues_found.add(cell_id)
-        _are_conflicted_cells(cell_id, board, window)
     else:
         window.clues_found.remove(cell_id)
         solver_status.naked_singles.add(cell_id)
@@ -128,12 +128,30 @@ def _as_opt_and_undefined(board, window):
         board[cell_id] = value
         window.options_visible.add(cell_id)
         solver_status.naked_singles.add(cell_id)
-        # window.set_current_board(board)
 
 
 def _check_board_integrity(board, window):
-    """ Check integrity of the current board, mark cells with
-    wrong value or options set as 'wrong_values' """
+    """ Check integrity of the current board:
+     - check for conflicted cells in each row, column and box
+     - if solved board is defined, check entered values (clues or options) if correct
+    """
+
+    def _check_house(cells):
+        values_dict = defaultdict(list)
+        for cell in cells:
+            if is_clue(cell, board, window):
+                values_dict[board[cell]].append(cell)
+        for value, in_cells in values_dict.items():
+            if len(in_cells) > 1:
+                solver_status.conflicted_cells.extend(in_cells)
+
+    solver_status.conflicted_cells.clear()
+    for i in range(9):
+        _check_house(CELLS_IN_ROW[i])
+        _check_house(CELLS_IN_COL[i])
+        _check_house(CELLS_IN_SQR[i])
+    solver_status.conflicted_cells = list(set(solver_status.conflicted_cells))
+
     if window.solved_board:
         window.wrong_values.clear()
         for cell_id in range(81):
@@ -146,38 +164,12 @@ def _check_board_integrity(board, window):
                         window.wrong_values.add(cell_id)
 
 
-def _are_conflicted_cells(cell_id, board, window):
-    """ Check if the given cell is not in conflict with values of other cells """
-    solver_status.conflicted_cells = [cell for cell in ALL_NBRS[cell_id] if
-                                      is_clue(cell, board, window) and board[cell] == board[cell_id]]
-    if solver_status.conflicted_cells:
-        solver_status.conflicted_cells.append(cell_id)
-        window.entered_conflicted_value = True
-        return True
-    return False
-
-
-def show_conflicted_cells(window, board):
-    """ TODO """
-    window.buttons[K_h].set_status(False)
-    cell_house = ALL_NBRS[solver_status.conflicted_cells[-1]]
-    window.draw_board(board, "plain_board",
-                      conflicted_cells=solver_status.conflicted_cells,
-                      cell_house=cell_house)
-    window.buttons[K_h].set_status(True)
-
-
-def show_wrong_values(window, board):
-    """ TODO """
-    window.buttons[K_h].set_status(False)
-    window.draw_board(board, "plain_board", wrong_values=window.wrong_values)
-    window.buttons[K_h].set_status(True)
-
-
 def _set_manually(board, window):
     """ Interactively take entered values """
 
-    while window and window.clue_entered:
+    board_updated = False
+    while window and window.clue_entered[0]:
+        board_updated = True
         cell_id, value, as_clue = window.clue_entered
         if cell_id in window.clues_found:
             if board[cell_id] == value:
@@ -190,22 +182,16 @@ def _set_manually(board, window):
             else:
                 _as_opt_and_undefined(board, window)
         _check_board_integrity(board, window)
-        window.clue_entered = None
+        window.clue_entered = (None, None, None)
 
-        if solver_status.conflicted_cells:
-            show_conflicted_cells(window, board)
-            if window.clue_entered:
-                continue
-
-        if window.show_wrong_values and window.wrong_values:
-            show_wrong_values(window, board)
-            if window.clue_entered:
-                continue
-
+        cell_house = ALL_NBRS[solver_status.conflicted_cells[-1]] if solver_status.conflicted_cells else list()
+        window.draw_board(board, "plain_board",
+                          wrong_values=window.wrong_values,
+                          conflicted_cells=solver_status.conflicted_cells,
+                          cell_house=cell_house)
+        window.wrong_values.clear()
         solver_status.conflicted_cells.clear()
-        window.entered_conflicted_value = False     # TODO - ???
-        return True
-    return False
+    return True if board_updated else False
 
 
 def _open_singles(board, window):

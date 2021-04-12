@@ -3,6 +3,8 @@
 import pygame
 import time
 
+# from icecream import ic
+
 import graph_utils
 from display import screen_messages
 
@@ -68,8 +70,8 @@ class AppWindow:
         self.show_wrong_values = True
         self.animate = False
         self.board_updated = False
-        self.clue_entered = None
-        self.entered_conflicted_value = False
+        self.clue_entered = (None, None, None)
+        # self.entered_conflicted_value = False
         self.show_all_pencil_marks = False
         self.critical_error = None
         self.wait = False
@@ -123,10 +125,10 @@ class AppWindow:
     def handle_input_events(self):
         """ handle input events before entering the display loop  """
         show_event = False
-        if self.entered_conflicted_value:
-            graph_utils.set_btn_status(self, False, (pygame.K_m, pygame.K_s))
-            graph_utils.set_btn_status(self, True, (pygame.K_b,))
-            show_event = True
+        # if self.entered_conflicted_value:
+        #     graph_utils.set_btn_status(self, False, (pygame.K_m, pygame.K_s))
+        #     graph_utils.set_btn_status(self, True, (pygame.K_b,))
+        #    show_event = True
         return show_event
 
     def impossible_entry_postproc(self):
@@ -191,6 +193,8 @@ class AppWindow:
             self.input_board = board.copy()     # TODO - check if it should be done each time in draw_board
         elif self.critical_error:
             self.critical_error_event(board, solver_tool, **kwargs)
+        elif "conflicted_cells" in kwargs and kwargs["conflicted_cells"]:
+            pass    # TODO !!!
         elif solver_tool == "end_of_game":
             self.sudoku_solved_event(board)
         elif not (self.show_solution_steps and self.method[solver_tool] in self.inspect):
@@ -198,12 +202,12 @@ class AppWindow:
 
         start = time.time()             # TODO - get rid of it!!!
 
-        self.handle_input_events()
+        # self.handle_input_events()
         self.render_board(board, solver_tool, **kwargs)
 
         if self.critical_error:
             graph_utils.display_info(self, screen_messages["critical_error"])
-        elif self.entered_conflicted_value:
+        elif "conflicted_cells" in kwargs and kwargs["conflicted_cells"]:
             graph_utils.display_info(self, screen_messages["conflicting_values"])
             self.entered_conflicted_value = None
         elif solver_tool == "end_of_game":
@@ -215,7 +219,6 @@ class AppWindow:
         elif solver_tool != "plain_board":
             graph_utils.display_info(self, screen_messages[solver_tool])
         else:
-            # print("plain_board")
             graph_utils.display_info(self, screen_messages["plain_board"])
 
         self.board_updated = False

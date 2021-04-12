@@ -2,6 +2,8 @@ import time
 import sys
 import pygame
 
+# from icecream import ic
+
 from solver_manual import solver_status
 from solver_manual import init_options
 
@@ -22,6 +24,7 @@ BLACK = (0, 0, 0)
 BLUE = (51, 102, 153)
 CORAL = (255, 127, 80)
 CYAN = (0, 255, 255)
+ORANGE = (255, 165, 0)
 PINK = (255, 192, 203)
 DARKGREY = (120, 120, 120)
 GAINSBORO = (230, 230, 230)
@@ -173,7 +176,7 @@ def cell_color(window, cell, **kwargs):
     if "wrong_values" in kwargs and cell in kwargs["wrong_values"]:
         color = PINK
     if "conflicted_cells" in kwargs and kwargs["conflicted_cells"] and cell in kwargs["conflicted_cells"]:
-        color = LIGHTCORAL
+        color = ORANGE
     if "impacted_cells" in kwargs and kwargs["impacted_cells"] and cell in kwargs["impacted_cells"]:
         color = C_OTHER_CELLS
     if cell == window.selected_cell or \
@@ -340,7 +343,7 @@ def pencil_mark_btn_clicked(window, _, board, *args, **kwargs):
         window.buttons[pygame.K_p].draw(window.screen)
         window.buttons[pygame.K_c].set_pressed(False)
         window.buttons[pygame.K_c].draw(window.screen)
-        init_options(board, window)
+        init_options(board, window, solver_status)
 
 
 def hint_btn_clicked(window, _, board, solver_tool, **kwargs):
@@ -431,7 +434,6 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
 def toggle_pencil_marks_btn_clicked(window, _, board, *args, **kwargs):
     """ action on pressing 'Toggle pencil marks' button - TODO: add the button """
     if not window.buttons[pygame.K_h].is_pressed():
-        # init_options(board, window)
         window.show_all_pencil_marks = not window.show_all_pencil_marks
         window.render_board(window.input_board, "plain_board")
         pygame.display.update()
@@ -475,6 +477,7 @@ def cell_clicked(window, cell_id, *args, **kwargs):
             window.clue_entered = (cell_id, window.selected_key,
                                    True if window.buttons[pygame.K_c].is_pressed() else False)
             window.wait = False
+            window.board_updated = True
         else:
             if cell_id == window.selected_cell:
                 window.selected_cell = None
