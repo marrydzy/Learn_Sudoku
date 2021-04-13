@@ -166,10 +166,9 @@ def _check_board_integrity(board, window):
 
 def _set_manually(board, window):
     """ Interactively take entered values """
-
-    board_updated = False
-    while window and window.clue_entered[0]:
-        board_updated = True
+    kwargs = {}
+    if window and window.clue_entered[0] is not None:
+        solver_status.capture_baseline(board, window)
         cell_id, value, as_clue = window.clue_entered
         if cell_id in window.clues_found:
             if board[cell_id] == value:
@@ -183,15 +182,13 @@ def _set_manually(board, window):
                 _as_opt_and_undefined(board, window)
         _check_board_integrity(board, window)
         window.clue_entered = (None, None, None)
-
         cell_house = ALL_NBRS[solver_status.conflicted_cells[-1]] if solver_status.conflicted_cells else list()
-        window.draw_board(board, "plain_board",
-                          wrong_values=window.wrong_values,
-                          conflicted_cells=solver_status.conflicted_cells,
-                          cell_house=cell_house)
-        window.wrong_values.clear()
-        solver_status.conflicted_cells.clear()
-    return True if board_updated else False
+        kwargs = {"solver_tool": "end_of_game" if is_solved(board, window) else "plain_board",
+                  "wrong_values": window.wrong_values,
+                  "conflicted_cells": solver_status.conflicted_cells,
+                  "cell_house": cell_house,
+                  }
+    return kwargs
 
 
 def _open_singles(board, window):
@@ -203,35 +200,36 @@ def _open_singles(board, window):
     def _set_missing_number(house):
         open_cells = [cell for cell in house if not is_clue(cell, board, window)]
         if len(open_cells) == 1:
+            solver_status.capture_baseline(board, window)
+            cell_id = open_cells.pop()
             missing_value = SUDOKU_VALUES_SET.copy() - set(
                 ''.join(board[cell] for cell in house if is_clue(cell, board, window)))
             if len(missing_value) != 1:
-                board[open_cells[0]] = ''.join(missing_value)
+                board[cell_id] = ''.join(missing_value)
                 value_cells = defaultdict(list)
                 for cell in house:
                     value_cells[board[cell]].append(cell)
-                screwed = [open_cells[0]]
+                screwed = [cell_id]
                 for value, cell in value_cells.items():
                     if len(cell) != 1:
                         screwed.extend(cell)
                 window.critical_error = tuple(screwed)
-                board[open_cells[0]] = ''.join(value for value in missing_value)
+                board[cell_id] = ''.join(value for value in missing_value)
             else:
-                board[open_cells[0]] = missing_value.pop()
-            if window:
-                if window.draw_board(board, "open_singles", new_clue=open_cells[0]):
-                    window.clues_found.add(open_cells[0])
-                else:
-                    solver_status.restore_baseline(board, window)
+                board[cell_id] = missing_value.pop()
+                window.clues_found.add(cell_id)
+            kwargs["solver_tool"] = "open_singles"
+            kwargs["new_clue"] = cell_id
             return True
         return False
 
+    kwargs = {}
     if not solver_status.options_set:
         for i in range(9):
             if (_set_missing_number(CELLS_IN_ROW[i]) or _set_missing_number(CELLS_IN_COL[i]) or
                     _set_missing_number(CELLS_IN_SQR[i])):
-                return True
-    return False
+                break
+    return kwargs
 
 
 def _visual_elimination(board, window):
@@ -270,23 +268,25 @@ def _visual_elimination(board, window):
                 else:
                     clues.append(cell)
             if len(clues) == 1:
-                board[clues[0]] = value
-                if window:
-                    house = [cell for offset in range(3) for cell in cols_rows[3*band + offset]]
-                    if window.draw_board(board, "visual_elimination", house=house, new_clue=clues[0],
-                                         greyed_out=greyed_out):
-                        window.clues_found.add(clues[0])
-                    else:
-                        solver_status.restore_baseline(board, window)
+                solver_status.capture_baseline(board, window)
+                cell_id = clues[0]
+                board[cell_id] = value
+                window.clues_found.add(cell_id)
+                house = [cell for offset in range(3) for cell in cols_rows[3*band + offset]]
+                kwargs["solver_tool"] = "visual_elimination"
+                kwargs["new_clue"] = cell_id
+                kwargs["greyed_out"] = greyed_out
+                kwargs["house"] = house
                 return True
         return False
 
+    kwargs = {}
     if not solver_status.options_set:
         for digit in SUDOKU_VALUES_LIST:
             for zone in range(6):
                 if _check_zone(digit, zone):
-                    return True
-    return False
+                    return kwargs
+    return kwargs
 
 
 def _naked_singles(board, window):
@@ -297,31 +297,34 @@ def _naked_singles(board, window):
         When options for all unsolved cells are already set the function continues solving naked singles until
         the 'naked_singles' list is empty (at this stage of sudoku solving it is the 'simplest' method)
     """
+    kwargs = {}
     if solver_status.options_set:
         if not solver_status.naked_singles:
-            return False
+            return kwargs
         else:
+            solver_status.capture_baseline(board, window)
             naked_single = solver_status.naked_singles.pop()
             clue = board[naked_single]  # TODO !!!!
             to_remove = [(clue, cell) for cell in ALL_NBRS[naked_single]
                          if not is_clue(cell, board, window) and clue in board[cell]]
             _remove_options(board, to_remove, window)
-            if window:
-                if window.draw_board(board, "naked_singles", new_clue=naked_single, remove=to_remove):
-                    window.clues_found.add(naked_single)
-                else:
-                    solver_status.restore_baseline(board, window)
-            return True
+            kwargs["solver_tool"] = "naked_singles"
+            kwargs["new_clue"] = naked_single
+            kwargs["remove"] = to_remove
+            window.clues_found.add(naked_single)
+            return kwargs
     else:
         for cell in range(81):
             if board[cell] == ".":
                 cell_opts = get_options(cell, board, window)
                 if len(cell_opts) == 1:
+                    solver_status.capture_baseline(board, window)
                     board[cell] = cell_opts.pop()
-                    if window and window.draw_board(board, "naked_singles", new_clue=cell):
-                        window.clues_found.add(cell)
-                    return True
-        return False
+                    kwargs["solver_tool"] = "naked_singles"
+                    kwargs["new_clue"] = cell
+                    window.clues_found.add(cell)
+                    return kwargs
+        return kwargs
 
 
 def _hidden_singles(board, window):
@@ -357,25 +360,34 @@ def _hidden_singles(board, window):
                 if solver_status.options_set:
                     to_remove = [(option, cell) for cell in ALL_NBRS[clue_id] if option in board[cell]]
                     _remove_options(board, to_remove, window)
+                kwargs["solver_tool"] = "hidden_singles"
+                kwargs["new_clue"] = clue_id
+                kwargs["house"] = house
+                kwargs["greyed_out"] = greyed_out
+                kwargs["remove"] = to_remove
+                window.clues_found.add(clue_id)
+                """
                 if window:
                     if window.draw_board(board, "hidden_singles", new_clue=clue_id,
                                                 house=house, greyed_out=greyed_out, remove=to_remove):
                         window.clues_found.add(clue_id)
                     else:
                         solver_status.restore_baseline(board, window)
+                """
                 return True
         return False
 
+    kwargs = {}
     for row in range(9):
         if _find_unique_positions(CELLS_IN_ROW[row]):
-            return True
+            return kwargs
     for col in range(9):
         if _find_unique_positions(CELLS_IN_COL[col]):
-            return True
+            return kwargs
     for sqr in range(9):
         if _find_unique_positions(CELLS_IN_SQR[sqr]):
-            return True
-    return False
+            return kwargs
+    return {}
 
 
 def _hidden_pair(board, window):
@@ -745,34 +757,38 @@ def _y_wings(board, window):
     return False
 
 
-def manual_solver(board, window, _):
+def manual_solver(board, window):
     """ Main solver loop:
      - The algorithm draws current board and waits until a predefined event happens
      - Each '_method' function returns True if the board is updated, False otherwise
      - Interactive vs. step-wise execution is controlled by 'window.calculate_next_clue' parameter """
 
     solver_status.reset(board, window)
+    kwargs = {"solver_tool": "plain_board"}
     while True:
-        if is_solved(board, window):
-            if window and window.draw_board(board, solver_tool="end_of_game"):
-                return True
-        solver_status.capture_baseline(board, window)
-        window.draw_board(board, "plain_board")
-        if _set_manually(board, window):
+        window.draw_board(board, **kwargs)
+
+        kwargs = _set_manually(board, window)
+        if kwargs:
             continue
         if not window.calculate_next_clue:
             continue
         elif window.show_solution_steps:
             window.calculate_next_clue = False
 
-        if _open_singles(board, window):
+        kwargs = _open_singles(board, window)
+        if kwargs:
             continue
-        if _visual_elimination(board, window):
+        kwargs = _visual_elimination(board, window)
+        if kwargs:
             continue
-        if _naked_singles(board, window):
+        kwargs = _naked_singles(board, window)
+        if kwargs:
             continue
-        if _hidden_singles(board, window):
+        kwargs = _hidden_singles(board, window)
+        if kwargs:
             continue
+
         if _hidden_pair(board, window):
             continue
         if _naked_twins(board, window):

@@ -346,7 +346,7 @@ def pencil_mark_btn_clicked(window, _, board, *args, **kwargs):
         init_options(board, window, solver_status)
 
 
-def hint_btn_clicked(window, _, board, solver_tool, **kwargs):
+def hint_btn_clicked(window, _, board, **kwargs):
     """ action on pressing 'Hint' button """
     if window.buttons[pygame.K_h].is_active():
         window.buttons[pygame.K_h].press_and_deactivate(window.screen)
@@ -357,16 +357,17 @@ def hint_btn_clicked(window, _, board, solver_tool, **kwargs):
         window.wait = False
 
 
-def back_btn_clicked(window, btn_id, board, solver_tool, **kwargs):
+def back_btn_clicked(window, btn_id, board, **kwargs):
     """ action on clicking 'Back' button """
     # window.buttons[pygame.K_h].set_pressed(False)
     if window.buttons[pygame.K_b].is_active():
+        solver_status.restore_baseline(board, window)
         window.buttons[pygame.K_b].press_and_deactivate(window.screen)
         set_btn_status(window, False, (pygame.K_a, pygame.K_b))
         set_btn_status(window, True, (pygame.K_c, pygame.K_p, pygame.K_h, pygame.K_m, pygame.K_s))
         set_keyboard_status(window, True)
         window.wait = False
-        window.board_updated = False
+        # window.board_updated = False
         # window.render_board(window.input_board, "plain_board")  # options_set=kwargs["options_set"])
         # display_info(window, "")
         # pygame.display.update()
@@ -428,14 +429,14 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
         if i not in window.clues_defined:
             board[i] = "."
     window.set_current_board(board)
-    window.board_updated = False
+    window.board_updated = True
 
 
 def toggle_pencil_marks_btn_clicked(window, _, board, *args, **kwargs):
     """ action on pressing 'Toggle pencil marks' button - TODO: add the button """
     if not window.buttons[pygame.K_h].is_pressed():
         window.show_all_pencil_marks = not window.show_all_pencil_marks
-        window.render_board(window.input_board, "plain_board")
+        window.render_board(window.input_board, solver_tool="plain_board")
         pygame.display.update()
         window.wait = False
         window.board_updated = False
@@ -483,7 +484,7 @@ def cell_clicked(window, cell_id, *args, **kwargs):
                 window.selected_cell = None
             else:
                 window.selected_cell = cell_id
-            window.render_board(window.input_board, "plain_board")
+            window.render_board(window.input_board)
             pygame.display.update()
 
 
