@@ -355,8 +355,10 @@ def _hidden_singles(board, window):
                         greyed_out.append(cell)
 
             if len(in_cells) == 1:
+                solver_status.capture_baseline(board, window)
                 clue_id = in_cells[0]
                 board[clue_id] = option
+                window.clues_found.add(clue_id)
                 if solver_status.options_set:
                     to_remove = [(option, cell) for cell in ALL_NBRS[clue_id] if option in board[cell]]
                     _remove_options(board, to_remove, window)
@@ -365,15 +367,6 @@ def _hidden_singles(board, window):
                 kwargs["house"] = house
                 kwargs["greyed_out"] = greyed_out
                 kwargs["remove"] = to_remove
-                window.clues_found.add(clue_id)
-                """
-                if window:
-                    if window.draw_board(board, "hidden_singles", new_clue=clue_id,
-                                                house=house, greyed_out=greyed_out, remove=to_remove):
-                        window.clues_found.add(clue_id)
-                    else:
-                        solver_status.restore_baseline(board, window)
-                """
                 return True
         return False
 
@@ -387,7 +380,7 @@ def _hidden_singles(board, window):
     for sqr in range(9):
         if _find_unique_positions(CELLS_IN_SQR[sqr]):
             return kwargs
-    return {}
+    return kwargs
 
 
 def _hidden_pair(board, window):
@@ -419,26 +412,27 @@ def _hidden_pair(board, window):
                 to_remove = \
                     [(option, cell) for option in other_options for cell in in_cells if option in board[cell]]
                 if to_remove:
+                    solver_status.capture_baseline(board, window)
                     _remove_options(board, to_remove, window)
-                    if window:
-                        if window.draw_board(board, "hidden_pairs", remove=to_remove, claims=in_cells, house=cells):
-                            pass
-                        else:
-                            solver_status.restore_baseline(board, window)
+                    kwargs["solver_tool"] = "hidden_pairs"
+                    kwargs["claims"] = in_cells
+                    kwargs["house"] = cells
+                    kwargs["remove"] = to_remove
                     return True
         return False
 
     init_options(board, window, solver_status)
+    kwargs = {}
     for i in range(9):
         if _find_pairs(CELLS_IN_ROW[i]):
-            return True
+            return kwargs
     for i in range(9):
         if _find_pairs(CELLS_IN_COL[i]):
-            return True
+            return kwargs
     for i in range(9):
         if _find_pairs(CELLS_IN_SQR[i]):
-            return True
-    return False
+            return kwargs
+    return kwargs
 
 
 def _hidden_triplet(board, window):
@@ -463,25 +457,25 @@ def _hidden_triplet(board, window):
                 remove_opts = set("".join(board[cell] for cell in triplet_cells)) - set(triplet)
                 to_remove = [(value, cell) for value in remove_opts for cell in triplet_cells]
                 if to_remove:
+                    solver_status.capture_baseline(board, window)
                     _remove_options(board, to_remove, window)
-                    if window:
-                        if window.draw_board(board, "hidden_triplets", remove=to_remove,
-                                             claims=triplet_cells, house=cells):
-                            pass
-                        else:
-                            solver_status.restore_baseline(board, window)
+                    kwargs["solver_tool"] = "hidden_triplets"
+                    kwargs["claims"] = triplet_cells
+                    kwargs["house"] = cells
+                    kwargs["remove"] = to_remove
                     return True
         return False
 
     init_options(board, window, solver_status)
+    kwargs = {}
     for i in range(9):
         if _find_triplets(CELLS_IN_ROW[i]):
-            return True
+            return kwargs
         if _find_triplets(CELLS_IN_COL[i]):
-            return True
+            return kwargs
         if _find_triplets(CELLS_IN_SQR[i]):
-            return True
-    return False
+            return kwargs
+    return kwargs
 
 
 def _hidden_quad(board, window):
@@ -550,24 +544,25 @@ def _naked_twins(board, window):
                 to_remove = [(values[0], cell) for cell in unsolved if values[0] in board[cell]]
                 to_remove.extend([(values[1], cell) for cell in unsolved if values[1] in board[cell]])
                 if to_remove:
+                    solver_status.capture_baseline(board, window)
                     _remove_options(board, to_remove, window)
-                    if window:
-                        if window.draw_board(board, "naked_twins", remove=to_remove, claims=in_cells, house=cells):
-                            pass
-                        else:
-                            solver_status.restore_baseline(board, window)
+                    kwargs["solver_tool"] = "naked_twins"
+                    kwargs["claims"] = in_cells
+                    kwargs["house"] = cells
+                    kwargs["remove"] = to_remove
                     return True
         return False
 
     init_options(board, window, solver_status)
+    kwargs = {}
     for i in range(9):
         if _find_pairs(CELLS_IN_ROW[i]):
-            return True
+            return kwargs
         if _find_pairs(CELLS_IN_COL[i]):
-            return True
+            return kwargs
         if _find_pairs(CELLS_IN_SQR[i]):
-            return True
-    return False
+            return kwargs
+    return kwargs
 
 
 def _naked_triplets(board, window):
@@ -663,14 +658,13 @@ def _omissions(board, window):
                     impacted_cells = set(CELLS_IN_SQR[squares.pop()]) - set(cells)
                     to_remove = [(value, cell) for cell in impacted_cells if value in board[cell]]
                     if to_remove:
+                        solver_status.capture_baseline(board, window)
                         _remove_options(board, to_remove, window)
-                        if window:
-                            claims = [(to_remove[0][0], cell) for cell in cells]
-                            if window.draw_board(board, "omissions", claims=claims, remove=to_remove,
-                                                 house=cells, impacted_cells=impacted_cells):
-                                pass
-                            else:
-                                solver_status.restore_baseline(board, window)
+                        kwargs["solver_tool"] = "omissions"
+                        kwargs["claims"] = [(to_remove[0][0], cell) for cell in cells]
+                        kwargs["house"] = cells
+                        kwargs["remove"] = to_remove
+                        kwargs["impacted_cells"] = impacted_cells
                         return True
         return False
 
@@ -688,27 +682,27 @@ def _omissions(board, window):
                     impacted_cells = set(CELLS_IN_COL[in_cols.pop()]) - set(cells)
                 to_remove = [(value, cell) for cell in impacted_cells if value in board[cell]]
                 if to_remove:
+                    solver_status.capture_baseline(board, window)
                     _remove_options(board, to_remove, window)
-                    if window:
-                        claims = [(to_remove[0][0], cell) for cell in cells]
-                        if window.draw_board(board, "omissions", claims=claims, remove=to_remove,
-                                             house=cells, impacted_cells=impacted_cells):
-                            pass
-                        else:
-                            solver_status.restore_baseline(board, window)
+                    kwargs["solver_tool"] = "omissions"
+                    kwargs["claims"] = [(to_remove[0][0], cell) for cell in cells]
+                    kwargs["house"] = cells
+                    kwargs["remove"] = to_remove
+                    kwargs["impacted_cells"] = impacted_cells
                     return True
         return False
 
     init_options(board, window, solver_status)
+    kwargs = {}
     for i in range(9):
         if _in_row_col(CELLS_IN_ROW[i]):
-            return True
+            return kwargs
         if _in_row_col(CELLS_IN_COL[i]):
-            return True
+            return kwargs
         if _in_block(CELLS_IN_SQR[i]):
-            return True
+            return kwargs
 
-    return False
+    return kwargs
 
 
 def _y_wings(board, window):
@@ -740,21 +734,29 @@ def _y_wings(board, window):
                 if wing[0] in board[cell_id]:
                     to_remove.append((wing[0], cell_id))
             if to_remove:
+                solver_status.capture_baseline(board, window)
                 _remove_options(board, to_remove, window)
+                kwargs["solver_tool"] = "y_wings"
+                kwargs["y_wing"] = wing
+                kwargs["remove"] = to_remove
+                kwargs["impacted_cells"] = set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]])
+                """
                 if window:
                     if window.draw_board(board, "y_wings", y_wing=wing, remove=to_remove,
                                          impacted_cells=set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]])):
                         pass
                     else:
                         solver_status.restore_baseline(board, window)
+                """
                 return True
         return False
 
     init_options(board, window, solver_status)
+    kwargs = {}
     for cell in range(81):
         if len(board[cell]) == 2 and _reduce_xs(_find_wings(cell)):
-            return True
-    return False
+            return kwargs
+    return kwargs
 
 
 def manual_solver(board, window):
@@ -788,17 +790,22 @@ def manual_solver(board, window):
         kwargs = _hidden_singles(board, window)
         if kwargs:
             continue
+        kwargs = _naked_twins(board, window)
+        if kwargs:
+            continue
+        kwargs = _hidden_pair(board, window)
+        if kwargs:
+            continue
+        kwargs = _hidden_triplet(board, window)
+        if kwargs:
+            continue
+        kwargs = _omissions(board, window)
+        if kwargs:
+            continue
+        kwargs = _y_wings(board, window)
+        if kwargs:
+            continue
 
-        if _hidden_pair(board, window):
-            continue
-        if _naked_twins(board, window):
-            continue
-        if _omissions(board, window):
-            continue
-        if _y_wings(board, window):
-            continue
-        if _hidden_triplet(board, window):
-            continue
         if _naked_triplets(board, window):
             continue
         if _hidden_quad(board, window):

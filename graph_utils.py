@@ -180,7 +180,7 @@ def cell_color(window, cell, **kwargs):
     if "impacted_cells" in kwargs and kwargs["impacted_cells"] and cell in kwargs["impacted_cells"]:
         color = C_OTHER_CELLS
     if cell == window.selected_cell or \
-            "new_clue" in kwargs and kwargs["new_clue"] and cell == kwargs["new_clue"]:
+            "new_clue" in kwargs and cell == kwargs["new_clue"]:
         color = LIGHTGREEN
     if window.critical_error and cell in window.critical_error:
         color = LIGHTCORAL

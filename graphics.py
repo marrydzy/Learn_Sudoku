@@ -192,10 +192,11 @@ class AppWindow:
                         if solver_tool != "plain_board":
                             graph_utils.highlight_options(self, cell_id, board[cell_id], cell_pos, **kwargs)
                         graph_utils.render_options(self, board[cell_id], cell_pos)
-        if removed and graph_utils.show_pencil_marks(self, cell_id, **kwargs):
+        if removed:
             for value, cell_id in removed:
-                cell_pos = (CELL_COL[cell_id] * CELL_SIZE + LEFT_MARGIN, CELL_ROW[cell_id] * CELL_SIZE + TOP_MARGIN)
-                graph_utils.render_options(self, value, cell_pos)
+                if cell_id in self.options_visible:
+                    cell_pos = (CELL_COL[cell_id] * CELL_SIZE + LEFT_MARGIN, CELL_ROW[cell_id] * CELL_SIZE + TOP_MARGIN)
+                    graph_utils.render_options(self, value, cell_pos)
 
         for i in range(10):
             line_thickness = 5 if i % 3 == 0 else 1
