@@ -70,7 +70,7 @@ def apply_standard_techniques():
                     elif not board[one_cell]:
                         return False
             if window:
-                window.draw_board(board, "scrub_pencil_marks",
+                window.draw_board(board, solver_tool="scrub_pencil_marks",
                                   new_clue=cell, remove=to_remove, singles=lone_singles,
                                   house=solver_methods.ALL_NBRS[cell])
         return True
@@ -140,7 +140,6 @@ def next_cell_to_resolve():
 def find_cells_values():
     """ resolve the sudoku puzzle by recursively finding values of empty cells """
     next_cell, clue_iterator = next_cell_to_resolve()
-    print('next_cell_to_resolve')
     if next_cell is None:
         return True
 
@@ -168,7 +167,7 @@ def find_cells_values():
 
         if config["graphical_mode"]:
             graph_utils.display_info(data["graph_display"], "Iterate")
-            data["graph_display"].draw_board(board, "iterate", iterate=next_cell)  # TODO - fix it!
+            data["graph_display"].draw_board(board, solver_tool="iterate", iterate=next_cell)
 
         if apply_standard_techniques() and find_cells_values():
             iter_stack.pop()

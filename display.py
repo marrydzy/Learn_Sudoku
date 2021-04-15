@@ -35,6 +35,7 @@ screen_messages = {
     "conflicting_values": "The entered value conflicts with other cells",
     "wrong_values": "Incorrect value entered!",
     "critical_error": "DUPA JAŚ !!!",
+    "iterate": "Iterating ..."
 }
 
 DEBUG = False

@@ -194,7 +194,7 @@ class AppWindow:
                         graph_utils.render_options(self, board[cell_id], cell_pos)
         if removed:
             for value, cell_id in removed:
-                if cell_id in self.options_visible:
+                if self.show_all_pencil_marks or cell_id in self.options_visible:
                     cell_pos = (CELL_COL[cell_id] * CELL_SIZE + LEFT_MARGIN, CELL_ROW[cell_id] * CELL_SIZE + TOP_MARGIN)
                     graph_utils.render_options(self, value, cell_pos)
 
@@ -242,10 +242,8 @@ class AppWindow:
 
         if self.animate:
             self.board_updated = True
-            self.render_board(board, solver_tool, **kwargs)
-            pygame.display.update()
-            time.sleep(ANIMATION_STEP_TIME)
             self.calculate_next_clue = True
+            time.sleep(ANIMATION_STEP_TIME)
         else:
             while self.wait:
                 event = None

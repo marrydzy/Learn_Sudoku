@@ -24,8 +24,7 @@ class SolverStatus:
         self.conflicted_cells = []
 
     def capture_baseline(self, board, window):
-        window.set_current_board(board)
-        if window:
+        if window and window.show_solution_steps and not window.animate:
             self.naked_singles_baseline = self.naked_singles.copy()
             self.clues_found_baseline = window.clues_found.copy()
             self.options_visible_baseline = window.options_visible.copy()
@@ -183,11 +182,13 @@ def _set_manually(board, window):
         _check_board_integrity(board, window)
         window.clue_entered = (None, None, None)
         cell_house = ALL_NBRS[solver_status.conflicted_cells[-1]] if solver_status.conflicted_cells else list()
-        kwargs = {"solver_tool": "end_of_game" if is_solved(board, window) else "plain_board",
+        kwargs = {"solver_tool": "plain_board",
                   "wrong_values": window.wrong_values,
                   "conflicted_cells": solver_status.conflicted_cells,
                   "cell_house": cell_house,
                   }
+    if is_solved(board, window):
+        kwargs["solver_tool"] = "end_of_game"
     return kwargs
 
 
@@ -217,7 +218,8 @@ def _open_singles(board, window):
                 board[cell_id] = ''.join(value for value in missing_value)
             else:
                 board[cell_id] = missing_value.pop()
-                window.clues_found.add(cell_id)
+                if window:
+                    window.clues_found.add(cell_id)
             kwargs["solver_tool"] = "open_singles"
             kwargs["new_clue"] = cell_id
             return True
@@ -271,7 +273,8 @@ def _visual_elimination(board, window):
                 solver_status.capture_baseline(board, window)
                 cell_id = clues[0]
                 board[cell_id] = value
-                window.clues_found.add(cell_id)
+                if window:
+                    window.clues_found.add(cell_id)
                 house = [cell for offset in range(3) for cell in cols_rows[3*band + offset]]
                 kwargs["solver_tool"] = "visual_elimination"
                 kwargs["new_clue"] = cell_id
@@ -311,7 +314,8 @@ def _naked_singles(board, window):
             kwargs["solver_tool"] = "naked_singles"
             kwargs["new_clue"] = naked_single
             kwargs["remove"] = to_remove
-            window.clues_found.add(naked_single)
+            if window:
+                window.clues_found.add(naked_single)
             return kwargs
     else:
         for cell in range(81):
@@ -322,7 +326,8 @@ def _naked_singles(board, window):
                     board[cell] = cell_opts.pop()
                     kwargs["solver_tool"] = "naked_singles"
                     kwargs["new_clue"] = cell
-                    window.clues_found.add(cell)
+                    if window:
+                        window.clues_found.add(cell)
                     return kwargs
         return kwargs
 
@@ -358,7 +363,8 @@ def _hidden_singles(board, window):
                 solver_status.capture_baseline(board, window)
                 clue_id = in_cells[0]
                 board[clue_id] = option
-                window.clues_found.add(clue_id)
+                if window:
+                    window.clues_found.add(clue_id)
                 if solver_status.options_set:
                     to_remove = [(option, cell) for cell in ALL_NBRS[clue_id] if option in board[cell]]
                     _remove_options(board, to_remove, window)
@@ -500,24 +506,25 @@ def _hidden_quad(board, window):
                 remove_opts = set("".join(board[cell] for cell in quad_cells)) - set(quad)
                 to_remove = [(value, cell) for value in remove_opts for cell in quad_cells]
                 if to_remove:
+                    solver_status.capture_baseline(board, window)
                     _remove_options(board, to_remove, window)
-                    if window:
-                        if window.draw_board(board, "hidden_quads", remove=to_remove, claims=quad_cells, house=cells):
-                            pass
-                        else:
-                            solver_status.restore_baseline(board, window)
+                    kwargs["solver_tool"] = "hidden_quads"
+                    kwargs["claims"] = quad_cells
+                    kwargs["house"] = cells
+                    kwargs["remove"] = to_remove
                     return True
         return False
 
     init_options(board, window, solver_status)
+    kwargs = {}
     for i in range(9):
         if _find_quad(CELLS_IN_ROW[i]):
-            return True
+            return kwargs
         if _find_quad(CELLS_IN_COL[i]):
-            return True
+            return kwargs
         if _find_quad(CELLS_IN_SQR[i]):
-            return True
-    return False
+            return kwargs
+    return kwargs
 
 
 def _naked_twins(board, window):
@@ -581,25 +588,25 @@ def _naked_triplets(board, window):
                     to_remove = [(values[idx], cell) for idx in range(3) for cell in other_cells
                                  if values[idx] in board[cell]]
                     if to_remove:
+                        solver_status.capture_baseline(board, window)
                         _remove_options(board, to_remove, window)
-                        if window:
-                            if window.draw_board(board, "naked_triplets", remove=to_remove,
-                                                 laims=triplet, house=cells):
-                                pass
-                            else:
-                                solver_status.restore_baseline(board, window)
+                        kwargs["solver_tool"] = "naked_triplets"
+                        kwargs["claims"] = triplet
+                        kwargs["house"] = cells
+                        kwargs["remove"] = to_remove
                         return True
         return False
 
     init_options(board, window, solver_status)
+    kwargs = {}
     for i in range(9):
         if _find_triplets(CELLS_IN_ROW[i]):
-            return True
+            return kwargs
         if _find_triplets(CELLS_IN_COL[i]):
-            return True
+            return kwargs
         if _find_triplets(CELLS_IN_SQR[i]):
-            return True
-    return False
+            return kwargs
+    return kwargs
 
 
 def _naked_quads(board, window):
@@ -618,24 +625,25 @@ def _naked_quads(board, window):
                     to_remove = [(values[idx], cell) for idx in range(4) for cell in other_cells
                                  if values[idx] in board[cell]]
                     if to_remove:
+                        solver_status.capture_baseline(board, window)
                         _remove_options(board, to_remove, window)
-                        if window:
-                            if window.draw_board(board, "naked_quads", remove=to_remove, claims=quad, house=cells):
-                                pass
-                            else:
-                                solver_status.restore_baseline(board, window)
+                        kwargs["solver_tool"] = "naked_quads"
+                        kwargs["claims"] = quad
+                        kwargs["house"] = cells
+                        kwargs["remove"] = to_remove
                         return True
         return False
 
     init_options(board, window, solver_status)
+    kwargs = {}
     for i in range(9):
         if _find_quad(CELLS_IN_ROW[i]):
-            return True
+            return kwargs
         if _find_quad(CELLS_IN_COL[i]):
-            return True
+            return kwargs
         if _find_quad(CELLS_IN_SQR[i]):
-            return True
-    return False
+            return kwargs
+    return kwargs
 
 
 def _omissions(board, window):
@@ -759,6 +767,98 @@ def _y_wings(board, window):
     return kwargs
 
 
+def _swordfish(board, window):
+    """Remove candidates (options) using Swordfish technique
+    (see https://www.learn-sudoku.com/x-wing.html)
+    """
+
+    def _get_crosses(direction):
+        # 'crosses' data structure:
+        # {(col_1, col_2): {value: [row_1, ...]}} for 'by row' direction
+        # {(row_1, row_2): {value: [col_1, ...]}} for 'by col' direction
+        crosses = {}
+        for i in range(9):
+            cells = CELLS_IN_ROW[i] if direction == "by row" else CELLS_IN_COL[i]
+            unsolved = [cell for cell in cells if len(board[cell]) > 1]
+            options = "".join([board[cell] for cell in unsolved])
+            for value in set(options):
+                if options.count(value) == 2:
+                    # print(f'{direction = } {i = } {value = }')
+                    in_columns = tuple(j for j in range(9) if value in board[cells[j]])
+                    value_pairs = crosses.pop(in_columns, {})
+                    if value in value_pairs:
+                        value_pairs[value].append(i)
+                    else:
+                        value_pairs[value] = [i, ]
+                    crosses[in_columns] = value_pairs
+        return crosses
+
+    def _find_swordfish(direction):
+        crosses = _get_crosses(direction)
+        # print(f'\n{direction = }: {crosses = } \n')
+        # 'primary' direction: rows for 'by row' direction, columns otherwise
+        # 'secondary' direction: columns for 'by row' direction, rows otherwise
+        value_positions = defaultdict(list)
+        for secondary_indexes, pairs in crosses.items():
+            for value, primary_indexes in pairs.items():
+                if len(primary_indexes) == 1:
+                    value_positions[value].append((primary_indexes[0], secondary_indexes[0], secondary_indexes[1]))
+        for value, positions in value_positions.items():
+            if len(positions) == 3:
+                primary_indexes = []
+                secondary_indexes = []
+                house = []
+                for position in positions:
+                    primary_indexes.append(position[0])
+                    secondary_indexes.append(position[1])
+                    secondary_indexes.append(position[2])
+                    house.extend(CELLS_IN_ROW[position[0]] if direction == "by row" else CELLS_IN_COL[position[0]])
+                in_2_places = (secondary_indexes.count(index) == 2 for index in set(secondary_indexes))
+                if all(in_2_places):
+                    to_remove = []
+                    sword = [value, ]
+                    in_cells = set()    # TODO - change the name
+                    for position in positions:
+                        if direction == "by row":
+                            sword.append(position[0] * 9 + position[1])
+                            sword.append(position[0] * 9 + position[2])
+                            in_cells = in_cells.union(set(CELLS_IN_COL[position[1]]))
+                            in_cells = in_cells.union(set(CELLS_IN_COL[position[2]]))
+                        else:
+                            sword.append(position[1] * 9 + position[0])
+                            sword.append(position[2] * 9 + position[0])
+                            in_cells = in_cells.union(set(CELLS_IN_ROW[position[1]]))
+                            in_cells = in_cells.union(set(CELLS_IN_ROW[position[2]]))
+                    secondary_indexes = set(secondary_indexes)
+                    for index in secondary_indexes:
+                        if direction == "by row":
+                            other_cells = [CELLS_IN_COL[index][row] for row in range(9)
+                                           if len(board[CELLS_IN_COL[index][row]]) > 1 and row not in primary_indexes]
+                        else:
+                            other_cells = [CELLS_IN_ROW[index][col] for col in range(9)
+                                           if len(board[CELLS_IN_ROW[index][col]]) > 1 and col not in primary_indexes]
+                        to_remove.extend([(value, cell) for cell in other_cells if value in board[cell]])
+
+                    if to_remove:
+                        solver_status.capture_baseline(board, window)
+                        _remove_options(board, to_remove, window)
+                        kwargs["solver_tool"] = "swordfish"
+                        kwargs["singles"] = solver_status.naked_singles
+                        kwargs["sword"] = sword
+                        kwargs["remove"] = to_remove
+                        kwargs["impacted_cells"] = in_cells
+                        kwargs["house"] = house
+                        return True
+        return False
+
+    kwargs = {}
+    if _find_swordfish("by row"):
+        return kwargs
+    if _find_swordfish("by column"):
+        return kwargs
+    return kwargs
+
+
 def manual_solver(board, window):
     """ Main solver loop:
      - The algorithm draws current board and waits until a predefined event happens
@@ -768,16 +868,15 @@ def manual_solver(board, window):
     solver_status.reset(board, window)
     kwargs = {"solver_tool": "plain_board"}
     while True:
-        window.draw_board(board, **kwargs)
-
-        kwargs = _set_manually(board, window)
-        if kwargs:
-            continue
-        if not window.calculate_next_clue:
-            continue
-        elif window.show_solution_steps:
-            window.calculate_next_clue = False
-
+        if window:
+            window.draw_board(board, **kwargs)
+            kwargs = _set_manually(board, window)
+            if kwargs:
+                continue
+            if not window.calculate_next_clue:
+                continue
+            elif window.show_solution_steps:
+                window.calculate_next_clue = False
         kwargs = _open_singles(board, window)
         if kwargs:
             continue
@@ -796,7 +895,16 @@ def manual_solver(board, window):
         kwargs = _hidden_pair(board, window)
         if kwargs:
             continue
+        kwargs = _naked_triplets(board, window)
+        if kwargs:
+            continue
         kwargs = _hidden_triplet(board, window)
+        if kwargs:
+            continue
+        kwargs = _naked_quads(board, window)
+        if kwargs:
+            continue
+        kwargs = _hidden_quad(board, window)
         if kwargs:
             continue
         kwargs = _omissions(board, window)
@@ -805,12 +913,8 @@ def manual_solver(board, window):
         kwargs = _y_wings(board, window)
         if kwargs:
             continue
-
-        if _naked_triplets(board, window):
-            continue
-        if _hidden_quad(board, window):
-            continue
-        if _naked_quads(board, window):
+        kwargs = _swordfish(board, window)
+        if kwargs:
             continue
 
         if not is_solved(board, window):        # TODO: for debugging only!

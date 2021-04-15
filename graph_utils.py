@@ -149,6 +149,8 @@ def show_pencil_marks(window, cell, **kwargs):
             window.options_visible.add(cell)
         if "y_wing" in kwargs and kwargs["y_wing"] and cell in kwargs["y_wing"][1:]:
             window.options_visible.add(cell)
+        if "sword" in kwargs and cell in kwargs["impacted_cells"]:
+            window.options_visible.add(cell)
     return True if cell in window.options_visible else False
 
 
@@ -171,13 +173,13 @@ def cell_color(window, cell, **kwargs):
     color = WHITE
     if "house" in kwargs and kwargs["house"] and cell in kwargs["house"]:
         color = LIGHTYELLOW
-    if "greyed_out" in kwargs and kwargs["greyed_out"] and cell in kwargs["greyed_out"]:
+    if "greyed_out" in kwargs and cell in kwargs["greyed_out"]:
         color = SILVER
     if "wrong_values" in kwargs and cell in kwargs["wrong_values"]:
         color = PINK
-    if "conflicted_cells" in kwargs and kwargs["conflicted_cells"] and cell in kwargs["conflicted_cells"]:
+    if "conflicted_cells" in kwargs and cell in kwargs["conflicted_cells"]:
         color = ORANGE
-    if "impacted_cells" in kwargs and kwargs["impacted_cells"] and cell in kwargs["impacted_cells"]:
+    if "impacted_cells" in kwargs and cell in kwargs["impacted_cells"]:
         color = C_OTHER_CELLS
     if cell == window.selected_cell or \
             "new_clue" in kwargs and cell == kwargs["new_clue"]:
@@ -359,7 +361,6 @@ def hint_btn_clicked(window, _, board, **kwargs):
 
 def back_btn_clicked(window, btn_id, board, **kwargs):
     """ action on clicking 'Back' button """
-    # window.buttons[pygame.K_h].set_pressed(False)
     if window.buttons[pygame.K_b].is_active():
         solver_status.restore_baseline(board, window)
         window.buttons[pygame.K_b].press_and_deactivate(window.screen)
@@ -367,10 +368,6 @@ def back_btn_clicked(window, btn_id, board, **kwargs):
         set_btn_status(window, True, (pygame.K_c, pygame.K_p, pygame.K_h, pygame.K_m, pygame.K_s))
         set_keyboard_status(window, True)
         window.wait = False
-        # window.board_updated = False
-        # window.render_board(window.input_board, "plain_board")  # options_set=kwargs["options_set"])
-        # display_info(window, "")
-        # pygame.display.update()
 
 
 def accept_btn_clicked(window, *args, **kwargs):
@@ -395,7 +392,7 @@ def solve_btn_clicked(window, *args, **kwargs):
     window.calculate_next_clue = True
 
 
-def animate_btn_clicked(window, btn_id, board, solver_tool, **kwargs):
+def animate_btn_clicked(window, *args, **kwargs):
     """ action on pressing 'Animate' button """
     window.buttons[pygame.K_m].set_pressed(True)
     set_btn_status(window, False, (pygame.K_c, pygame.K_p, pygame.K_a, pygame.K_h,
@@ -404,7 +401,6 @@ def animate_btn_clicked(window, btn_id, board, solver_tool, **kwargs):
     window.animate = True
     window.wait = False
     window.board_updated = True
-    window.render_board(board, solver_tool, **kwargs)
     time.sleep(ANIMATION_STEP_TIME)
 
 
@@ -425,6 +421,7 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     set_btn_state(window, True, (pygame.K_c, ))
     window.selected_key = None
     window.wait = False
+    window.calculate_next_clue = False
     for i in range(81):
         if i not in window.clues_defined:
             board[i] = "."
