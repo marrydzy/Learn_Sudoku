@@ -851,37 +851,21 @@ def _x_wings(board, window):
         for secondary_idxs, pairs in pairs_dict.items():
             for value, primary_idxs in pairs.items():
                 if len(primary_idxs) == 2:
-                    if by_row:
-                        impacted_cells = [CELLS_IN_COL[secondary_idxs[0]][i] for i in range(9) if
-                                          i not in primary_idxs and value in board[CELLS_IN_COL[secondary_idxs[0]][i]]]
-                        impacted_cells.extend([CELLS_IN_COL[secondary_idxs[1]][i] for i in range(9) if
-                             i not in primary_idxs and value in board[CELLS_IN_COL[secondary_idxs[1]][i]]])
-                        house = [cell for cell in range(81) if cell in CELLS_IN_COL[secondary_idxs[0]] or
-                                 cell in CELLS_IN_COL[secondary_idxs[1]]]
-                    else:
-                        impacted_cells = [CELLS_IN_ROW[secondary_idxs[0]][i] for i in range(9) if
-                                          i not in secondary_idxs and value in board[CELLS_IN_ROW[secondary_idxs[0]][i]]]
-                        impacted_cells.extend([CELLS_IN_ROW[secondary_idxs[1]][i] for i in range(9) if
-                            i not in primary_idxs and value in board[CELLS_IN_ROW[secondary_idxs[1]][i]]])
-                        house = [cell for cell in range(81) if cell in CELLS_IN_ROW[secondary_idxs[0]] or
-                                 cell in CELLS_IN_ROW[secondary_idxs[1]]]
+                    cells = CELLS_IN_COL if by_row else CELLS_IN_ROW
+                    impacted_cells = [cells[secondary_idxs[0]][i] for i in range(9) if i not in primary_idxs]
+                    impacted_cells.extend([cells[secondary_idxs[1]][i] for i in range(9) if i not in primary_idxs])
+                    house = [cell for cell in range(81) if cell in cells[secondary_idxs[0]] or
+                             cell in cells[secondary_idxs[1]]]
                     to_remove = [(value, cell) for cell in impacted_cells if value in board[cell]]
                     if to_remove:
                         solver_status.capture_baseline(board, window)
                         if window:
                             window.options_visible = window.options_visible.union(set(house))
-                        if by_row:
-                            corners = [value,
-                                       primary_idxs[0] * 9 + secondary_idxs[0],
-                                       primary_idxs[0] * 9 + secondary_idxs[1],
-                                       primary_idxs[1] * 9 + secondary_idxs[0],
-                                       primary_idxs[1] * 9 + secondary_idxs[1]]
-                        else:
-                            corners = [value,
-                                       secondary_idxs[0] * 9 + primary_idxs[0],
-                                       secondary_idxs[0] * 9 + primary_idxs[1],
-                                       secondary_idxs[1] * 9 + primary_idxs[0],
-                                       secondary_idxs[1] * 9 + primary_idxs[1]]
+                        rows = primary_idxs if by_row else secondary_idxs
+                        cols = secondary_idxs if by_row else primary_idxs
+                        corners = [value,
+                                   rows[0] * 9 + cols[0], rows[0] * 9 + cols[1],
+                                   rows[1] * 9 + cols[0], rows[1] * 9 + cols[1]]
                         _remove_options(board, to_remove, window)
                         kwargs["solver_tool"] = "x_wings"
                         kwargs["singles"] = solver_status.naked_singles
