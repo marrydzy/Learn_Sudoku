@@ -10,6 +10,7 @@ from collections import defaultdict
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
 from utils import is_clue, is_solved, get_options, init_options, set_cell_options, set_neighbours_options
+from utils import get_pairs
 
 
 class SolverStatus:
@@ -772,34 +773,12 @@ def _swordfish(board, window):
     (see https://www.learn-sudoku.com/x-wing.html)
     """
 
-    def _get_crosses(direction):
-        # 'crosses' data structure:
-        # {(col_1, col_2): {value: [row_1, ...]}} for 'by row' direction
-        # {(row_1, row_2): {value: [col_1, ...]}} for 'by col' direction
-        crosses = {}
-        for i in range(9):
-            cells = CELLS_IN_ROW[i] if direction == "by row" else CELLS_IN_COL[i]
-            unsolved = [cell for cell in cells if len(board[cell]) > 1]
-            options = "".join([board[cell] for cell in unsolved])
-            for value in set(options):
-                if options.count(value) == 2:
-                    # print(f'{direction = } {i = } {value = }')
-                    in_columns = tuple(j for j in range(9) if value in board[cells[j]])
-                    value_pairs = crosses.pop(in_columns, {})
-                    if value in value_pairs:
-                        value_pairs[value].append(i)
-                    else:
-                        value_pairs[value] = [i, ]
-                    crosses[in_columns] = value_pairs
-        return crosses
-
-    def _find_swordfish(direction):
-        crosses = _get_crosses(direction)
-        # print(f'\n{direction = }: {crosses = } \n')
-        # 'primary' direction: rows for 'by row' direction, columns otherwise
-        # 'secondary' direction: columns for 'by row' direction, rows otherwise
+    def _find_swordfish(by_row):
+        pairs_dict = get_pairs(board, by_row)
+        # 'primary' direction: rows for 'by_row' direction, columns otherwise
+        # 'secondary' direction: columns for 'by_row' direction, rows otherwise
         value_positions = defaultdict(list)
-        for secondary_indexes, pairs in crosses.items():
+        for secondary_indexes, pairs in pairs_dict.items():
             for value, primary_indexes in pairs.items():
                 if len(primary_indexes) == 1:
                     value_positions[value].append((primary_indexes[0], secondary_indexes[0], secondary_indexes[1]))
@@ -812,14 +791,14 @@ def _swordfish(board, window):
                     primary_indexes.append(position[0])
                     secondary_indexes.append(position[1])
                     secondary_indexes.append(position[2])
-                    house.extend(CELLS_IN_ROW[position[0]] if direction == "by row" else CELLS_IN_COL[position[0]])
+                    house.extend(CELLS_IN_ROW[position[0]] if by_row else CELLS_IN_COL[position[0]])
                 in_2_places = (secondary_indexes.count(index) == 2 for index in set(secondary_indexes))
                 if all(in_2_places):
                     to_remove = []
                     sword = [value, ]
                     in_cells = set()    # TODO - change the name
                     for position in positions:
-                        if direction == "by row":
+                        if by_row:
                             sword.append(position[0] * 9 + position[1])
                             sword.append(position[0] * 9 + position[2])
                             in_cells = in_cells.union(set(CELLS_IN_COL[position[1]]))
@@ -831,7 +810,7 @@ def _swordfish(board, window):
                             in_cells = in_cells.union(set(CELLS_IN_ROW[position[2]]))
                     secondary_indexes = set(secondary_indexes)
                     for index in secondary_indexes:
-                        if direction == "by row":
+                        if by_row:
                             other_cells = [CELLS_IN_COL[index][row] for row in range(9)
                                            if len(board[CELLS_IN_COL[index][row]]) > 1 and row not in primary_indexes]
                         else:
@@ -841,6 +820,8 @@ def _swordfish(board, window):
 
                     if to_remove:
                         solver_status.capture_baseline(board, window)
+                        if window:
+                            window.options_visible = window.options_visible.union(set(house))
                         _remove_options(board, to_remove, window)
                         kwargs["solver_tool"] = "swordfish"
                         kwargs["singles"] = solver_status.naked_singles
@@ -852,9 +833,9 @@ def _swordfish(board, window):
         return False
 
     kwargs = {}
-    if _find_swordfish("by row"):
+    if _find_swordfish(True):
         return kwargs
-    if _find_swordfish("by column"):
+    if _find_swordfish(False):
         return kwargs
     return kwargs
 
