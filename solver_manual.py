@@ -778,21 +778,21 @@ def _swordfish(board, window):
         # 'primary' direction: rows for 'by_row' direction, columns otherwise
         # 'secondary' direction: columns for 'by_row' direction, rows otherwise
         value_positions = defaultdict(list)
-        for secondary_indexes, pairs in pairs_dict.items():
-            for value, primary_indexes in pairs.items():
-                if len(primary_indexes) == 1:
-                    value_positions[value].append((primary_indexes[0], secondary_indexes[0], secondary_indexes[1]))
+        for secondary_idxs, pairs in pairs_dict.items():
+            for value, primary_idxs in pairs.items():
+                if len(primary_idxs) == 1:
+                    value_positions[value].append((primary_idxs[0], secondary_idxs[0], secondary_idxs[1]))
         for value, positions in value_positions.items():
             if len(positions) == 3:
-                primary_indexes = []
-                secondary_indexes = []
+                primary_idxs = []
+                secondary_idxs = []
                 house = []
                 for position in positions:
-                    primary_indexes.append(position[0])
-                    secondary_indexes.append(position[1])
-                    secondary_indexes.append(position[2])
+                    primary_idxs.append(position[0])
+                    secondary_idxs.append(position[1])
+                    secondary_idxs.append(position[2])
                     house.extend(CELLS_IN_ROW[position[0]] if by_row else CELLS_IN_COL[position[0]])
-                in_2_places = (secondary_indexes.count(index) == 2 for index in set(secondary_indexes))
+                in_2_places = (secondary_idxs.count(index) == 2 for index in set(secondary_idxs))
                 if all(in_2_places):
                     to_remove = []
                     sword = [value, ]
@@ -808,14 +808,14 @@ def _swordfish(board, window):
                             sword.append(position[2] * 9 + position[0])
                             in_cells = in_cells.union(set(CELLS_IN_ROW[position[1]]))
                             in_cells = in_cells.union(set(CELLS_IN_ROW[position[2]]))
-                    secondary_indexes = set(secondary_indexes)
-                    for index in secondary_indexes:
+                    secondary_idxs = set(secondary_idxs)
+                    for index in secondary_idxs:
                         if by_row:
                             other_cells = [CELLS_IN_COL[index][row] for row in range(9)
-                                           if len(board[CELLS_IN_COL[index][row]]) > 1 and row not in primary_indexes]
+                                           if len(board[CELLS_IN_COL[index][row]]) > 1 and row not in primary_idxs]
                         else:
                             other_cells = [CELLS_IN_ROW[index][col] for col in range(9)
-                                           if len(board[CELLS_IN_ROW[index][col]]) > 1 and col not in primary_indexes]
+                                           if len(board[CELLS_IN_ROW[index][col]]) > 1 and col not in primary_idxs]
                         to_remove.extend([(value, cell) for cell in other_cells if value in board[cell]])
 
                     if to_remove:

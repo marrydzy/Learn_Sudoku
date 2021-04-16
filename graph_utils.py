@@ -149,8 +149,6 @@ def show_pencil_marks(window, cell, **kwargs):
             window.options_visible.add(cell)
         if "y_wing" in kwargs and kwargs["y_wing"] and cell in kwargs["y_wing"][1:]:
             window.options_visible.add(cell)
-        if "sword" in kwargs and cell in kwargs["impacted_cells"]:
-            window.options_visible.add(cell)
     return True if cell in window.options_visible else False
 
 

@@ -6,7 +6,10 @@ import os
 import sys
 import glob
 import difflib
+
+from collections import defaultdict
 from pathlib import Path
+
 from display import error_message, did_you_mean_message
 
 
@@ -90,6 +93,25 @@ def get_options(cell_id, board, window):
     """ returns set of options of the cell """
     return SUDOKU_VALUES_SET.copy() - set(''.join(
         [board[cell] for cell in ALL_NBRS[cell_id] if is_clue(cell, board, window)]))
+
+
+def get_pairs(board, by_row):
+    # 'pairs' data structure:
+    # {(col_1, col_2): {value: [row_1, ...]}} for 'by row' direction
+    # {(row_1, row_2): {value: [col_1, ...]}} for 'by col' direction
+    pairs_dict = {}
+    for idx in range(9):
+        cells = CELLS_IN_ROW[idx] if by_row else CELLS_IN_COL[idx]
+        unsolved = [cell for cell in cells if len(board[cell]) > 1]
+        options = "".join([board[cell] for cell in unsolved])
+        for value in set(options):
+            if options.count(value) == 2:
+                pair = tuple(j for j in range(9) if value in board[cells[j]])
+                pair_item = pairs_dict.pop(pair, defaultdict(list))
+                pair_item[value].append(idx)
+                pairs_dict[pair] = pair_item
+    return pairs_dict
+
 
 
 def init_options(board, window, solver_status):
