@@ -77,7 +77,8 @@ def unique_values(board, window, lone_singles):
         _solve_lone_singles(CELLS_IN_COL[i])
         _solve_lone_singles(CELLS_IN_SQR[i])
     if unique_values.board_updated:
-        print('unique_values')
+        pass
+        # print('unique_values')
     return True if unique_values.board_updated else None
 
 
@@ -777,8 +778,8 @@ def unique_rectangles(board, window, lone_singles):
                     if not _reduce_rectangle(pair, rect):
                         return False
 
-    if unique_values.board_updated:
-        print('unique_rectangles')
+    # if unique_values.board_updated:
+        # print('unique_rectangles')
     return True if unique_rectangles.board_updated else None
 
 

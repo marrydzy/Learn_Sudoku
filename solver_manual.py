@@ -840,6 +840,69 @@ def _swordfish(board, window):
     return kwargs
 
 
+def _x_wings(board, window):
+    """Remove candidates (options) using X Wing technique
+    (see https://www.learn-sudoku.com/x-wing.html)"""
+
+    kwargs = {}
+    pairs_dict = get_pairs(board, True)
+    for cols, pairs in pairs_dict.items():
+        for value, rows in pairs.items():
+            if len(rows) == 2:
+                impacted_cells = [CELLS_IN_COL[cols[0]][i] for i in range(9)
+                                  if (i not in rows and value in board[CELLS_IN_COL[cols[0]][i]])]
+                impacted_cells.extend([CELLS_IN_COL[cols[1]][i] for i in range(9)
+                                       if (i not in rows and value in board[CELLS_IN_COL[cols[1]][i]])])
+                to_remove = [(value, cell) for cell in impacted_cells if value in board[cell]]
+                house = [cell for cell in range(81) if cell in CELLS_IN_COL[cols[0]] or cell in CELLS_IN_COL[cols[1]]]
+
+                if to_remove:
+                    solver_status.capture_baseline(board, window)
+                    if window:
+                        window.options_visible = window.options_visible.union(set(house))
+                    corners = [value, rows[0] * 9 + cols[0], rows[0] * 9 + cols[1],
+                               rows[1] * 9 + cols[0], rows[1] * 9 + cols[1]]
+                    _remove_options(board, to_remove, window)
+                    kwargs["solver_tool"] = "x_wings"
+                    kwargs["singles"] = solver_status.naked_singles
+                    kwargs["x_wing"] = corners
+                    kwargs["subset"] = [value]
+                    kwargs["remove"] = to_remove
+                    # kwargs["impacted_cells"] = in_cells
+                    kwargs["house"] = house
+                    print('in _x_wings(by row)')
+                    return kwargs
+
+    pairs_dict = get_pairs(board, False)
+    for rows, pairs in pairs_dict.items():
+        for value, cols in pairs.items():
+            if len(cols) == 2:
+                impacted_cells = [CELLS_IN_ROW[rows[0]][i] for i in range(9)
+                                  if (i not in cols and value in board[CELLS_IN_ROW[rows[0]][i]])]
+                impacted_cells.extend([CELLS_IN_ROW[rows[1]][i] for i in range(9)
+                                       if (i not in cols and value in board[CELLS_IN_ROW[rows[1]][i]])])
+                to_remove = [(value, cell) for cell in impacted_cells if value in board[cell]]
+                house = [cell for cell in range(81) if cell in CELLS_IN_ROW[rows[0]] or cell in CELLS_IN_ROW[rows[1]]]
+
+                if to_remove:
+                    solver_status.capture_baseline(board, window)
+                    if window:
+                        window.options_visible = window.options_visible.union(set(house))
+                    corners = [value, rows[0] * 9 + cols[0], rows[0] * 9 + cols[1],
+                               rows[1] * 9 + cols[0], rows[1] * 9 + cols[1]]
+                    _remove_options(board, to_remove, window)
+                    kwargs["solver_tool"] = "x_wings"
+                    kwargs["singles"] = solver_status.naked_singles
+                    kwargs["x_wing"] = corners
+                    kwargs["subset"] = [value]
+                    kwargs["remove"] = to_remove
+                    # kwargs["impacted_cells"] = in_cells
+                    kwargs["house"] = house
+                    print('in _x_wings(by col)')
+                    return kwargs
+    return kwargs
+
+
 def manual_solver(board, window):
     """ Main solver loop:
      - The algorithm draws current board and waits until a predefined event happens
@@ -894,10 +957,14 @@ def manual_solver(board, window):
         kwargs = _y_wings(board, window)
         if kwargs:
             continue
+        kwargs = _x_wings(board, window)
+        if kwargs:
+            continue
         kwargs = _swordfish(board, window)
         if kwargs:
             continue
 
         if not is_solved(board, window):        # TODO: for debugging only!
-            print('\nLeaving manual_solver')
+            pass
+            # print('\nLeaving manual_solver')
         return False
