@@ -26,6 +26,7 @@ class SolverStatus:
 
     def capture_baseline(self, board, window):
         if window and window.show_solution_steps and not window.animate:
+            window.set_current_board(board)
             self.naked_singles_baseline = self.naked_singles.copy()
             self.clues_found_baseline = window.clues_found.copy()
             self.options_visible_baseline = window.options_visible.copy()
@@ -768,6 +769,64 @@ def _y_wings(board, window):
     return kwargs
 
 
+def _unique_rectangles(board, window):
+    """Remove candidates (options) using Unique Rectangle technique
+    (see https://www.learn-sudoku.com/unique-rectangle.html)"""
+
+    # 'pairs' data structure:
+    # {'xy': [(row, col, blk), ...]}
+
+    # Finding unique rectangles:
+    #  - a pair is in at least three cells and the pair values are in options of the fourth one
+    #  - the pair is in exactly two rows, to columns and two blocks
+
+    def _reduce_rectangle(pair, corners):
+        if all(board[corner] == pair for corner in corners):
+            return False
+        to_remove = []
+        for corner in corners:
+            if board[corner] != pair:
+                subset = [cell for cell in rect if len(board[cell]) == 2]
+                if pair[0] in board[corner]:
+                    to_remove.append((pair[0], corner))
+                if pair[1] in board[corner]:
+                    to_remove.append((pair[1], corner))
+                if to_remove:
+                    solver_status.capture_baseline(board, window)
+                    _remove_options(board, to_remove, window)
+                    if window:
+                        window.options_visible = window.options_visible.union(set(corners))
+                    kwargs["solver_tool"] = "unique_rectangles"
+                    kwargs["rectangle"] = rect
+                    kwargs["remove"] = to_remove
+                    kwargs["subset"] = subset
+                    return True
+        return False
+
+    kwargs = {}
+    pairs = defaultdict(list)
+    for i in range(81):
+        if len(board[i]) == 2:
+            pairs[board[i]].append((CELL_ROW[i], CELL_COL[i], CELL_SQR[i]))
+
+    for pair, positions in pairs.items():
+        if len(positions) > 2:
+            rows = list(set(pos[0] for pos in positions))
+            cols = list(set(pos[1] for pos in positions))
+            blocks = set(pos[2] for pos in positions)
+            if len(rows) == 2 and len(cols) == 2 and len(blocks) == 2:
+                row_1 = CELLS_IN_ROW[rows[0]]
+                row_2 = CELLS_IN_ROW[rows[1]]
+                rect = sorted([row_1[cols[0]], row_1[cols[1]], row_2[cols[0]], row_2[cols[1]]])
+                for val in pair:
+                    if not all(val in board[corner] for corner in rect):
+                        break
+                else:
+                    if _reduce_rectangle(pair, rect):
+                        return kwargs
+    return {}
+
+
 def _swordfish(board, window):
     """Remove candidates (options) using Swordfish technique
     (see https://www.learn-sudoku.com/x-wing.html)
@@ -935,10 +994,13 @@ def manual_solver(board, window):
         kwargs = _omissions(board, window)
         if kwargs:
             continue
-        kwargs = _y_wings(board, window)
+        kwargs = _unique_rectangles(board, window)
         if kwargs:
             continue
         kwargs = _x_wings(board, window)
+        if kwargs:
+            continue
+        kwargs = _y_wings(board, window)
         if kwargs:
             continue
         kwargs = _swordfish(board, window)

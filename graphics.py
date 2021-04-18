@@ -127,6 +127,11 @@ class AppWindow:
         graph_utils.set_btn_status(self, True, (pygame.K_r,))
         graph_utils.set_btn_state(self, False, (pygame.K_m, pygame.K_s))
 
+    def plain_board_event(self):
+        """ Clean current board, not solved yet event  """
+        graph_utils.set_btn_status(self, False, (pygame.K_a, pygame.K_b))
+        graph_utils.set_btn_status(self, True, (pygame.K_h,))
+
     def set_current_board(self, board):
         """ Save copy of the current board (before applying a tool)  """
         self.input_board = board.copy()
@@ -150,6 +155,8 @@ class AppWindow:
             self.sudoku_solved_event(board)
         elif not (self.show_solution_steps and self.method[kwargs["solver_tool"]] in self.inspect):
             return True
+        elif solver_tool == "plain_board":
+            self.plain_board_event()
         return False
 
     def impossible_entry_postproc(self):
@@ -230,8 +237,9 @@ class AppWindow:
             graph_utils.display_info(self, screen_messages[solver_tool])
         elif self.show_wrong_values and self.wrong_values:
             graph_utils.display_info(self, screen_messages["wrong_values"])
-        elif self.buttons[pygame.K_h].is_pressed():
-            graph_utils.display_info(self, screen_messages[solver_tool])
+        # elif self.buttons[pygame.K_h].is_pressed():     # TODO - most probably remove it !!!
+            # print('\nDupa')
+            # graph_utils.display_info(self, screen_messages[solver_tool])
         elif solver_tool != "plain_board":
             graph_utils.display_info(self, screen_messages[solver_tool])
         else:

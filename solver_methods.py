@@ -143,7 +143,8 @@ def hidden_pairs(board, window, _):
         _find_pairs(CELLS_IN_COL[i])
         _find_pairs(CELLS_IN_SQR[i])
     if hidden_pairs.board_updated:
-        print(hidden_pairs)
+        pass
+        # print(hidden_pairs)
     return True if hidden_pairs.board_updated else None
 
 
@@ -209,7 +210,8 @@ def naked_twins(board, window, lone_singles):
             break
     else:
         if naked_twins.board_updated:
-            print('naked_twins')
+            pass
+            # print('naked_twins')
         return True if naked_twins.board_updated else None
     return False
 
@@ -317,7 +319,8 @@ def omissions(board, window, lone_singles):
             break
     else:
         if omissions.board_updated:
-            print('omissions')
+            pass
+            # print('omissions')
         return True if omissions.board_updated else None
     return False
 
@@ -373,7 +376,8 @@ def naked_triplets(board, window, lone_singles):
             break
     else:
         if naked_triplets.board_updated:
-            print('naked_triplets')
+            pass
+            # print('naked_triplets')
         return True if naked_triplets.board_updated else None
 
     return False
@@ -433,7 +437,8 @@ def hidden_triplets(board, window, _):
         _find_triplets(CELLS_IN_COL[i])
         _find_triplets(CELLS_IN_SQR[i])
     if hidden_triplets.board_updated:
-        print('hidden_triplets')
+        pass
+        # print('hidden_triplets')
     return True if hidden_triplets.board_updated else None, 0   # TODE
 
 
@@ -489,7 +494,8 @@ def hidden_quads(board, window, _):
         _find_quads(CELLS_IN_COL[i])
         _find_quads(CELLS_IN_SQR[i])
     if hidden_quads.board_updated:
-        print('hidden_quads')
+        pass
+        # print('hidden_quads')
     return True if hidden_quads.board_updated else None
 
 
@@ -545,7 +551,8 @@ def naked_quads(board, window, lone_singles):
             break
     else:
         if naked_quads.board_updated:
-            print('naked_quads')
+            pass
+            # print('naked_quads')
         return True if naked_quads.board_updated else None
     return False
 
@@ -642,7 +649,8 @@ def x_wings(board, window, lone_singles):
                         window.draw_board(board, solver_tool="x_wings", remove=to_remove, singles=lone_singles,
                                           x_wing=corners, subset=[value], other_cells=other_cells)
     if x_wings.board_updated:
-        print('x_wings')
+        pass
+        # print('x_wings')
     return True if x_wings.board_updated else None
 
 
@@ -707,7 +715,8 @@ def y_wings(board, window, lone_singles):
             if not _reduce_xs(_find_wings(cell)):
                 return False
     if y_wings.board_updated:
-        print('y_wings')
+        pass
+        # print('y_wings')
     return True if y_wings.board_updated else None
 
 
@@ -778,8 +787,8 @@ def unique_rectangles(board, window, lone_singles):
                     if not _reduce_rectangle(pair, rect):
                         return False
 
-    # if unique_values.board_updated:
-        # print('unique_rectangles')
+    if unique_values.board_updated:
+        print('unique_rectangles')
     return True if unique_rectangles.board_updated else None
 
 
@@ -901,5 +910,6 @@ def swordfish(board, window, lone_singles):
     if not _find_swordfish("by column"):
         return False
     if swordfish.board_updated:
-        print('swordfish')
+        pass
+        # print('swordfish')
     return True if swordfish.board_updated else None

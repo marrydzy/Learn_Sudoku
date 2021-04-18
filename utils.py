@@ -113,7 +113,6 @@ def get_pairs(board, by_row):
     return pairs_dict
 
 
-
 def init_options(board, window, solver_status):
     """ Initialize options of unsolved cells """
     if not solver_status.options_set:
