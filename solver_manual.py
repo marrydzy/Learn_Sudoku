@@ -368,7 +368,8 @@ def _hidden_singles(board, window):
                 if window:
                     window.clues_found.add(clue_id)
                 if solver_status.options_set:
-                    to_remove = [(option, cell) for cell in ALL_NBRS[clue_id] if option in board[cell]]
+                    to_remove = [(option, cell) for cell in ALL_NBRS[clue_id]
+                                 if option in board[cell] and cell not in window.clues_defined]
                     _remove_options(board, to_remove, window)
                 kwargs["solver_tool"] = "hidden_singles"
                 kwargs["new_clue"] = clue_id

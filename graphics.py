@@ -92,10 +92,10 @@ class AppWindow:
         self.screen.fill(GAINSBORO)
         graph_utils.set_buttons(self)
 
-    def critical_error_event(self, board, solver_tool, **kwargs):
+    def critical_error_event(self, board, **kwargs):
         """ Handle 'Critical Error' event """
         if self.buttons[pygame.K_h].is_pressed() or self.buttons[pygame.K_m].is_pressed() or self.buttons[
-            pygame.K_s].is_pressed():
+                pygame.K_s].is_pressed():
             self.show_solution_steps = True
             self.inspect = ''.join(self.method.values())
             self.animate = False
@@ -111,8 +111,9 @@ class AppWindow:
                 else:
                     self.options_visible.add(kwargs["new_clue"])
             for cell in self.critical_error:
-                self.options_visible.add(cell)
-            self.set_current_board(board)
+                if cell not in self.clues_defined:
+                    self.options_visible.add(cell)
+            # self.set_current_board(board)         TODO !!!
 
     def wrong_entry_event(self):
         """ Handle 'Wrong Manual Entry' event """
@@ -130,7 +131,7 @@ class AppWindow:
     def plain_board_event(self):
         """ Clean current board, not solved yet event  """
         graph_utils.set_btn_status(self, False, (pygame.K_a, pygame.K_b))
-        graph_utils.set_btn_status(self, True, (pygame.K_h,))
+        graph_utils.set_btn_status(self, True, (pygame.K_h, pygame.K_m, pygame.K_s))
 
     def set_current_board(self, board):
         """ Save copy of the current board (before applying a tool)  """
@@ -148,7 +149,7 @@ class AppWindow:
         if not solver_tool:
             pass
         elif self.critical_error:
-            self.critical_error_event(board, solver_tool, **kwargs)
+            self.critical_error_event(board, **kwargs)
         elif wrong_entry:
             self.wrong_entry_event()
         elif kwargs["solver_tool"] == "end_of_game":

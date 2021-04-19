@@ -413,6 +413,7 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     window.show_wrong_values = True
     window.critical_error = None
     window.show_all_pencil_marks = False
+    window.selected_cell = None
     set_btn_status(window, True)
     set_btn_status(window, False, (pygame.K_b, pygame.K_a))
     set_btn_state(window, False)
@@ -420,11 +421,6 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     window.selected_key = None
     window.wait = False
     window.calculate_next_clue = False
-    for i in range(81):
-        if i not in window.clues_defined:
-            board[i] = "."
-    window.set_current_board(board)
-    window.board_updated = True
 
 
 def toggle_pencil_marks_btn_clicked(window, _, board, *args, **kwargs):
@@ -462,7 +458,6 @@ def keyboard_btn_clicked(window, btn_id, *args, **kwargs):
             window.selected_key = str(btn_id)
             window.buttons[btn_id].set_pressed(True)
             window.buttons[btn_id].draw(window.screen)
-    window.selected_cell = None
 
 
 def cell_clicked(window, cell_id, *args, **kwargs):
@@ -472,15 +467,13 @@ def cell_clicked(window, cell_id, *args, **kwargs):
         if window.selected_key:
             window.clue_entered = (cell_id, window.selected_key,
                                    True if window.buttons[pygame.K_c].is_pressed() else False)
-            window.wait = False
             window.board_updated = True
         else:
             if cell_id == window.selected_cell:
                 window.selected_cell = None
             else:
                 window.selected_cell = cell_id
-            window.render_board(window.input_board)
-            pygame.display.update()
+        window.wait = False
 
 
 def set_buttons(window):
