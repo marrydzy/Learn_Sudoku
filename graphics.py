@@ -238,9 +238,6 @@ class AppWindow:
             graph_utils.display_info(self, screen_messages[solver_tool])
         elif self.show_wrong_values and self.wrong_values:
             graph_utils.display_info(self, screen_messages["wrong_values"])
-        # elif self.buttons[pygame.K_h].is_pressed():     # TODO - most probably remove it !!!
-            # print('\nDupa')
-            # graph_utils.display_info(self, screen_messages[solver_tool])
         elif solver_tool != "plain_board":
             graph_utils.display_info(self, screen_messages[solver_tool])
         else:

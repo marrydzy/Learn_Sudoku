@@ -258,6 +258,8 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     y_wing = kwargs["y_wing"] if "y_wing" in kwargs else None
     corners = kwargs["rectangle"] if "rectangle" in kwargs else None
     x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
+    if x_wing is None and "finned_x_wing" in kwargs:
+        x_wing = kwargs["finned_x_wing"]
     sword = kwargs["sword"] if "sword" in kwargs else None
 
     if iterate is not None and cell_id == iterate:
@@ -618,6 +620,7 @@ def set_methods():
             "naked_quads": "q",
             "unique_rectangles": "r",
             "x_wings": "x",
+            "finned_x_wings": "f",
             "swordfish": "s",
             "scrub_pencil_marks": "c",
             "iterate": "z",

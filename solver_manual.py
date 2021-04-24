@@ -189,7 +189,7 @@ def _set_manually(board, window):
                   "conflicted_cells": solver_status.conflicted_cells,
                   "cell_house": cell_house,
                   }
-    if is_solved(board, window):
+    if is_solved(board, window) and window.solver_loop != -1:
         kwargs["solver_tool"] = "end_of_game"
     return kwargs
 
@@ -944,6 +944,81 @@ def _x_wings(board, window):
     return kwargs
 
 
+def _finned_x_wing(board, window):
+    """ TODO """
+
+    def _find_finned_x_wing(by_row, option):
+        cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
+        for row_1 in range(9):
+            r1_cols = set(col for col in range(9) if
+                          option in board[cells[row_1][col]] and not is_clue(cells[row_1][col], board, window))
+            if len(r1_cols) == 2:
+                for row_2 in range(9):
+                    if row_2 != row_1:
+                        r2_cols = set(col for col in range(9) if option in board[cells[row_2][col]]
+                                      and not is_clue(cells[row_2][col], board, window))
+                        if r2_cols.issuperset(r1_cols):
+                            fin = r2_cols.difference(r1_cols)
+                            other_cells = set()
+                            if len(fin) == 1:
+                                col_1 = r1_cols.pop()
+                                col_2 = r1_cols.pop()
+                                col_f = fin.pop()
+                                if by_row:
+                                    box_1 = CELL_SQR[row_2 * 9 + col_1]
+                                    box_2 = CELL_SQR[row_2 * 9 + col_2]
+                                    box_f = CELL_SQR[row_2 * 9 + col_f]
+                                    corners = [option,
+                                               row_1 * 9 + col_1, row_1 * 9 + col_2,
+                                               row_2 * 9 + col_1, row_2 * 9 + col_f, row_2 * 9 + col_2]
+                                    house = set(CELLS_IN_ROW[row_1]).union(set(CELLS_IN_ROW[row_2]))
+                                    if box_1 == box_f:
+                                        other_cells = set(CELLS_IN_SQR[box_1]).intersection(set(CELLS_IN_COL[col_1]))
+                                        other_cells.remove(row_2 * 9 + col_1)
+                                    elif box_2 == box_f:
+                                        other_cells = set(CELLS_IN_SQR[box_2]).intersection(set(CELLS_IN_COL[col_2]))
+                                        other_cells.remove(row_2 * 9 + col_2)
+                                else:
+                                    box_1 = CELL_SQR[col_1 * 9 + row_2]
+                                    box_2 = CELL_SQR[col_2 * 9 + row_2]
+                                    box_f = CELL_SQR[col_f * 9 + row_2]
+                                    corners = [option,
+                                               col_1 * 9 + row_1, col_2 * 9 + row_1,
+                                               col_1 * 9 + row_2, col_f * 9 + row_2, col_2 * 9 + row_2]
+                                    house = set(CELLS_IN_COL[row_1]).union(set(CELLS_IN_COL[row_2]))
+                                    if box_f == box_1:
+                                        other_cells = set(CELLS_IN_SQR[box_1]).intersection(set(CELLS_IN_ROW[col_1]))
+                                        other_cells.remove(col_1 * 9 + row_2)
+                                    elif box_f == box_2:
+                                        other_cells = set(CELLS_IN_SQR[box_2]).intersection(set(CELLS_IN_ROW[col_2]))
+                                        other_cells.remove(col_2 * 9 + row_2)
+                            if other_cells:
+                                to_remove = [(option, cell) for cell in other_cells if option in board[cell]]
+                                if to_remove:
+                                    solver_status.capture_baseline(board, window)
+                                    if window:
+                                        window.options_visible = window.options_visible.union(house).union(other_cells)
+                                    _remove_options(board, to_remove, window)
+                                    kwargs["solver_tool"] = "finned_x_wings"
+                                    kwargs["singles"] = solver_status.naked_singles
+                                    kwargs["finned_x_wing"] = corners
+                                    kwargs["subset"] = [option]
+                                    kwargs["remove"] = to_remove
+                                    kwargs["house"] = house
+                                    kwargs["impacted_cells"] = other_cells
+                                    return True
+        return False
+
+    init_options(board, window, solver_status)
+    kwargs = {}
+    for opt in SUDOKU_VALUES_SET:
+        if _find_finned_x_wing(True, opt):
+            return kwargs
+        if _find_finned_x_wing(False, opt):
+            return kwargs
+    return kwargs
+
+
 def manual_solver(board, window):
     """ Main solver loop:
      - The algorithm draws current board and waits until a predefined event happens
@@ -962,6 +1037,11 @@ def manual_solver(board, window):
                 continue
             elif window.show_solution_steps:
                 window.calculate_next_clue = False
+
+        kwargs = _finned_x_wing(board, window)
+        if kwargs:
+            continue
+
         kwargs = _open_singles(board, window)
         if kwargs:
             continue

@@ -26,6 +26,7 @@ screen_messages = {
     "omissions": "'Locked Candidate' technique:",
     "swordfish": "'Swordfish' technique",
     "x_wings": "'x-wings' technique",
+    "finned_x_wings": "'finned-x-wings' technique",
     "y_wings": "'y-wings' technique",
     "scrub_pencil_marks": "WTF",
     "unique_values": "WTF",
