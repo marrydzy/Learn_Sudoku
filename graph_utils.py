@@ -5,7 +5,7 @@ import pygame
 # from icecream import ic
 
 from solver_manual import solver_status
-from solver_manual import init_options
+from utils import init_options
 
 
 ANIMATION_STEP_TIME = 0.05
@@ -283,7 +283,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
 
-    for value in window.input_board[cell_id]:
+    for value in window.solver_status.board_baseline[cell_id]:
         if remove and (value, cell_id) in remove:
             pygame.draw.rect(window.screen, GREY,
                              (pos[0] + window.option_offsets[value][0],
@@ -429,7 +429,8 @@ def toggle_pencil_marks_btn_clicked(window, _, board, *args, **kwargs):
     """ action on pressing 'Toggle pencil marks' button - TODO: add the button """
     if not window.buttons[pygame.K_h].is_pressed():
         window.show_all_pencil_marks = not window.show_all_pencil_marks
-        window.render_board(window.input_board, solver_tool="plain_board")
+        # ndow.render_board(window.input_board, solver_tool="plain_board") TODO: why displaying input_board?
+        window.render_board(board, solver_tool="plain_board")
         pygame.display.update()
         window.wait = False
         window.board_updated = False

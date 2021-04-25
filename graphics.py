@@ -55,7 +55,6 @@ class AppWindow:
         self.option_offsets = graph_utils.set_option_offsets()
 
         self.screen = None
-        self.input_board = None
         self.board_cells = graph_utils.set_cell_rectangles()
         self.keypad_frame = graph_utils.set_keypad_frame()
         self.keypad_keys = graph_utils.set_keypad_keys()
@@ -67,8 +66,6 @@ class AppWindow:
         self.inspect = self.peep
 
         self.solver_status = solver_status
-        # self.clues_defined = [cell_id for cell_id in range(81) if board[cell_id] != "."]
-        # self.clues_found = set()
         self.wrong_values = set()
         self.options_visible = set()
         self.selected_key = None
@@ -123,7 +120,7 @@ class AppWindow:
 
     def sudoku_solved_event(self, board):
         """ Handle 'Sudoku Solved' event """
-        self.input_board = board.copy()
+        self.solver_status.board_baseline = board.copy()        # TODO - is it needed?
         self.animate = False
         graph_utils.set_btn_status(self, False, (pygame.K_m, pygame.K_s))
         graph_utils.set_btn_status(self, True, (pygame.K_r,))
@@ -134,9 +131,9 @@ class AppWindow:
         graph_utils.set_btn_status(self, False, (pygame.K_a, pygame.K_b))
         graph_utils.set_btn_status(self, True, (pygame.K_h, pygame.K_m, pygame.K_s))
 
-    def set_current_board(self, board):
+    def set_current_board(self, board):         # TODO - move it from here!
         """ Save copy of the current board (before applying a tool)  """
-        self.input_board = board.copy()
+        self.solver_status.board_baseline = board.copy()
 
     def handle_input_events(self, board, **kwargs):
         """ handle input events before entering the display loop  """

@@ -128,6 +128,16 @@ def init_options(board, window, solver_status):
         solver_status.options_set = True
 
 
+def remove_options(solver_status, board, to_remove, window):
+    """ utility function: removes options as per 'to_remove' list """
+    for option, cell in to_remove:
+        board[cell] = board[cell].replace(option, "")
+        if not board[cell]:
+            window.critical_error = (cell, )
+        elif len(board[cell]) == 1:
+            solver_status.naked_singles.add(cell)
+
+
 def set_cell_options(cell_id, board, window, solver_status):
     """ Set cell options """
     board[cell_id] = ''.join(get_options(cell_id, board, window))
