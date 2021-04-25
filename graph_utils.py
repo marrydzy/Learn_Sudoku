@@ -409,7 +409,7 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     solver_status.reset(board, window)
     window.show_solution_steps = True
     window.inspect = window.peep
-    window.clues_found.clear()
+    window.solver_status.clues_found.clear()
     window.options_visible.clear()
     window.wrong_values.clear()
     window.show_wrong_values = True
@@ -465,7 +465,7 @@ def keyboard_btn_clicked(window, btn_id, *args, **kwargs):
 def cell_clicked(window, cell_id, *args, **kwargs):
     """ action on clicking a board cell """
     cell_id -= CELL_ID_OFFSET
-    if cell_id not in window.clues_defined:
+    if cell_id not in solver_status.clues_defined:
         if window.selected_key:
             window.clue_entered = (cell_id, window.selected_key,
                                    True if window.buttons[pygame.K_c].is_pressed() else False)

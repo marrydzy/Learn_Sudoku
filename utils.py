@@ -74,7 +74,7 @@ def is_clue(cell_id, board, window):
     if board[cell_id] == "." or len(board[cell_id]) != 1:
         return False
     if window:
-        if not (cell_id in window.clues_defined or cell_id in window.clues_found):
+        if not (cell_id in window.solver_status.clues_defined or cell_id in window.solver_status.clues_found):
             return False
     return True
 

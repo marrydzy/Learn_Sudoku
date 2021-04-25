@@ -34,7 +34,7 @@ KEYBOARD_DIGITS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
 class AppWindow:
     """ TODO """
 
-    def __init__(self, board, inspect):
+    def __init__(self, board, solver_status, inspect):
         if not pygame.get_init():
             pygame.init()
         self.font_type = "FreeSans"
@@ -66,8 +66,9 @@ class AppWindow:
         self.peep = inspect if len(inspect) else ''.join(self.method.values())
         self.inspect = self.peep
 
-        self.clues_defined = [cell_id for cell_id in range(81) if board[cell_id] != "."]
-        self.clues_found = set()
+        self.solver_status = solver_status
+        # self.clues_defined = [cell_id for cell_id in range(81) if board[cell_id] != "."]
+        # self.clues_found = set()
         self.wrong_values = set()
         self.options_visible = set()
         self.selected_key = None
@@ -107,11 +108,11 @@ class AppWindow:
                 if len(board[kwargs["new_clue"]]) == 1:
                     if kwargs["new_clue"] in self.options_visible:
                         self.options_visible.remove(kwargs["new_clue"])
-                    self.clues_found.add(kwargs["new_clue"])
+                    self.solver_status.clues_found.add(kwargs["new_clue"])
                 else:
                     self.options_visible.add(kwargs["new_clue"])
             for cell in self.critical_error:
-                if cell not in self.clues_defined:
+                if cell not in self.solver_status.clues_defined:
                     self.options_visible.add(cell)
             # self.set_current_board(board)         TODO !!!
 
@@ -190,11 +191,12 @@ class AppWindow:
                 pygame.draw.rect(self.screen, graph_utils.cell_color(self, cell_id, **kwargs), cell_rect)
 
                 if board[cell_id] != '.':
-                    if (solver_tool is None or cell_id in self.clues_defined or
+                    if (solver_tool is None or cell_id in self.solver_status.clues_defined or
                             cell_id == active_clue and not self.critical_error or
-                            cell_id in self.wrong_values and cell_id in self.clues_found and not self.critical_error):
+                            cell_id in self.wrong_values and cell_id in self.solver_status.clues_found and
+                            not self.critical_error):
                         graph_utils.render_clue(self, board[cell_id], cell_pos, BLACK)
-                    elif cell_id in self.clues_found and len(board[cell_id]) == 1:
+                    elif cell_id in self.solver_status.clues_found and len(board[cell_id]) == 1:
                         graph_utils.render_clue(self, board[cell_id], cell_pos, BLUE)
                     elif graph_utils.show_pencil_marks(self, cell_id, **kwargs):
                         if solver_tool != "plain_board":
@@ -264,8 +266,8 @@ class AppWindow:
                 if event in self.actions:
                     self.actions[event](self, event, board, **kwargs)
                 pygame.display.update()
-        if self.board_updated:
-            self.input_board = board.copy()
+        # if self.board_updated:
+        #     self.input_board = board.copy()
         self.time_in += time.time() - start
         return self.board_updated
 

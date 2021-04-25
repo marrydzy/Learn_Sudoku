@@ -17,6 +17,8 @@ class SolverStatus:
     """ class to store data needed for recovering of puzzle
     status prior to applying a method """
     def __init__(self):
+        self.clues_defined = set()
+        self.clues_found = set()
         self.options_set = False
         self.naked_singles = set()
         self.naked_singles_baseline = set()
@@ -24,30 +26,35 @@ class SolverStatus:
         self.options_visible_baseline = set()
         self.conflicted_cells = []
 
+    def initialize(self, board, window):
+        self.clues_defined = set(cell_id for cell_id in range(81) if board[cell_id] != ".")
+        self.reset(board, window)
+
     def capture_baseline(self, board, window):
         if window and window.show_solution_steps and not window.animate:
             window.set_current_board(board)
             self.naked_singles_baseline = self.naked_singles.copy()
-            self.clues_found_baseline = window.clues_found.copy()
+            self.clues_found_baseline = self.clues_found.copy()
             self.options_visible_baseline = window.options_visible.copy()
 
     def restore_baseline(self, board, window):
+        self.naked_singles = self.naked_singles_baseline.copy()
+        self.clues_found = self.clues_found_baseline.copy()
         if window:
-            self.naked_singles = self.naked_singles_baseline.copy()
-            window.clues_found = self.clues_found_baseline.copy()
             window.options_visible = self.options_visible_baseline.copy()
             for cell_id in range(81):
                 board[cell_id] = window.input_board[cell_id]
 
     def reset(self, board, window):
         self.options_set = False
+        self.clues_found.clear()
         self.naked_singles.clear()
         self.naked_singles_baseline.clear()
         self.clues_found_baseline.clear()
         self.options_visible_baseline.clear()
         if window:
             for cell_id in range(81):
-                if cell_id not in window.clues_defined:
+                if cell_id not in self.clues_defined:
                     board[cell_id] = "."
             window.set_current_board(board)
 
@@ -68,7 +75,7 @@ def _remove_options(board, to_remove, window):
 def _the_same_as_clue_found(board, window, options_set):
     """ Entered key is the same as clicked cell value """
     cell_id, value, as_clue = window.clue_entered
-    window.clues_found.remove(cell_id)
+    solver_status.clues_found.remove(cell_id)
     if as_clue:
         if options_set:
             set_cell_options(cell_id, board, window, solver_status)
@@ -88,9 +95,9 @@ def _other_than_clue_found(board, window, options_set):
         solver_status.naked_singles.remove(cell_id)
     board[cell_id] = value
     if as_clue:
-        window.clues_found.add(cell_id)
+        solver_status.clues_found.add(cell_id)
     else:
-        window.clues_found.remove(cell_id)
+        solver_status.clues_found.remove(cell_id)
         solver_status.naked_singles.add(cell_id)
         window.options_visible.add(cell_id)
     if options_set:
@@ -105,7 +112,7 @@ def _as_clue_and_undefined(board, window, options_set):
     if cell_id in solver_status.naked_singles:
         solver_status.naked_singles.remove(cell_id)
     board[cell_id] = value
-    window.clues_found.add(cell_id)
+    solver_status.clues_found.add(cell_id)
     if options_set:
         set_neighbours_options(cell_id, board, window, solver_status)
 
@@ -156,8 +163,8 @@ def _check_board_integrity(board, window):
     if window.solved_board:
         window.wrong_values.clear()
         for cell_id in range(81):
-            if cell_id not in window.clues_defined:
-                if cell_id in window.clues_found:
+            if cell_id not in solver_status.clues_defined:
+                if cell_id in solver_status.clues_found:
                     if board[cell_id] != window.solved_board[cell_id]:
                         window.wrong_values.add(cell_id)
                 elif cell_id in window.options_visible:
@@ -171,7 +178,7 @@ def _set_manually(board, window):
     if window and window.clue_entered[0] is not None:
         solver_status.capture_baseline(board, window)
         cell_id, value, as_clue = window.clue_entered
-        if cell_id in window.clues_found:
+        if cell_id in solver_status.clues_found:
             if board[cell_id] == value:
                 _the_same_as_clue_found(board, window, solver_status.options_set)
             else:
@@ -220,8 +227,7 @@ def _open_singles(board, window):
                 board[cell_id] = ''.join(value for value in missing_value)
             else:
                 board[cell_id] = missing_value.pop()
-                if window:
-                    window.clues_found.add(cell_id)
+                solver_status.clues_found.add(cell_id)
             kwargs["solver_tool"] = "open_singles"
             kwargs["new_clue"] = cell_id
             return True
@@ -275,8 +281,7 @@ def _visual_elimination(board, window):
                 solver_status.capture_baseline(board, window)
                 cell_id = clues[0]
                 board[cell_id] = value
-                if window:
-                    window.clues_found.add(cell_id)
+                solver_status.clues_found.add(cell_id)
                 house = [cell for offset in range(3) for cell in cols_rows[3*band + offset]]
                 kwargs["solver_tool"] = "visual_elimination"
                 kwargs["new_clue"] = cell_id
@@ -316,8 +321,7 @@ def _naked_singles(board, window):
             kwargs["solver_tool"] = "naked_singles"
             kwargs["new_clue"] = naked_single
             kwargs["remove"] = to_remove
-            if window:
-                window.clues_found.add(naked_single)
+            solver_status.clues_found.add(naked_single)
             return kwargs
     else:
         for cell in range(81):
@@ -328,8 +332,7 @@ def _naked_singles(board, window):
                     board[cell] = cell_opts.pop()
                     kwargs["solver_tool"] = "naked_singles"
                     kwargs["new_clue"] = cell
-                    if window:
-                        window.clues_found.add(cell)
+                    solver_status.clues_found.add(cell)
                     return kwargs
         return kwargs
 
@@ -365,11 +368,10 @@ def _hidden_singles(board, window):
                 solver_status.capture_baseline(board, window)
                 clue_id = in_cells[0]
                 board[clue_id] = option
-                if window:
-                    window.clues_found.add(clue_id)
+                solver_status.clues_found.add(clue_id)
                 if solver_status.options_set:
                     to_remove = [(option, cell) for cell in ALL_NBRS[clue_id]
-                                 if option in board[cell] and cell not in window.clues_defined]
+                                 if option in board[cell] and cell not in solver_status.clues_defined]
                     _remove_options(board, to_remove, window)
                 kwargs["solver_tool"] = "hidden_singles"
                 kwargs["new_clue"] = clue_id
@@ -960,6 +962,8 @@ def _finned_x_wing(board, window):
                         if r2_cols.issuperset(r1_cols):
                             fin = r2_cols.difference(r1_cols)
                             other_cells = set()
+                            house = set()
+                            corners = list()
                             if len(fin) == 1:
                                 col_1 = r1_cols.pop()
                                 col_2 = r1_cols.pop()
@@ -974,10 +978,12 @@ def _finned_x_wing(board, window):
                                     house = set(CELLS_IN_ROW[row_1]).union(set(CELLS_IN_ROW[row_2]))
                                     if box_1 == box_f:
                                         other_cells = set(CELLS_IN_SQR[box_1]).intersection(set(CELLS_IN_COL[col_1]))
-                                        other_cells.remove(row_2 * 9 + col_1)
+                                        other_cells.discard(row_1 * 9 + col_1)
+                                        other_cells.discard(row_2 * 9 + col_1)
                                     elif box_2 == box_f:
                                         other_cells = set(CELLS_IN_SQR[box_2]).intersection(set(CELLS_IN_COL[col_2]))
-                                        other_cells.remove(row_2 * 9 + col_2)
+                                        other_cells.discard(row_1 * 9 + col_2)
+                                        other_cells.discard(row_2 * 9 + col_2)
                                 else:
                                     box_1 = CELL_SQR[col_1 * 9 + row_2]
                                     box_2 = CELL_SQR[col_2 * 9 + row_2]
@@ -988,13 +994,16 @@ def _finned_x_wing(board, window):
                                     house = set(CELLS_IN_COL[row_1]).union(set(CELLS_IN_COL[row_2]))
                                     if box_f == box_1:
                                         other_cells = set(CELLS_IN_SQR[box_1]).intersection(set(CELLS_IN_ROW[col_1]))
-                                        other_cells.remove(col_1 * 9 + row_2)
+                                        other_cells.discard(col_1 * 9 + row_1)
+                                        other_cells.discard(col_1 * 9 + row_2)
                                     elif box_f == box_2:
                                         other_cells = set(CELLS_IN_SQR[box_2]).intersection(set(CELLS_IN_ROW[col_2]))
-                                        other_cells.remove(col_2 * 9 + row_2)
+                                        other_cells.discard(col_2 * 9 + row_1)
+                                        other_cells.discard(col_2 * 9 + row_2)
                             if other_cells:
                                 to_remove = [(option, cell) for cell in other_cells if option in board[cell]]
                                 if to_remove:
+                                    # print(f'\n{other_cells = } {to_remove = }')
                                     solver_status.capture_baseline(board, window)
                                     if window:
                                         window.options_visible = window.options_visible.union(house).union(other_cells)
@@ -1011,7 +1020,7 @@ def _finned_x_wing(board, window):
 
     init_options(board, window, solver_status)
     kwargs = {}
-    for opt in SUDOKU_VALUES_SET:
+    for opt in SUDOKU_VALUES_LIST:
         if _find_finned_x_wing(True, opt):
             return kwargs
         if _find_finned_x_wing(False, opt):
@@ -1025,7 +1034,7 @@ def manual_solver(board, window):
      - Each '_method' function returns True if the board is updated, False otherwise
      - Interactive vs. step-wise execution is controlled by 'window.calculate_next_clue' parameter """
 
-    solver_status.reset(board, window)
+    solver_status.initialize(board, window)
     kwargs = {"solver_tool": "plain_board"}
     while True:
         if window:
@@ -1037,10 +1046,6 @@ def manual_solver(board, window):
                 continue
             elif window.show_solution_steps:
                 window.calculate_next_clue = False
-
-        kwargs = _finned_x_wing(board, window)
-        if kwargs:
-            continue
 
         kwargs = _open_singles(board, window)
         if kwargs:
@@ -1079,6 +1084,9 @@ def manual_solver(board, window):
         if kwargs:
             continue
         kwargs = _x_wings(board, window)
+        if kwargs:
+            continue
+        kwargs = _finned_x_wing(board, window)
         if kwargs:
             continue
         kwargs = _y_wings(board, window)
