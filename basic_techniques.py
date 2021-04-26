@@ -5,12 +5,9 @@
 import itertools
 from collections import defaultdict
 
-# from icecream import ic
-
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
 from utils import is_clue, get_options, init_options, remove_options
-# from utils import get_pairs
 
 
 def open_singles(solver_status, board, window):
@@ -20,12 +17,12 @@ def open_singles(solver_status, board, window):
     """
 
     def _set_missing_number(house):
-        open_cells = [cell for cell in house if not is_clue(cell, board, window)]
+        open_cells = [cell for cell in house if not is_clue(cell, board, solver_status)]
         if len(open_cells) == 1:
             solver_status.capture_baseline(board, window)
             cell_id = open_cells.pop()
             missing_value = SUDOKU_VALUES_SET.copy() - set(
-                ''.join(board[cell] for cell in house if is_clue(cell, board, window)))
+                ''.join(board[cell] for cell in house if is_clue(cell, board, solver_status)))
             if len(missing_value) != 1:
                 board[cell_id] = ''.join(missing_value)
                 value_cells = defaultdict(list)
@@ -76,7 +73,7 @@ def visual_elimination(solver_status, board, window):
                 cells -= set(CELLS_IN_COL[CELL_COL[with_clue[0]]]).union(set(CELLS_IN_COL[CELL_COL[with_clue[1]]]))
             else:
                 cells -= set(CELLS_IN_ROW[CELL_ROW[with_clue[0]]]).union(set(CELLS_IN_ROW[CELL_ROW[with_clue[1]]]))
-            possible_clue_cells = [cell for cell in cells if not is_clue(cell, board, window)]
+            possible_clue_cells = [cell for cell in cells if not is_clue(cell, board, solver_status)]
             clues = []
             greyed_out = []
             for cell in possible_clue_cells:
@@ -126,9 +123,9 @@ def naked_singles(solver_status, board, window):
         else:
             solver_status.capture_baseline(board, window)
             naked_single = solver_status.naked_singles.pop()
-            clue = board[naked_single]  # TODO !!!!
+            clue = board[naked_single]
             to_remove = [(clue, cell) for cell in ALL_NBRS[naked_single]
-                         if not is_clue(cell, board, window) and clue in board[cell]]
+                         if not is_clue(cell, board, solver_status) and clue in board[cell]]
             remove_options(solver_status, board, to_remove, window)
             kwargs["solver_tool"] = "naked_singles"
             kwargs["new_clue"] = naked_single
@@ -138,7 +135,7 @@ def naked_singles(solver_status, board, window):
     else:
         for cell in range(81):
             if board[cell] == ".":
-                cell_opts = get_options(cell, board, window)
+                cell_opts = get_options(cell, board, solver_status)
                 if len(cell_opts) == 1:
                     solver_status.capture_baseline(board, window)
                     board[cell] = cell_opts.pop()
@@ -165,7 +162,7 @@ def hidden_singles(solver_status, board, window):
             options_visible = window.options_visible if window else list()
             for cell in house:
                 if board[cell] == ".":
-                    cell_opts = get_options(cell, board, window)
+                    cell_opts = get_options(cell, board, solver_status)
                     if option in cell_opts:
                         in_cells.append(cell)
                     else:
@@ -289,7 +286,7 @@ def hidden_triplet(solver_status, board, window):
                     return True
         return False
 
-    init_options(board, window, solver_status)
+    init_options(board, solver_status)
     kwargs = {}
     for i in range(9):
         if _find_triplets(CELLS_IN_ROW[i]):
@@ -332,7 +329,7 @@ def hidden_quad(solver_status, board, window):
                     return True
         return False
 
-    init_options(board, window, solver_status)
+    init_options(board, solver_status)
     kwargs = {}
     for i in range(9):
         if _find_quad(CELLS_IN_ROW[i]):
@@ -377,7 +374,7 @@ def naked_twins(solver_status, board, window):
                     return True
         return False
 
-    init_options(board, window, solver_status)
+    init_options(board, solver_status)
     kwargs = {}
     for i in range(9):
         if _find_pairs(CELLS_IN_ROW[i]):
@@ -414,7 +411,7 @@ def naked_triplets(solver_status, board, window):
                         return True
         return False
 
-    init_options(board, window, solver_status)
+    init_options(board, solver_status)
     kwargs = {}
     for i in range(9):
         if _find_triplets(CELLS_IN_ROW[i]):
@@ -451,7 +448,7 @@ def naked_quads(solver_status, board, window):
                         return True
         return False
 
-    init_options(board, window, solver_status)
+    init_options(board, solver_status)
     kwargs = {}
     for i in range(9):
         if _find_quad(CELLS_IN_ROW[i]):
@@ -517,7 +514,7 @@ def omissions(solver_status, board, window):
                     return True
         return False
 
-    init_options(board, window, solver_status)
+    init_options(board, solver_status)
     kwargs = {}
     for i in range(9):
         if _in_row_col(CELLS_IN_ROW[i]):

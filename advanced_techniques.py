@@ -59,7 +59,7 @@ def y_wings(solver_status, board, window):
                 return True
         return False
 
-    init_options(board, window, solver_status)
+    init_options(board, solver_status)
     kwargs = {}
     for cell in range(81):
         if len(board[cell]) == 2 and _reduce_xs(_find_wings(cell)):
@@ -78,17 +78,17 @@ def unique_rectangles(solver_status, board, window):
     #  - a pair is in at least three cells and the pair values are in options of the fourth one
     #  - the pair is in exactly two rows, to columns and two blocks
 
-    def _reduce_rectangle(pair, corners):
-        if all(board[corner] == pair for corner in corners):
+    def _reduce_rectangle(a_pair, corners):
+        if all(board[corner] == a_pair for corner in corners):
             return False
         to_remove = []
         for corner in corners:
-            if board[corner] != pair:
+            if board[corner] != a_pair:
                 subset = [cell for cell in rect if len(board[cell]) == 2]
-                if pair[0] in board[corner]:
-                    to_remove.append((pair[0], corner))
-                if pair[1] in board[corner]:
-                    to_remove.append((pair[1], corner))
+                if a_pair[0] in board[corner]:
+                    to_remove.append((a_pair[0], corner))
+                if a_pair[1] in board[corner]:
+                    to_remove.append((a_pair[1], corner))
                 if to_remove:
                     solver_status.capture_baseline(board, window)
                     remove_options(solver_status, board, to_remove, window)
@@ -101,6 +101,7 @@ def unique_rectangles(solver_status, board, window):
                     return True
         return False
 
+    init_options(board, solver_status)
     kwargs = {}
     pairs = defaultdict(list)
     for i in range(81):
@@ -189,6 +190,7 @@ def swordfish(solver_status, board, window):
                         return True
         return False
 
+    init_options(board, solver_status)
     kwargs = {}
     if _find_swordfish(True):
         return kwargs
@@ -233,6 +235,7 @@ def x_wings(solver_status, board, window):
                         return True
         return False
 
+    init_options(board, solver_status)
     kwargs = {}
     if _find_x_wing(True):
         return kwargs
@@ -248,12 +251,12 @@ def finned_x_wing(solver_status, board, window):
         cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
         for row_1 in range(9):
             r1_cols = set(col for col in range(9) if
-                          option in board[cells[row_1][col]] and not is_clue(cells[row_1][col], board, window))
+                          option in board[cells[row_1][col]] and not is_clue(cells[row_1][col], board, solver_status))
             if len(r1_cols) == 2:
                 for row_2 in range(9):
                     if row_2 != row_1:
                         r2_cols = set(col for col in range(9) if option in board[cells[row_2][col]]
-                                      and not is_clue(cells[row_2][col], board, window))
+                                      and not is_clue(cells[row_2][col], board, solver_status))
                         if r2_cols.issuperset(r1_cols):
                             fin = r2_cols.difference(r1_cols)
                             other_cells = set()
@@ -313,7 +316,7 @@ def finned_x_wing(solver_status, board, window):
                                     return True
         return False
 
-    init_options(board, window, solver_status)
+    init_options(board, solver_status)
     kwargs = {}
     for opt in SUDOKU_VALUES_LIST:
         if _find_finned_x_wing(True, opt):

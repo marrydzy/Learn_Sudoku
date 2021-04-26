@@ -345,7 +345,7 @@ def pencil_mark_btn_clicked(window, _, board, *args, **kwargs):
         window.buttons[pygame.K_p].draw(window.screen)
         window.buttons[pygame.K_c].set_pressed(False)
         window.buttons[pygame.K_c].draw(window.screen)
-        init_options(board, window, solver_status)
+        init_options(board, solver_status)
 
 
 def hint_btn_clicked(window, _, board, **kwargs):
@@ -383,6 +383,7 @@ def accept_btn_clicked(window, *args, **kwargs):
 
 def solve_btn_clicked(window, *args, **kwargs):
     """ action on pressing 'Solve' button """
+    window.selected_cell = None
     window.buttons[pygame.K_s].set_pressed(True)
     set_btn_status(window, False, (pygame.K_c, pygame.K_p, pygame.K_a, pygame.K_h, pygame.K_b, pygame.K_m))
     set_keyboard_status(window, False)
@@ -394,6 +395,7 @@ def solve_btn_clicked(window, *args, **kwargs):
 
 def animate_btn_clicked(window, *args, **kwargs):
     """ action on pressing 'Animate' button """
+    window.selected_cell = None
     window.buttons[pygame.K_m].set_pressed(True)
     set_btn_status(window, False, (pygame.K_c, pygame.K_p, pygame.K_a, pygame.K_h,
                                    pygame.K_b, pygame.K_m, pygame.K_s, pygame.K_r))
@@ -406,7 +408,7 @@ def animate_btn_clicked(window, *args, **kwargs):
 
 def reset_btn_clicked(window, _, board, *args, **kwargs):
     """ action on clicking 'Reset' button """
-    solver_status.reset(board, window)
+    solver_status.reset(board)
     window.show_solution_steps = True
     window.inspect = window.peep
     window.solver_status.clues_found.clear()
@@ -445,7 +447,7 @@ def quit_btn_clicked(window, *args, **kwargs):
 
 def keyboard_btn_clicked(window, btn_id, *args, **kwargs):
     """ action on pressing a keyboard button """
-    if window.selected_cell:
+    if window.selected_cell is not None:
         window.clue_entered = (window.selected_cell, str(btn_id),
                                True if window.buttons[pygame.K_c].is_pressed() else False)
         window.wait = False

@@ -48,34 +48,32 @@ CELL_COL = tuple(i % 9 for i in range(81))
 CELL_SQR = tuple((i // 27) * 3 + (i % 9) // 3 for i in range(81))
 
 
-class DeadEndException(Exception):
+class DeadEndException(Exception):      # TODO
     pass
 
 
-def is_solved(board, window):
+def is_solved(board, solver_status):
     """ check if the board is solved """
     for row in range(9):
-        clues = set(''.join(board[cell] for cell in CELLS_IN_ROW[row] if is_clue(cell, board, window)))
+        clues = set(''.join(board[cell] for cell in CELLS_IN_ROW[row] if is_clue(cell, board, solver_status)))
         if clues != SUDOKU_VALUES_SET:
             return False
     for col in range(9):
-        clues = set(''.join(board[cell] for cell in CELLS_IN_COL[col] if is_clue(cell, board, window)))
+        clues = set(''.join(board[cell] for cell in CELLS_IN_COL[col] if is_clue(cell, board, solver_status)))
         if clues != SUDOKU_VALUES_SET:
             return False
     for box in range(9):
-        clues = set(''.join(board[cell] for cell in CELLS_IN_SQR[box] if is_clue(cell, board, window)))
+        clues = set(''.join(board[cell] for cell in CELLS_IN_SQR[box] if is_clue(cell, board, solver_status)))
         if clues != SUDOKU_VALUES_SET:
             return False
     return True
 
 
-def is_clue(cell_id, board, window):
+def is_clue(cell_id, board, solver_status):
     """ check if the cell has clue (is solved) """
-    if board[cell_id] == "." or len(board[cell_id]) != 1:
+    if board[cell_id] == "." or len(board[cell_id]) != 1 or \
+            (cell_id not in solver_status.clues_defined and cell_id not in solver_status.clues_found):
         return False
-    if window:
-        if not (cell_id in window.solver_status.clues_defined or cell_id in window.solver_status.clues_found):
-            return False
     return True
 
 
@@ -89,10 +87,10 @@ def is_single(board, house, value):
     return None
 
 
-def get_options(cell_id, board, window):
+def get_options(cell_id, board, solver_status):
     """ returns set of options of the cell """
     return SUDOKU_VALUES_SET.copy() - set(''.join(
-        [board[cell] for cell in ALL_NBRS[cell_id] if is_clue(cell, board, window)]))
+        [board[cell] for cell in ALL_NBRS[cell_id] if is_clue(cell, board, solver_status)]))
 
 
 def get_pairs(board, by_row):
@@ -113,18 +111,16 @@ def get_pairs(board, by_row):
     return pairs_dict
 
 
-def init_options(board, window, solver_status):
+def init_options(board, solver_status):
     """ Initialize options of unsolved cells """
     if not solver_status.options_set:
         for cell in range(81):
-            if not is_clue(cell, board, window):
-                nbr_clues = [board[nbr_cell] for nbr_cell in ALL_NBRS[cell] if is_clue(nbr_cell, board, window)]
+            if not is_clue(cell, board, solver_status):
+                nbr_clues = [board[nbr_cell] for nbr_cell in ALL_NBRS[cell]
+                             if is_clue(nbr_cell, board, solver_status)]
                 board[cell] = "".join(value for value in SUDOKU_VALUES_LIST if value not in nbr_clues)
                 if len(board[cell]) == 1:
                     solver_status.naked_singles.add(cell)
-        if window:
-            window.set_current_board(board)
-            solver_status.capture_baseline(board, window)
         solver_status.options_set = True
 
 
@@ -138,9 +134,9 @@ def remove_options(solver_status, board, to_remove, window):
             solver_status.naked_singles.add(cell)
 
 
-def set_cell_options(cell_id, board, window, solver_status):
+def set_cell_options(cell_id, board, solver_status):
     """ Set cell options """
-    board[cell_id] = ''.join(get_options(cell_id, board, window))
+    board[cell_id] = ''.join(get_options(cell_id, board, solver_status))
     if len(board[cell_id]) == 1:
         solver_status.naked_singles.add(cell_id)
 
@@ -152,16 +148,16 @@ def set_neighbours_options(cell_id, board, window, solver_status):
         - if the set is empty, set allowed options and remove the cell
           from the set with 'visible' options """
     for cell in ALL_NBRS[cell_id]:
-        if not is_clue(cell, board, window):
+        if not is_clue(cell, board, solver_status):
             if cell in window.options_visible:
-                updated_opts = set(board[cell]) & get_options(cell, board, window)
+                updated_opts = set(board[cell]) & get_options(cell, board, solver_status)
                 if updated_opts:
                     board[cell] = ''.join(updated_opts)
                 else:
-                    board[cell] = ''.join(get_options(cell, board, window))
+                    board[cell] = ''.join(get_options(cell, board, solver_status))
                     window.options_visible.remove(cell)
             else:
-                board[cell] = ''.join(get_options(cell, board, window))
+                board[cell] = ''.join(get_options(cell, board, solver_status))
             if len(board[cell]) > 1 and cell in solver_status.naked_singles:
                 solver_status.naked_singles.remove(cell)
             if len(board[cell]) == 1:

@@ -131,9 +131,9 @@ class AppWindow:
         graph_utils.set_btn_status(self, False, (pygame.K_a, pygame.K_b))
         graph_utils.set_btn_status(self, True, (pygame.K_h, pygame.K_m, pygame.K_s))
 
-    def set_current_board(self, board):         # TODO - move it from here!
-        """ Save copy of the current board (before applying a tool)  """
-        self.solver_status.board_baseline = board.copy()
+    # def set_current_board(self, board):         # TODO - move it from here!
+        # """ Save copy of the current board (before applying a tool)  """
+        # self.solver_status.board_baseline = board.copy()
 
     def handle_input_events(self, board, **kwargs):
         """ handle input events before entering the display loop  """

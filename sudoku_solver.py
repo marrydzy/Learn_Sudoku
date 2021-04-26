@@ -78,7 +78,7 @@ def apply_standard_techniques():
         return True
 
     window = data["graph_display"] if config['graphical_mode'] else None
-    if is_solved(board, window):
+    if is_solved(board, solver_status):
         return True
 
     report_stats = bool(config["method_stats"] and data["current_loop"] == 0)
@@ -88,7 +88,7 @@ def apply_standard_techniques():
         if lone_singles:
             if not _erase_pencil_marks():
                 return False
-        if is_solved(board, window):
+        if is_solved(board, solver_status):
             return True
 
         for method in methods[1:]:      # TODO - manual solution
@@ -238,7 +238,7 @@ def run_solver(progress_bar=None):
 
     if not ret_code:
         ret_code = apply_standard_techniques()
-        if ret_code and not is_solved(board, data["graph_display"] if config['graphical_mode'] else None):
+        if ret_code and not is_solved(board, solver_status):
             ret_code = find_cells_values()
     data["resolution_time"] = time.time() - start_time
 
