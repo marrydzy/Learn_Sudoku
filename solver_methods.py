@@ -7,6 +7,7 @@ import itertools
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_SET
+from solver_manual import solver_status
 
 
 def get_stats(func):
@@ -70,7 +71,7 @@ def unique_values(board, window, lone_singles):
 
     if window:
 #         window.display_info("Hidden Singles")
-        window.set_current_board(board)
+        solver_status.capture_baseline(board, window)
     unique_values.board_updated = False
     for i in range(9):
         _solve_lone_singles(CELLS_IN_ROW[i])
@@ -136,7 +137,7 @@ def hidden_pairs(board, window, _):
 
     if window:
         # ("Hidden Pairs")
-        window.set_current_board(board)
+        solver_status.capture_baseline(board, window)
     hidden_pairs.board_updated = False
     for i in range(9):
         _find_pairs(CELLS_IN_ROW[i])
@@ -199,7 +200,7 @@ def naked_twins(board, window, lone_singles):
 
     if window:
         # window.display_info("Naked Pairs")
-        window.set_current_board(board)
+        solver_status.capture_baseline(board, window)
     naked_twins.board_updated = False
     for i in range(9):
         if not _find_pairs(CELLS_IN_ROW[i]):
@@ -308,7 +309,7 @@ def omissions(board, window, lone_singles):
 
     if window:
         # window.display_info("Omission")
-        window.set_current_board(board)
+        solver_status.capture_baseline(board, window)
     omissions.board_updated = False
     for i in range(9):
         if not _in_row_col(CELLS_IN_ROW[i]):
@@ -365,7 +366,7 @@ def naked_triplets(board, window, lone_singles):
 
     if window:
         # window.display_info("'Naked Triplets' technique")
-        window.set_current_board(board)
+        solver_status.capture_baseline(board, window)
     naked_triplets.board_updated = False
     for i in range(9):
         if not _find_triplets(CELLS_IN_ROW[i]):
@@ -430,7 +431,7 @@ def hidden_triplets(board, window, _):
 
     if window:
         # window.display_info("Hidden Triplets")
-        window.set_current_board(board)
+        solver_status.capture_baseline(board, window)
     hidden_triplets.board_updated = False
     for i in range(9):
         _find_triplets(CELLS_IN_ROW[i])
@@ -487,7 +488,7 @@ def hidden_quads(board, window, _):
 
     if window:
         # window.display_info("Hidden Quads")
-        window.set_current_board(board)
+        solver_status.capture_baseline(board, window)
     hidden_quads.board_updated = False
     for i in range(9):
         _find_quads(CELLS_IN_ROW[i])
@@ -540,7 +541,7 @@ def naked_quads(board, window, lone_singles):
     # naked_quads.removed = 0
     if window:
         # window.display_info("Naked Quads")
-        window.set_current_board(board)
+        solver_status.capture_baseline(board, window)
     naked_quads.board_updated = False
     for i in range(9):
         if not _find_quads(CELLS_IN_ROW[i]):
@@ -597,7 +598,7 @@ def x_wings(board, window, lone_singles):
     to_remove = []
     if window:
         # window.display_info("X-Wings")
-        window.set_current_board(board)
+        solver_status.capture_baseline(board, window)
     x_wings.board_updated = False
 
     _find_pairs("by row")
@@ -708,7 +709,7 @@ def y_wings(board, window, lone_singles):
 
     if window:
         # window.display_info("Y-Wing")
-        window.set_current_board(board)
+        solver_status.capture_baseline(board, window)
     y_wings.board_updated = False
     for cell in range(81):
         if len(board[cell]) == 2:
@@ -761,7 +762,7 @@ def unique_rectangles(board, window, lone_singles):
 
     if window:
         # window.display_info("Unique Rectangle")
-        window.set_current_board(board)
+        solver_status.capture_baseline(board, window)
     unique_rectangles.board_updated = False
     pairs = {}
     for i in range(81):
@@ -903,7 +904,7 @@ def swordfish(board, window, lone_singles):
     to_remove = []
     if window:
         # window.display_info("Swordfish")
-        window.set_current_board(board)
+        solver_status.capture_baseline(board, window)
     swordfish.board_updated = False
     if not _find_swordfish("by row"):
         return False

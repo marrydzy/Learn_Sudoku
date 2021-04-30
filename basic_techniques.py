@@ -241,7 +241,7 @@ def hidden_pair(solver_status, board, window):
                     return True
         return False
 
-    init_options(board, window, solver_status)
+    init_options(board, solver_status)
     kwargs = {}
     for i in range(9):
         if _find_pairs(CELLS_IN_ROW[i]):

@@ -189,11 +189,16 @@ def _set_manually(board, window):
     return kwargs
 
 
+tmp_counter = 0     # TODO - for debugging/testing only!
+
+
 def manual_solver(board, window):
     """ Main solver loop:
      - The algorithm draws current board and waits until a predefined event happens
      - Each 'technique' function returns kwargs dictionary if the board is updated, empty dictionary otherwise
      - Interactive vs. step-wise execution is controlled by 'window.calculate_next_clue' parameter """
+
+    global tmp_counter  # TODO - for debugging/testing only!
 
     solver_status.initialize(board)
     kwargs = {"solver_tool": "plain_board"}
@@ -244,6 +249,9 @@ def manual_solver(board, window):
         kwargs = advanced_techniques.unique_rectangles(solver_status, board, window)
         if kwargs:
             continue
+        kwargs = advanced_techniques.skyscraper(solver_status, board, window)
+        if kwargs:
+            continue
         kwargs = advanced_techniques.x_wings(solver_status, board, window)
         if kwargs:
             continue
@@ -256,8 +264,15 @@ def manual_solver(board, window):
         kwargs = advanced_techniques.swordfish(solver_status, board, window)
         if kwargs:
             continue
+        # questionable techniques:
+        kwargs = advanced_techniques.franken_x_wing(solver_status, board, window)
+        if kwargs:
+            continue
+
 
         if not is_solved(board, solver_status):        # TODO: for debugging only!
+            tmp_counter += 1
+            # print(f"\n{tmp_counter = }")
             pass
-            # print('\nLeaving manual_solver')
+
         return False

@@ -57,7 +57,7 @@ def apply_standard_techniques():
     def _erase_pencil_marks():
         if window:
             graph_utils.display_info(window, "Naked Singles")
-            window.set_current_board(board)
+            solver_status.capture_baseline(board, window)
 
         while lone_singles:
             cell = lone_singles.pop(0)
@@ -156,7 +156,7 @@ def find_cells_values():
         data["iter_counter"] += 1
         _recreate_board()
         if config["graphical_mode"] and data["graph_display"]:  # TODO - redundant?
-            data["graph_display"].set_current_board(board)      # TODO
+            solver_status.capture_baseline(board, data["graph_display"])      # TODO
         lone_singles.clear()
         board[next_cell] = value
         lone_singles.append(next_cell)
@@ -193,7 +193,7 @@ def init_cells_options():
     for cell_id in cells_to_resolve:
         board[cell_id] = "123456789"
     if data["graph_display"]:
-        data["graph_display"].set_current_board(board)
+        solver_status.capture_baseline(board, data["graph_display"])
 
 
 def init_board():

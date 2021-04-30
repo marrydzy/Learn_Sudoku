@@ -301,7 +301,6 @@ def finned_x_wing(solver_status, board, window):
                             if other_cells:
                                 to_remove = [(option, cell) for cell in other_cells if option in board[cell]]
                                 if to_remove:
-                                    # print(f'\n{other_cells = } {to_remove = }')
                                     solver_status.capture_baseline(board, window)
                                     if window:
                                         window.options_visible = window.options_visible.union(house).union(other_cells)
@@ -322,5 +321,132 @@ def finned_x_wing(solver_status, board, window):
         if _find_finned_x_wing(True, opt):
             return kwargs
         if _find_finned_x_wing(False, opt):
+            return kwargs
+    return kwargs
+
+
+def franken_x_wing(solver_status, board, window):
+    """ TODO """
+    by_row_boxes = {0: (3, 6), 1: (4, 7), 2: (5, 8),
+                    3: (0, 6), 4: (1, 7), 5: (2, 8),
+                    6: (0, 3), 7: (1, 4), 8: (2, 5),}
+    by_col_boxes = {0: (1, 2), 1: (0, 2), 2: (0, 1),
+                    3: (4, 5), 4: (3, 5), 5: (3, 4),
+                    6: (7, 8), 7: (6, 8), 8: (6, 7),}
+
+    def _find_franken_x_wing(by_row, option):
+        cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
+        for row in range(9):
+            cols_1 = [col for col in range(9) if
+                      option in board[cells[row][col]] and not is_clue(cells[row][col], board, solver_status)]
+            if len(cols_1) == 2:
+                corner_1 = cells[row][cols_1[0]]
+                corner_2 = cells[row][cols_1[1]]
+                if CELL_SQR[corner_1] == CELL_SQR[corner_2]:
+                    other_boxes = by_row_boxes[CELL_SQR[corner_1]] if by_row else by_col_boxes[CELL_SQR[corner_1]]
+                    for box in other_boxes:
+                        if by_row:
+                            cols_2 = set(CELL_COL[cell] for cell in CELLS_IN_SQR[box]
+                                         if option in board[cell] and not is_clue(cell, board, solver_status))
+                        else:
+                            cols_2 = set(CELL_ROW[cell] for cell in CELLS_IN_SQR[box]
+                                         if option in board[cell] and not is_clue(cell, board, solver_status))
+                        if set(cols_1) == cols_2:
+                            if by_row:
+                                other_cells = set(CELLS_IN_COL[cols_1[0]]).union(set(CELLS_IN_COL[cols_1[1]]))
+                            else:
+                                other_cells = set(CELLS_IN_ROW[cols_1[0]]).union(set(CELLS_IN_ROW[cols_1[1]]))
+                            other_cells = other_cells.intersection(set(CELLS_IN_SQR[CELL_SQR[corner_1]]))
+                            other_cells.discard(corner_1)
+                            other_cells.discard(corner_2)
+                            house = set(cells[row]).union(set(CELLS_IN_SQR[box]))
+                            corners = [option, corner_1, corner_2]
+                            corners.extend(cell for cell in CELLS_IN_SQR[box] if option in board[cell])
+                            to_remove = [(option, cell) for cell in other_cells if option in board[cell]]
+                            if to_remove:
+                                solver_status.capture_baseline(board, window)
+                                if window:
+                                    window.options_visible = window.options_visible.union(house).union(other_cells)
+                                remove_options(solver_status, board, to_remove, window)
+                                kwargs["solver_tool"] = "franken_x_wings"
+                                kwargs["singles"] = solver_status.naked_singles
+                                kwargs["finned_x_wing"] = corners
+                                kwargs["subset"] = [option]
+                                kwargs["remove"] = to_remove
+                                kwargs["house"] = house
+                                kwargs["impacted_cells"] = other_cells
+                                return True
+        return False
+
+    init_options(board, solver_status)
+    kwargs = {}
+    for opt in SUDOKU_VALUES_LIST:
+        if _find_franken_x_wing(True, opt):
+            return kwargs
+        if _find_franken_x_wing(False, opt):
+            return kwargs
+    return kwargs
+
+
+def skyscraper(solver_status, board, window):
+    """ TODO """
+
+    def _find_skyscraper(by_row, option):
+        cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
+        for row_1 in range(8):
+            cols_1 = set(col for col in range(9) if option in board[cells[row_1][col]]
+                         and not is_clue(cells[row_1][col], board, solver_status))
+            if len(cols_1) == 2:
+                for row_2 in range(row_1+1, 9):
+                    cols_2 = set(col for col in range(9) if option in board[cells[row_2][col]]
+                                 and not is_clue(cells[row_2][col], board, solver_status))
+                    if len(cols_2) == 2 and len(cols_1.union(cols_2)) == 3:
+                        different_cols = cols_1.symmetric_difference(cols_2)
+                        cl_1_list = sorted(list(cols_1))
+
+                        cl_2_list = sorted(list(cols_2))
+                        corners = list()
+                        corners.append((row_1, cl_1_list[0]) if cl_1_list[0] not in different_cols else
+                                       (row_1, cl_1_list[1]))
+                        corners.append((row_1, cl_1_list[0]) if cl_1_list[0] in different_cols else
+                                       (row_1, cl_1_list[1]))
+                        corners.append((row_2, cl_2_list[0]) if cl_2_list[0] in different_cols else
+                                       (row_2, cl_2_list[1]))
+                        corners.append((row_2, cl_2_list[0]) if cl_2_list[0] not in different_cols else
+                                       (row_2, cl_2_list[1]))
+                        if by_row:
+                            corners_idx = [corners[i][0] * 9 + corners[i][1] for i in range(4)]
+                        else:
+                            corners_idx = [corners[i][1] * 9 + corners[i][0] for i in range(4)]
+                        impacted_cells = set(ALL_NBRS[corners_idx[1]]).intersection(ALL_NBRS[corners_idx[2]])
+                        for corner in corners_idx:
+                            impacted_cells.discard(corner)
+                        clues = [cell for cell in impacted_cells if is_clue(cell, board, solver_status)]
+                        for clue_id in clues:
+                            impacted_cells.discard(clue_id)
+                        corners_idx.insert(0, option)
+                        to_remove = [(option, cell) for cell in impacted_cells if option in board[cell]]  # TODO - check if not set
+                        if to_remove:
+                            solver_status.capture_baseline(board, window)
+                            house = set(cells[row_1]).union(set(cells[row_2]))
+                            if window:
+                                window.options_visible = window.options_visible.union(house).union(impacted_cells)
+                            remove_options(solver_status, board, to_remove, window)
+                            kwargs["solver_tool"] = "skyscraper"
+                            kwargs["singles"] = solver_status.naked_singles
+                            kwargs["skyscraper"] = corners_idx
+                            kwargs["subset"] = [option]
+                            kwargs["remove"] = to_remove
+                            kwargs["house"] = house
+                            kwargs["impacted_cells"] = impacted_cells
+                            return True
+        return False
+
+    init_options(board, solver_status)
+    kwargs = {}
+    for opt in SUDOKU_VALUES_LIST:
+        if _find_skyscraper(True, opt):
+            return kwargs
+        if _find_skyscraper(False, opt):
             return kwargs
     return kwargs

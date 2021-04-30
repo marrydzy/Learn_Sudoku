@@ -210,6 +210,7 @@ def draw_board_features(window, **kwargs):
     rectangle = kwargs["rectangle"] if "rectangle" in kwargs else None
     y_wing = kwargs["y_wing"] if "y_wing" in kwargs else None
     x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
+    skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
 
     if rectangle:
         left = (rectangle[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
@@ -218,6 +219,20 @@ def draw_board_features(window, **kwargs):
         bottom = (rectangle[2] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
         rect = pygame.Rect(left, top, right - left, bottom - top)
         pygame.draw.rect(window.screen, MAGENTA, rect, width=4)
+
+    if skyscraper:
+        color = MAGENTA
+        skyscraper = skyscraper[1:]
+        x1 = (skyscraper[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+        y1 = (skyscraper[0] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+        x2 = (skyscraper[2] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+        y2 = (skyscraper[2] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+        pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
+        x1 = (skyscraper[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+        y1 = (skyscraper[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+        x2 = (skyscraper[3] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+        y2 = (skyscraper[3] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+        pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
 
     if x_wing:
         color = MAGENTA
@@ -260,6 +275,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
     if x_wing is None and "finned_x_wing" in kwargs:
         x_wing = kwargs["finned_x_wing"]
+    skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
     sword = kwargs["sword"] if "sword" in kwargs else None
 
     if iterate is not None and cell_id == iterate:
@@ -279,6 +295,10 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
     if sword and cell_id in sword[1:]:
+        pygame.draw.rect(
+            window.screen, Y_WING_LEAF,
+            (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+    if skyscraper and cell_id in skyscraper[1:]:
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
@@ -311,6 +331,11 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if sword and value == sword[0] and cell_id in sword[1:]:
+            pygame.draw.rect(window.screen, CYAN,
+                             (pos[0] + window.option_offsets[value][0],
+                              pos[1] + window.option_offsets[value][1],
+                              CELL_SIZE // 3, CELL_SIZE // 3))
+        if skyscraper and value == skyscraper[0] and cell_id in skyscraper[1:]:
             pygame.draw.rect(window.screen, CYAN,
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
@@ -624,6 +649,8 @@ def set_methods():
             "unique_rectangles": "r",
             "x_wings": "x",
             "finned_x_wings": "f",
+            "franken_x_wing": "a",
+            "skyscraper": "k",
             "swordfish": "s",
             "scrub_pencil_marks": "c",
             "iterate": "z",
