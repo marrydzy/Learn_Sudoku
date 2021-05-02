@@ -2,7 +2,7 @@
 
 """ SUDOKU SOLVING METHODS """
 
-# import itertools
+from itertools import combinations
 from collections import defaultdict
 
 # from icecream import ic
@@ -199,6 +199,58 @@ def swordfish(solver_status, board, window):
     return kwargs
 
 
+def jellyfish(solver_status, board, window):
+    """ TODO """
+
+    def _find_jellyfish(by_row):
+        for opt in SUDOKU_VALUES_LIST:
+            positions = {}
+            cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
+            for indx_1 in range(9):
+                at_pos = set(CELL_COL[cell] if by_row else CELL_ROW[cell] for cell in cells[indx_1]
+                             if opt in board[cell] and not is_clue(cell, board, solver_status))
+                if 0 < len(at_pos) < 5:
+                    positions[indx_1] = at_pos
+            if len(positions) > 3:
+                for quad in combinations(positions.keys(), 4):
+                    indxs_2 = set()
+                    for indx in quad:
+                        indxs_2 = indxs_2.union(positions[indx])
+                    if len(indxs_2) == 4:
+                        impacted_cells = set()
+                        house = set()
+                        cells_t = CELLS_IN_COL if by_row else CELLS_IN_ROW
+                        for indx in indxs_2:
+                            impacted_cells = impacted_cells.union(set(cells_t[indx]))
+                        for indx in quad:
+                            impacted_cells = impacted_cells.difference(set(cells[indx]))
+                            house = house.union(set(cells[indx]))
+                        to_remove = [(opt, cell) for cell in impacted_cells if opt in board[cell]]
+                        if to_remove:
+                            corners = [cell for idx in quad for cell in cells[idx] if opt in board[cell]]
+                            corners.insert(0, opt)
+                            solver_status.capture_baseline(board, window)
+                            if window:
+                                window.options_visible = window.options_visible.union(set(house))
+                            remove_options(solver_status, board, to_remove, window)
+                            kwargs["solver_tool"] = "jellyfish"
+                            kwargs["singles"] = solver_status.naked_singles
+                            kwargs["sword"] = corners
+                            kwargs["remove"] = to_remove
+                            kwargs["impacted_cells"] = impacted_cells
+                            kwargs["house"] = house
+                            return True
+        return False
+
+    init_options(board, solver_status)
+    kwargs = {}
+    if _find_jellyfish(True):
+        return kwargs
+    if _find_jellyfish(False):
+        return kwargs
+    return kwargs
+
+
 def x_wings(solver_status, board, window):
     """Remove candidates (options) using X Wing technique
     (see https://www.learn-sudoku.com/x-wing.html)"""
@@ -329,10 +381,10 @@ def franken_x_wing(solver_status, board, window):
     """ TODO """
     by_row_boxes = {0: (3, 6), 1: (4, 7), 2: (5, 8),
                     3: (0, 6), 4: (1, 7), 5: (2, 8),
-                    6: (0, 3), 7: (1, 4), 8: (2, 5),}
+                    6: (0, 3), 7: (1, 4), 8: (2, 5), }
     by_col_boxes = {0: (1, 2), 1: (0, 2), 2: (0, 1),
                     3: (4, 5), 4: (3, 5), 5: (3, 4),
-                    6: (7, 8), 7: (6, 8), 8: (6, 7),}
+                    6: (7, 8), 7: (6, 8), 8: (6, 7), }
 
     def _find_franken_x_wing(by_row, option):
         cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
@@ -448,5 +500,130 @@ def skyscraper(solver_status, board, window):
         if _find_skyscraper(True, opt):
             return kwargs
         if _find_skyscraper(False, opt):
+            return kwargs
+    return kwargs
+
+
+def sue_de_coq(solver_status, board, window):
+    """ TODO """
+
+    def _find_sue_de_coq_type_1(box, by_rows):
+        for cell_1 in CELLS_IN_SQR[box]:
+            if len(board[cell_1]) == 2:
+                if by_rows:
+                    indexes = [row for row in range((box // 3) * 3, (box // 3) * 3 + 3) if row != CELL_ROW[cell_1]]
+                else:
+                    indexes = [col for col in range((box % 3) * 3, (box % 3) * 3 + 3) if col != CELL_COL[cell_1]]
+                for indx in indexes:
+                    cells_b = set(CELLS_IN_SQR[box])
+                    cells_1 = set(CELLS_IN_ROW[indx]) if by_rows else set(CELLS_IN_COL[indx])
+                    cells_2 = [cell for cell in cells_1.difference(cells_b)
+                               if not is_clue(cell, board, solver_status)]
+                    cells_3 = [cell for cell in cells_1.intersection(cells_b)
+                               if not is_clue(cell, board, solver_status)]
+                    cells_4 = [cell for cell in cells_b.difference(cells_1)
+                               if not is_clue(cell, board, solver_status)]
+                    if len(cells_3) > 1:
+                        for cell_2 in cells_2:
+                            if len(board[cell_2]) == 2 and not set(board[cell_1]).intersection(set(board[cell_2])):
+                                options_12 = set(board[cell_1]).union(set(board[cell_2]))
+                                for pair in combinations(cells_3, 2):
+                                    if options_12 == set(board[pair[0]]).union(board[pair[1]]):
+                                        to_remove = []
+                                        for opt in board[cell_1]:
+                                            for cell in cells_4:
+                                                if cell != cell_1 and opt in board[cell]:
+                                                    to_remove.append((opt, cell))
+                                        for opt in board[cell_2]:
+                                            for cell in cells_1:
+                                                if cell != cell_2 and cell != pair[0] and cell != pair[1] \
+                                                        and opt in board[cell]:
+                                                    to_remove.append((opt, cell))
+                                        if to_remove:
+                                            solver_status.capture_baseline(board, window)
+                                            house = cells_b.union(cells_1)
+                                            pattern = {cell_1, cell_2, pair[0], pair[1]}
+                                            impacted_cells = set(cells_2).union(set(cells_3)).union(set(cells_4))
+                                            impacted_cells.difference(pattern)
+                                            if window:
+                                                window.options_visible = window.options_visible.union(house).union(
+                                                    house)
+                                            remove_options(solver_status, board, to_remove, window)
+                                            kwargs["solver_tool"] = "sue_de_coq"
+                                            kwargs["singles"] = solver_status.naked_singles
+                                            kwargs["sue_de_coq"] = pattern
+                                            kwargs["remove"] = to_remove
+                                            kwargs["house"] = house
+                                            kwargs["impacted_cells"] = impacted_cells
+                                            kwargs["subset"] = [to_remove[0][0]]
+                                            return True
+        return False
+
+    def _find_sue_de_coq_type_2(box, by_rows):
+        for cell_1 in CELLS_IN_SQR[box]:
+            if len(board[cell_1]) == 2:
+                if by_rows:
+                    indexes = [row for row in range((box // 3) * 3, (box // 3) * 3 + 3) if row != CELL_ROW[cell_1]]
+                else:
+                    indexes = [col for col in range((box % 3) * 3, (box % 3) * 3 + 3) if col != CELL_COL[cell_1]]
+                for indx in indexes:
+                    cells_b = set(CELLS_IN_SQR[box])
+                    cells_1 = set(CELLS_IN_ROW[indx]) if by_rows else set(CELLS_IN_COL[indx])
+                    cells_2 = [cell for cell in cells_1.difference(cells_b)
+                               if not is_clue(cell, board, solver_status)]
+                    cells_3 = [cell for cell in cells_1.intersection(cells_b)
+                               if not is_clue(cell, board, solver_status)]
+                    cells_4 = [cell for cell in cells_b.difference(cells_1)
+                               if not is_clue(cell, board, solver_status)]
+                    if len(cells_3) == 3:
+                        for cell_2 in cells_2:
+                            if len(board[cell_2]) == 2 and not set(board[cell_1]).intersection(set(board[cell_2])):
+                                options_12 = set(board[cell_1]).union(set(board[cell_2]))
+                                options_3 = set(board[cells_3[0]]).union(set(board[cells_3[1]])).union(
+                                        set(board[cells_3[2]]))
+                                if options_3.issuperset(options_12) and len(options_3.difference(options_12)) == 1:
+                                    to_remove = []
+                                    for opt in board[cell_1]:
+                                        for cell in cells_4:
+                                            if cell != cell_1 and opt in board[cell]:
+                                                to_remove.append((opt, cell))
+                                    for opt in board[cell_2]:
+                                        for cell in cells_2:
+                                            if cell != cell_2 and opt in board[cell]:
+                                                to_remove.append((opt, cell))
+                                    opt = options_3.difference(options_12).pop()
+                                    for cell in set(cells_2).union(set(cells_4)):
+                                        if opt in board[cell]:
+                                            to_remove.append((opt, cell))
+                                    if to_remove:
+                                        solver_status.capture_baseline(board, window)
+                                        house = cells_b.union(cells_1)
+                                        pattern = {cell_1, cell_2}.union(cells_3)
+                                        impacted_cells = set(cells_2).union(set(cells_3)).union(set(cells_4))
+                                        impacted_cells.difference(pattern)
+                                        if window:
+                                            window.options_visible = window.options_visible.union(house).union(
+                                                house)
+                                        remove_options(solver_status, board, to_remove, window)
+                                        kwargs["solver_tool"] = "sue_de_coq"
+                                        kwargs["singles"] = solver_status.naked_singles
+                                        kwargs["sue_de_coq"] = pattern
+                                        kwargs["remove"] = to_remove
+                                        kwargs["house"] = house
+                                        kwargs["impacted_cells"] = impacted_cells
+                                        kwargs["subset"] = [to_remove[0][0]]
+                                        return True
+        return False
+
+    init_options(board, solver_status)
+    kwargs = {}
+    for sqr in range(9):
+        if _find_sue_de_coq_type_1(sqr, True):
+            return kwargs
+        if _find_sue_de_coq_type_2(sqr, True):
+            return kwargs
+        if _find_sue_de_coq_type_1(sqr, False):
+            return kwargs
+        if _find_sue_de_coq_type_2(sqr, False):
             return kwargs
     return kwargs

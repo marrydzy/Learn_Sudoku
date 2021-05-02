@@ -276,6 +276,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     if x_wing is None and "finned_x_wing" in kwargs:
         x_wing = kwargs["finned_x_wing"]
     skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
+    sue_de_coq = kwargs["sue_de_coq"] if "sue_de_coq" in kwargs else None
     sword = kwargs["sword"] if "sword" in kwargs else None
 
     if iterate is not None and cell_id == iterate:
@@ -299,6 +300,10 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
     if skyscraper and cell_id in skyscraper[1:]:
+        pygame.draw.rect(
+            window.screen, Y_WING_LEAF,
+            (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+    if sue_de_coq and cell_id in sue_de_coq:
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
@@ -340,7 +345,11 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
-
+        if sue_de_coq and cell_id in sue_de_coq:
+            pygame.draw.rect(window.screen, CYAN,
+                             (pos[0] + window.option_offsets[value][0],
+                              pos[1] + window.option_offsets[value][1],
+                              CELL_SIZE // 3, CELL_SIZE // 3))
 
 def clicked_widget_id(window):
     """ Return id of a clicked widget (button or cell) """
@@ -652,6 +661,8 @@ def set_methods():
             "franken_x_wing": "a",
             "skyscraper": "k",
             "swordfish": "s",
+            "jellyfish": "l",
+            "sue_de_coq": "q",
             "scrub_pencil_marks": "c",
             "iterate": "z",
             "plain_board": "b",
