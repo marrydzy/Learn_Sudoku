@@ -661,6 +661,7 @@ def set_methods():
             "franken_x_wing": "a",
             "skyscraper": "k",
             "swordfish": "s",
+            "finned_swordfish": "w",
             "jellyfish": "l",
             "sue_de_coq": "q",
             "scrub_pencil_marks": "c",

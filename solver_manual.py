@@ -155,9 +155,6 @@ def _check_board_integrity(board, window):
                 if cell_id in solver_status.clues_found:
                     if board[cell_id] != window.solved_board[cell_id]:
                         window.wrong_values.add(cell_id)
-                elif cell_id in window.options_visible:
-                    if window.solved_board[cell_id] not in set(board[cell_id]):
-                        window.wrong_values.add(cell_id)
 
 
 def _set_manually(board, window):
@@ -263,6 +260,10 @@ def manual_solver(board, window):
             continue
         kwargs = advanced_techniques.swordfish(solver_status, board, window)
         if kwargs:
+            continue
+        kwargs = advanced_techniques.finned_swordfish(solver_status, board, window)
+        if kwargs:
+            # print('\nBingo!')
             continue
         kwargs = advanced_techniques.jellyfish(solver_status, board, window)
         if kwargs:

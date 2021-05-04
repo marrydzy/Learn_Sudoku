@@ -127,65 +127,43 @@ def unique_rectangles(solver_status, board, window):
 
 
 def swordfish(solver_status, board, window):
-    """Remove candidates (options) using Swordfish technique
-    (see https://www.learn-sudoku.com/x-wing.html)
-    """
+    """ TODO """
 
     def _find_swordfish(by_row):
-        pairs_dict = get_pairs(board, by_row)
-        # 'primary' direction: rows for 'by_row' direction, columns otherwise
-        # 'secondary' direction: columns for 'by_row' direction, rows otherwise
-        value_positions = defaultdict(list)
-        for secondary_idxs, pairs in pairs_dict.items():
-            for value, primary_idxs in pairs.items():
-                if len(primary_idxs) == 1:
-                    value_positions[value].append((primary_idxs[0], secondary_idxs[0], secondary_idxs[1]))
-        for value, positions in value_positions.items():
-            if len(positions) == 3:
-                primary_idxs = []
-                secondary_idxs = []
-                house = []
-                for position in positions:
-                    primary_idxs.append(position[0])
-                    secondary_idxs.append(position[1])
-                    secondary_idxs.append(position[2])
-                    house.extend(CELLS_IN_ROW[position[0]] if by_row else CELLS_IN_COL[position[0]])
-                in_2_places = (secondary_idxs.count(index) == 2 for index in set(secondary_idxs))
-                if all(in_2_places):
-                    to_remove = []
-                    sword = [value, ]
-                    in_cells = set()    # TODO - change the name
-                    for position in positions:
-                        if by_row:
-                            sword.append(position[0] * 9 + position[1])
-                            sword.append(position[0] * 9 + position[2])
-                            in_cells = in_cells.union(set(CELLS_IN_COL[position[1]]))
-                            in_cells = in_cells.union(set(CELLS_IN_COL[position[2]]))
-                        else:
-                            sword.append(position[1] * 9 + position[0])
-                            sword.append(position[2] * 9 + position[0])
-                            in_cells = in_cells.union(set(CELLS_IN_ROW[position[1]]))
-                            in_cells = in_cells.union(set(CELLS_IN_ROW[position[2]]))
-                    secondary_idxs = set(secondary_idxs)
-                    for index in secondary_idxs:
-                        if by_row:
-                            other_cells = [CELLS_IN_COL[index][row] for row in range(9)
-                                           if len(board[CELLS_IN_COL[index][row]]) > 1 and row not in primary_idxs]
-                        else:
-                            other_cells = [CELLS_IN_ROW[index][col] for col in range(9)
-                                           if len(board[CELLS_IN_ROW[index][col]]) > 1 and col not in primary_idxs]
-                        to_remove.extend([(value, cell) for cell in other_cells if value in board[cell]])
-
+        for opt in SUDOKU_VALUES_LIST:
+            primary_units = {}
+            cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
+            for indx in range(9):
+                at_pos = set(CELL_COL[cell] if by_row else CELL_ROW[cell] for cell in cells[indx]
+                             if opt in board[cell] and not is_clue(cell, board, solver_status))
+                if len(at_pos) == 2:
+                    primary_units[indx] = at_pos
+            if len(primary_units) == 3:
+                secondary_units = set()
+                for indx in primary_units:
+                    secondary_units = secondary_units.union(primary_units[indx])
+                if len(secondary_units) == 3:
+                    impacted_cells = set()
+                    house = set()
+                    cells_t = CELLS_IN_COL if by_row else CELLS_IN_ROW
+                    for indx in secondary_units:
+                        impacted_cells = impacted_cells.union(set(cells_t[indx]))
+                    for indx in primary_units:
+                        impacted_cells = impacted_cells.difference(set(cells[indx]))
+                        house = house.union(set(cells[indx]))
+                    to_remove = [(opt, cell) for cell in impacted_cells if opt in board[cell]]
                     if to_remove:
+                        corners = [cell for idx in primary_units for cell in cells[idx] if opt in board[cell]]
+                        corners.insert(0, opt)
                         solver_status.capture_baseline(board, window)
                         if window:
                             window.options_visible = window.options_visible.union(set(house))
                         remove_options(solver_status, board, to_remove, window)
                         kwargs["solver_tool"] = "swordfish"
                         kwargs["singles"] = solver_status.naked_singles
-                        kwargs["sword"] = sword
+                        kwargs["sword"] = corners
                         kwargs["remove"] = to_remove
-                        kwargs["impacted_cells"] = in_cells
+                        kwargs["impacted_cells"] = impacted_cells
                         kwargs["house"] = house
                         return True
         return False
@@ -195,6 +173,99 @@ def swordfish(solver_status, board, window):
     if _find_swordfish(True):
         return kwargs
     if _find_swordfish(False):
+        return kwargs
+    return kwargs
+
+
+def finned_swordfish(solver_status, board, window):
+    """ TODO """
+
+    def _find_finned_swordfish(by_row):
+        for opt in SUDOKU_VALUES_LIST:
+            primary_units = {}
+            finned = {}
+            cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
+            for indx in range(9):
+                at_pos = set(CELL_COL[cell] if by_row else CELL_ROW[cell] for cell in cells[indx]
+                             if opt in board[cell] and not is_clue(cell, board, solver_status))
+                if len(at_pos) == 2:
+                    primary_units[indx] = at_pos
+                elif len(at_pos) in (3, 4):
+                    finned[indx] = at_pos
+            if len(primary_units) == 2 and finned:
+                secondary_units = set()
+                for indx in primary_units:
+                    secondary_units = secondary_units.union(primary_units[indx])
+                if len(secondary_units) == 3:
+                    for finned_indx, finned_values in finned.items():
+                        boxes_1 = {indx // 3 for indx in secondary_units}
+                        boxes_2 = {indx // 3 for indx in secondary_units.union(finned_values)}
+                        if boxes_1 == boxes_2:
+                            in_units = defaultdict(int)
+                            for indx in secondary_units:
+                                if indx in list(primary_units.values())[0]:
+                                    in_units[indx] += 1
+                                if indx in list(primary_units.values())[1]:
+                                    in_units[indx] += 1
+                                if indx in finned_values:
+                                    in_units[indx] += 1
+                            if all((in_units[indx] == 2 for indx in secondary_units)):
+                                fin = finned_values.difference(secondary_units)
+                                fin_cells = [finned_indx * 9 + indx if by_row else indx * 9 + finned_indx
+                                             for indx in fin]
+                                impacted_cells = set(CELLS_IN_SQR[CELL_SQR[fin_cells[0]]]).difference(set(fin_cells))
+                                secondary_cells = set()
+                                for indx in secondary_units:
+                                    if by_row:
+                                        secondary_cells = secondary_cells.union(set(CELLS_IN_COL[indx]))
+                                    else:
+                                        secondary_cells = secondary_cells.union(set(CELLS_IN_ROW[indx]))
+                                impacted_cells = impacted_cells.intersection(secondary_cells)
+                                corners = [opt]
+                                if by_row:
+                                    for indx in primary_units:
+                                        for unit in primary_units[indx]:
+                                            corners.append(indx * 9 + unit)
+                                    for unit in finned_values:
+                                        corners.append(finned_indx * 9 + unit)
+                                else:
+                                    for indx in primary_units:
+                                        for unit in primary_units[indx]:
+                                            corners.append(unit * 9 + indx)
+                                    for unit in finned_values:
+                                        corners.append(unit * 9 + finned_indx)
+                                for cell in corners[1:]:
+                                    impacted_cells.discard(cell)
+                                for indx in secondary_units:
+                                    if by_row:
+                                        impacted_cells.discard(finned_indx * 9 + indx)
+                                    else:
+                                        impacted_cells.discard(indx * 9 + finned_indx)
+                                house = set(cells[list(primary_units.keys())[0]]).union(
+                                            set(cells[list(primary_units.keys())[1]])).union(
+                                            set(cells[finned_indx]))
+                                to_remove = [(opt, cell) for cell in impacted_cells if opt in board[cell]]
+                                # print(f'\n{impacted_cells = }\n{to_remove = }')
+                                if to_remove:
+                                    solver_status.capture_baseline(board, window)
+                                    if window:
+                                        window.options_visible = window.options_visible.union(set(house))
+                                    remove_options(solver_status, board, to_remove, window)
+                                    kwargs["solver_tool"] = "finned_swordfish"
+                                    kwargs["singles"] = solver_status.naked_singles
+                                    kwargs["sword"] = corners
+                                    kwargs["remove"] = to_remove
+                                    kwargs["impacted_cells"] = impacted_cells
+                                    kwargs["house"] = house
+                                    print(f'\n{by_row = }')
+                                    return True
+        return False
+
+    init_options(board, solver_status)
+    kwargs = {}
+    if _find_finned_swordfish(True):
+        return kwargs
+    if _find_finned_swordfish(False):
         return kwargs
     return kwargs
 
@@ -227,7 +298,7 @@ def jellyfish(solver_status, board, window):
                             house = house.union(set(cells[indx]))
                         to_remove = [(opt, cell) for cell in impacted_cells if opt in board[cell]]
                         if to_remove:
-                            corners = [cell for idx in quad for cell in cells[idx] if opt in board[cell]]
+                            corners = [cell for idx in quad for cell in cells[idx] if opt in board[cell]]   # TODO - check it!
                             corners.insert(0, opt)
                             solver_status.capture_baseline(board, window)
                             if window:
