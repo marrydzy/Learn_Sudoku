@@ -17,52 +17,71 @@ def y_wings(solver_status, board, window):
     """Remove candidates (options) using XY Wing technique
     (see https://www.learn-sudoku.com/xy-wing.html)"""
 
-    def _find_wings(cell_id):
-        a_value, b_value = board[cell_id]
-        corners_ax = defaultdict(list)
-        corners_bx = defaultdict(list)
-        for nbr_cell in ALL_NBRS[cell_id]:
-            if len(board[nbr_cell]) == 2:
-                if a_value in board[nbr_cell]:
-                    x_value = board[nbr_cell].replace(a_value, "")
-                    corners_ax[x_value].append(nbr_cell)
-                elif b_value in board[nbr_cell]:
-                    x_value = board[nbr_cell].replace(b_value, "")
-                    corners_bx[x_value].append(nbr_cell)
-        wings = [(x_value, cell_id, corner_ax, corner_bx)
-                 for x_value in set(corners_ax) & set(corners_bx)
-                 for corner_ax in corners_ax[x_value]
-                 for corner_bx in corners_bx[x_value]]
-        return wings
-
-    def _reduce_xs(wings):
-        for wing in wings:
-            to_remove = []
-            for cell_id in set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]]):
-                if wing[0] in board[cell_id]:
-                    to_remove.append((wing[0], cell_id))
-            if to_remove:
-                solver_status.capture_baseline(board, window)
-                remove_options(solver_status, board, to_remove, window)
-                kwargs["solver_tool"] = "y_wings"
-                kwargs["y_wing"] = wing
-                kwargs["remove"] = to_remove
-                kwargs["impacted_cells"] = set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]])
-                """
-                if window:
-                    if window.draw_board(board, "y_wings", y_wing=wing, remove=to_remove,
-                                         impacted_cells=set(ALL_NBRS[wing[2]]) & set(ALL_NBRS[wing[3]])):
-                        pass
-                    else:
-                        solver_status.restore_baseline(board, window)
-                """
-                return True
+    def _find_xy_wing(cell_id):
+        xy = set(board[cell_id])
+        bi_values = [indx for indx in ALL_NBRS[cell_id] if len(board[indx]) == 2]
+        for pair in combinations(bi_values, 2):
+            xz = set(board[pair[0]])
+            yz = set(board[pair[1]])
+            if len(xy.union(xz).union(yz)) == 3 and not xy.intersection(xz).intersection(yz):
+                z_value = xz.intersection(yz).pop()
+                impacted_cells = set(ALL_NBRS[pair[0]]).intersection(set(ALL_NBRS[pair[1]]))
+                to_remove = [(z_value, a_cell) for a_cell in impacted_cells if
+                             z_value in board[a_cell] and not is_clue(cell, board, solver_status)]
+                if to_remove:
+                    solver_status.capture_baseline(board, window)
+                    if window:
+                        window.options_visible = window.options_visible.union(impacted_cells)
+                    remove_options(solver_status, board, to_remove, window)
+                    kwargs["solver_tool"] = "y_wings"
+                    kwargs["y_wing"] = (z_value, cell_id, pair[0], pair[1])
+                    kwargs["remove"] = to_remove
+                    kwargs["impacted_cells"] = impacted_cells
+                    # print('\nBingo: Y-Wing found!')
+                    return True
         return False
 
     init_options(board, solver_status)
     kwargs = {}
     for cell in range(81):
-        if len(board[cell]) == 2 and _reduce_xs(_find_wings(cell)):
+        if len(board[cell]) == 2 and _find_xy_wing(cell):
+            return kwargs
+    return kwargs
+
+
+def xyz_wing(solver_status, board, window):
+    """Remove candidates (options) using XY Wing technique
+    (see https://www.learn-sudoku.com/xy-wing.html)"""
+
+    def _find_xyz_wing(cell_id):
+        xyz = set(board[cell_id])
+        bi_values = [indx for indx in ALL_NBRS[cell_id] if len(board[indx]) == 2]
+        for pair in combinations(bi_values, 2):
+            xz = set(board[pair[0]])
+            yz = set(board[pair[1]])
+            if xz != yz and len(xyz.union(xz).union(yz)) == 3:
+                z_value = xyz.intersection(xz).intersection(yz).pop()
+                impacted_cells = set(ALL_NBRS[cell_id]).intersection(set(ALL_NBRS[pair[0]])).intersection(
+                                 set(ALL_NBRS[pair[1]]))
+                to_remove = [(z_value, a_cell) for a_cell in impacted_cells if
+                             z_value in board[a_cell] and not is_clue(cell, board, solver_status)]
+                if to_remove:
+                    solver_status.capture_baseline(board, window)
+                    if window:
+                        window.options_visible = window.options_visible.union(impacted_cells)
+                    remove_options(solver_status, board, to_remove, window)
+                    kwargs["solver_tool"] = "xyz_wing"
+                    kwargs["y_wing"] = (z_value, cell_id, pair[0], pair[1])
+                    kwargs["remove"] = to_remove
+                    kwargs["impacted_cells"] = impacted_cells
+                    # print('\nBingo: XYZ-Wing found!')
+                    return True
+        return False
+
+    init_options(board, solver_status)
+    kwargs = {}
+    for cell in range(81):
+        if len(board[cell]) == 3 and _find_xyz_wing(cell):
             return kwargs
     return kwargs
 
@@ -197,55 +216,43 @@ def finned_swordfish(solver_status, board, window):
                 for indx in primary_units:
                     secondary_units = secondary_units.union(primary_units[indx])
                 if len(secondary_units) == 3:
+                    boxes = {indx // 3 for indx in secondary_units}
                     for finned_indx, finned_values in finned.items():
-                        boxes_1 = {indx // 3 for indx in secondary_units}
-                        boxes_2 = {indx // 3 for indx in secondary_units.union(finned_values)}
-                        if boxes_1 == boxes_2:
-                            in_units = defaultdict(int)
+                        if boxes == {indx // 3 for indx in secondary_units.union(finned_values)}:
+                            in_primary_units = defaultdict(int)
                             for indx in secondary_units:
                                 if indx in list(primary_units.values())[0]:
-                                    in_units[indx] += 1
+                                    in_primary_units[indx] += 1
                                 if indx in list(primary_units.values())[1]:
-                                    in_units[indx] += 1
+                                    in_primary_units[indx] += 1
                                 if indx in finned_values:
-                                    in_units[indx] += 1
-                            if all((in_units[indx] == 2 for indx in secondary_units)):
-                                fin = finned_values.difference(secondary_units)
+                                    in_primary_units[indx] += 1
+                            if all((in_primary_units[indx] == 2 for indx in secondary_units)):
+                                corners = [opt]
+                                if by_row:
+                                    corners.extend(
+                                        [indx * 9 + unit for indx in primary_units for unit in primary_units[indx]])
+                                    corners.extend([finned_indx * 9 + unit for unit in finned_values])
+                                else:
+                                    corners.extend(
+                                        [unit * 9 + indx for indx in primary_units for unit in primary_units[indx]])
+                                    corners.extend([unit * 9 + finned_indx for unit in finned_values])
+
                                 fin_cells = [finned_indx * 9 + indx if by_row else indx * 9 + finned_indx
-                                             for indx in fin]
+                                             for indx in finned_values.difference(secondary_units)]
                                 impacted_cells = set(CELLS_IN_SQR[CELL_SQR[fin_cells[0]]]).difference(set(fin_cells))
                                 secondary_cells = set()
                                 for indx in secondary_units:
-                                    if by_row:
-                                        secondary_cells = secondary_cells.union(set(CELLS_IN_COL[indx]))
-                                    else:
-                                        secondary_cells = secondary_cells.union(set(CELLS_IN_ROW[indx]))
+                                    secondary_cells = secondary_cells.union(
+                                        set(CELLS_IN_COL[indx] if by_row else CELLS_IN_ROW[indx]))
                                 impacted_cells = impacted_cells.intersection(secondary_cells)
-                                corners = [opt]
-                                if by_row:
-                                    for indx in primary_units:
-                                        for unit in primary_units[indx]:
-                                            corners.append(indx * 9 + unit)
-                                    for unit in finned_values:
-                                        corners.append(finned_indx * 9 + unit)
-                                else:
-                                    for indx in primary_units:
-                                        for unit in primary_units[indx]:
-                                            corners.append(unit * 9 + indx)
-                                    for unit in finned_values:
-                                        corners.append(unit * 9 + finned_indx)
                                 for cell in corners[1:]:
                                     impacted_cells.discard(cell)
-                                for indx in secondary_units:
-                                    if by_row:
-                                        impacted_cells.discard(finned_indx * 9 + indx)
-                                    else:
-                                        impacted_cells.discard(indx * 9 + finned_indx)
+
                                 house = set(cells[list(primary_units.keys())[0]]).union(
                                             set(cells[list(primary_units.keys())[1]])).union(
                                             set(cells[finned_indx]))
                                 to_remove = [(opt, cell) for cell in impacted_cells if opt in board[cell]]
-                                # print(f'\n{impacted_cells = }\n{to_remove = }')
                                 if to_remove:
                                     solver_status.capture_baseline(board, window)
                                     if window:
@@ -257,7 +264,6 @@ def finned_swordfish(solver_status, board, window):
                                     kwargs["remove"] = to_remove
                                     kwargs["impacted_cells"] = impacted_cells
                                     kwargs["house"] = house
-                                    print(f'\n{by_row = }')
                                     return True
         return False
 

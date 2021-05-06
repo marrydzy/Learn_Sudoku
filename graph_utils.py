@@ -330,7 +330,8 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
-        if y_wing and value == y_wing[0] and cell_id in (y_wing[2], y_wing[3]):
+        # if y_wing and value == y_wing[0] and cell_id in (y_wing[2], y_wing[3]):
+        if y_wing and value == y_wing[0] and cell_id in y_wing[1:]:
             pygame.draw.rect(window.screen, CYAN,
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
@@ -651,6 +652,7 @@ def set_methods():
             "naked_twins": "p",
             "omissions": "o",
             "y_wings": "y",
+            "xyz_wing": "1",
             "hidden_triplets": "i",
             "hidden_quads": "j",
             "naked_triplets": "t",

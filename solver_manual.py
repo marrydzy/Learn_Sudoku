@@ -258,20 +258,20 @@ def manual_solver(board, window):
         kwargs = advanced_techniques.y_wings(solver_status, board, window)
         if kwargs:
             continue
+        kwargs = advanced_techniques.xyz_wing(solver_status, board, window)
+        if kwargs:
+            continue
         kwargs = advanced_techniques.swordfish(solver_status, board, window)
         if kwargs:
             continue
         kwargs = advanced_techniques.finned_swordfish(solver_status, board, window)
         if kwargs:
-            # print('\nBingo!')
             continue
         kwargs = advanced_techniques.jellyfish(solver_status, board, window)
         if kwargs:
             continue
         kwargs = advanced_techniques.sue_de_coq(solver_status, board, window)
         if kwargs:
-            # tmp_counter += 1
-            # print(f"\n{tmp_counter = }")
             continue
         # questionable techniques:
         kwargs = advanced_techniques.franken_x_wing(solver_status, board, window)
@@ -279,8 +279,8 @@ def manual_solver(board, window):
             continue
 
         if not is_solved(board, solver_status):        # TODO: for debugging only!
-            # tmp_counter += 1
-            # print(f"\n{tmp_counter = }")
+            tmp_counter += 1
+            print(f"\n{tmp_counter = }")
             pass
 
         return False
