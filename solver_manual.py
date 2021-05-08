@@ -243,6 +243,9 @@ def manual_solver(board, window):
         kwargs = basic_techniques.omissions(solver_status, board, window)
         if kwargs:
             continue
+        kwargs = advanced_techniques.remote_pairs(solver_status, board, window)
+        if kwargs:
+            continue
         kwargs = advanced_techniques.unique_rectangles(solver_status, board, window)
         if kwargs:
             continue
@@ -260,6 +263,10 @@ def manual_solver(board, window):
             continue
         kwargs = advanced_techniques.xyz_wing(solver_status, board, window)
         if kwargs:
+            continue
+        kwargs = advanced_techniques.wxy_wings(solver_status, board, window)
+        if kwargs:
+            print('\nBingo: found WXY-Wing')
             continue
         kwargs = advanced_techniques.swordfish(solver_status, board, window)
         if kwargs:
@@ -279,8 +286,8 @@ def manual_solver(board, window):
             continue
 
         if not is_solved(board, solver_status):        # TODO: for debugging only!
-            tmp_counter += 1
-            print(f"\n{tmp_counter = }")
+            # tmp_counter += 1
+            # print(f"\n{tmp_counter = }")
             pass
 
         return False

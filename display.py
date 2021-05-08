@@ -32,6 +32,8 @@ screen_messages = {
     "franken_x_wing": "'Franken X-Wing' technique",
     "y_wings": "'XY-wing' technique",
     "xyz_wing": "'XYZ-Wing' technique",
+    "wxy_wing": "'WXY-Wing' technique",
+    "remote_pairs": "'Remote Pairs' technique",
     "skyscraper": "'skyscraper' technique",
     "sue_de_coq": "'Sue de Coq' technique",
     "scrub_pencil_marks": "WTF",

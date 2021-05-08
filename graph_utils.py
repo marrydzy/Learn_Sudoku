@@ -209,8 +209,10 @@ def draw_board_features(window, **kwargs):
 
     rectangle = kwargs["rectangle"] if "rectangle" in kwargs else None
     y_wing = kwargs["y_wing"] if "y_wing" in kwargs else None
+    wxy_wing = kwargs["wxy_wing"] if "wxy_wing" in kwargs else None
     x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
     skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
+    chain = kwargs["chain"] if "chain" in kwargs else None
 
     if rectangle:
         left = (rectangle[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
@@ -263,6 +265,36 @@ def draw_board_features(window, **kwargs):
         width = 4 if x1 == x2 or y1 == y2 else 5
         pygame.draw.line(window.screen, MAGENTA, root, leaf, width=width)
 
+    if wxy_wing:
+        x1 = (wxy_wing[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+        y1 = (wxy_wing[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+        root = (x1, y1)
+        x2 = (wxy_wing[2] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+        y2 = (wxy_wing[2] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+        leaf = (x2, y2)
+        width = 4 if x1 == x2 or y1 == y2 else 5
+        pygame.draw.line(window.screen, MAGENTA, root, leaf, width=width)
+        x2 = (wxy_wing[3] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+        y2 = (wxy_wing[3] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+        leaf = (x2, y2)
+        width = 4 if x1 == x2 or y1 == y2 else 5
+        pygame.draw.line(window.screen, MAGENTA, root, leaf, width=width)
+        x2 = (wxy_wing[4] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+        y2 = (wxy_wing[4] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+        leaf = (x2, y2)
+        width = 4 if x1 == x2 or y1 == y2 else 5
+        pygame.draw.line(window.screen, MAGENTA, root, leaf, width=width)
+
+
+    if chain:
+        color = MAGENTA
+        for node in range(len(chain) - 1):
+            x1 = (chain[node] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            y1 = (chain[node] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+            x2 = (chain[node+1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            y2 = (chain[node+1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+            pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
+
 
 def highlight_options(window, cell_id, new_value, pos, **kwargs):
     """ Highlight pencil marks, as applicable """
@@ -271,6 +303,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     claims = kwargs["claims"] if "claims" in kwargs else None
     iterate = kwargs["iterate"] if "iterate" in kwargs else None
     y_wing = kwargs["y_wing"] if "y_wing" in kwargs else None
+    wxy_wing = kwargs["wxy_wing"] if "wxy_wing" in kwargs else None
     corners = kwargs["rectangle"] if "rectangle" in kwargs else None
     x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
     if x_wing is None and "finned_x_wing" in kwargs:
@@ -278,12 +311,13 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
     sue_de_coq = kwargs["sue_de_coq"] if "sue_de_coq" in kwargs else None
     sword = kwargs["sword"] if "sword" in kwargs else None
+    chain = kwargs["chain"] if "chain" in kwargs else None
 
     if iterate is not None and cell_id == iterate:
         pygame.draw.rect(
             window.screen, LIGHTPINK,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
-    if y_wing is not None and cell_id == y_wing[1]:
+    if y_wing is not None and cell_id == y_wing[1] or wxy_wing is not None and cell_id == wxy_wing[1]:
         pygame.draw.rect(
             window.screen, Y_WING_ROOT,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
@@ -291,7 +325,15 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+    if wxy_wing is not None and (cell_id == wxy_wing[2] or cell_id == wxy_wing[3] or cell_id == wxy_wing[4]):
+        pygame.draw.rect(
+            window.screen, Y_WING_LEAF,
+            (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
     if corners and cell_id in corners or x_wing and cell_id in x_wing[1:]:
+        pygame.draw.rect(
+            window.screen, Y_WING_LEAF,
+            (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+    if chain and cell_id in chain:
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
@@ -351,6 +393,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
+
 
 def clicked_widget_id(window):
     """ Return id of a clicked widget (button or cell) """
@@ -652,7 +695,9 @@ def set_methods():
             "naked_twins": "p",
             "omissions": "o",
             "y_wings": "y",
+            "wxy_wing": "3",
             "xyz_wing": "1",
+            "remote_pairs": "2",
             "hidden_triplets": "i",
             "hidden_quads": "j",
             "naked_triplets": "t",

@@ -13,6 +13,61 @@ from utils import is_clue, init_options, remove_options
 from utils import get_pairs
 
 
+def remote_pairs(solver_status, board, window):
+    """ TODO """
+
+    def _find_chain(pair):
+        chain_cells = set(pairs_positions[pair])
+        ends = [cell_id for cell_id in chain_cells if len(set(ALL_NBRS[cell_id]).intersection(chain_cells)) == 1]
+        inner_nodes = [cell_id for cell_id in chain_cells if len(set(ALL_NBRS[cell_id]).intersection(chain_cells)) == 2]
+        if len(ends) == 2 and ends[0] not in ALL_NBRS[ends[1]] and len(ends) + len(inner_nodes) == len(chain_cells):
+            # print('\n')
+            chain = [ends[0]]
+            while inner_nodes:
+                for node in inner_nodes:
+                    if chain[-1] in set(ALL_NBRS[node]):
+                        chain.append(node)
+                        break
+                if chain[-1] in inner_nodes:
+                    inner_nodes.remove(chain[-1])
+                elif len(chain) % 2 == 0:
+                    return []
+                else:
+                    break
+            chain.append(ends[1])
+            return chain
+        else:
+            return []
+
+    init_options(board, solver_status)
+    pairs_positions = defaultdict(list)
+    for cell in range(81):
+        if len(board[cell]) == 2:
+            pairs_positions[board[cell]].append(cell)
+    pair_chains = [pair for pair in pairs_positions if
+                   len(pairs_positions[pair]) > 3 and len(pairs_positions[pair]) % 2 == 0]
+    for pair in pair_chains:
+        chain = _find_chain(pair)
+        if chain:
+            impacted_cells = set(ALL_NBRS[chain[0]]).intersection(set(ALL_NBRS[chain[-1]]))
+            to_remove = [(value, cell) for value in pair for cell in impacted_cells
+                         if value in board[cell] and not is_clue(cell, board, solver_status)]
+            if to_remove:
+                solver_status.capture_baseline(board, window)
+                if window:
+                    window.options_visible = window.options_visible.union(impacted_cells)
+                remove_options(solver_status, board, to_remove, window)
+                kwargs = {
+                    "solver_tool": "remote_pairs",
+                    "chain": chain,
+                    "remove": to_remove,
+                    "impacted_cells": impacted_cells,
+                }
+                return kwargs
+
+    return {}
+
+
 def y_wings(solver_status, board, window):
     """Remove candidates (options) using XY Wing technique
     (see https://www.learn-sudoku.com/xy-wing.html)"""
@@ -37,7 +92,6 @@ def y_wings(solver_status, board, window):
                     kwargs["y_wing"] = (z_value, cell_id, pair[0], pair[1])
                     kwargs["remove"] = to_remove
                     kwargs["impacted_cells"] = impacted_cells
-                    # print('\nBingo: Y-Wing found!')
                     return True
         return False
 
@@ -45,6 +99,49 @@ def y_wings(solver_status, board, window):
     kwargs = {}
     for cell in range(81):
         if len(board[cell]) == 2 and _find_xy_wing(cell):
+            return kwargs
+    return kwargs
+
+
+def wxy_wings(solver_status, board, window):
+    """Remove candidates (options) using WXY Wing technique
+    (see https://www.learn-sudoku.com/xy-wing.html)"""
+
+    def _find_wxy_wing(cell_id):
+        wxy = set(board[cell_id])
+        bi_values = [indx for indx in ALL_NBRS[cell_id] if len(board[indx]) == 2]
+        if len(bi_values) > 2:
+            for triplet in combinations(bi_values, 3):
+                wz = set(board[triplet[0]])
+                xz = set(board[triplet[1]])
+                yz = set(board[triplet[2]])
+                if len(wxy.union(wz).union(xz).union(yz)) == 4 \
+                        and len(wz.union(xz).union(yz)) == 4 \
+                        and len(wz.intersection(xz).intersection(yz)) == 1 \
+                        and not wxy.intersection(wz).intersection(xz).intersection(yz):
+                    # print()
+                    # print(f'{wxy = } {wz = } {xz = } {yz = }')
+                    z_value = wz.intersection(xz).intersection(yz).pop()
+                    impacted_cells = set(ALL_NBRS[triplet[0]]).intersection(
+                        set(ALL_NBRS[triplet[1]])).intersection(set(ALL_NBRS[triplet[2]]))
+                    to_remove = [(z_value, a_cell) for a_cell in impacted_cells if
+                                 z_value in board[a_cell] and not is_clue(cell, board, solver_status)]
+                    if to_remove:
+                        solver_status.capture_baseline(board, window)
+                        if window:
+                            window.options_visible = window.options_visible.union(set(triplet)).union(impacted_cells)
+                        remove_options(solver_status, board, to_remove, window)
+                        kwargs["solver_tool"] = "wxy_wing"
+                        kwargs["wxy_wing"] = (z_value, cell_id, triplet[0], triplet[1], triplet[2])
+                        kwargs["remove"] = to_remove
+                        kwargs["impacted_cells"] = impacted_cells
+                    return True
+        return False
+
+    init_options(board, solver_status)
+    kwargs = {}
+    for cell in range(81):
+        if len(board[cell]) == 3 and _find_wxy_wing(cell):
             return kwargs
     return kwargs
 
@@ -74,7 +171,6 @@ def xyz_wing(solver_status, board, window):
                     kwargs["y_wing"] = (z_value, cell_id, pair[0], pair[1])
                     kwargs["remove"] = to_remove
                     kwargs["impacted_cells"] = impacted_cells
-                    # print('\nBingo: XYZ-Wing found!')
                     return True
         return False
 
