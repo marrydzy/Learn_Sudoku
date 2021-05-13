@@ -9,6 +9,7 @@ from utils import ALL_NBRS
 from utils import is_clue, is_solved, set_cell_options, set_neighbours_options
 
 import basic_techniques
+import intermediate_techniques
 import advanced_techniques
 
 
@@ -243,51 +244,62 @@ def manual_solver(board, window):
         kwargs = basic_techniques.omissions(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = advanced_techniques.remote_pairs(solver_status, board, window)
+        kwargs = intermediate_techniques.remote_pairs(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = advanced_techniques.unique_rectangles(solver_status, board, window)
+        kwargs = intermediate_techniques.unique_rectangles(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = advanced_techniques.skyscraper(solver_status, board, window)
+        kwargs = intermediate_techniques.skyscraper(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = advanced_techniques.x_wings(solver_status, board, window)
+        kwargs = intermediate_techniques.x_wings(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = advanced_techniques.finned_x_wing(solver_status, board, window)
+        kwargs = intermediate_techniques.finned_x_wing(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = advanced_techniques.y_wings(solver_status, board, window)
+        kwargs = intermediate_techniques.xy_wing(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = advanced_techniques.xyz_wing(solver_status, board, window)
+        kwargs = intermediate_techniques.xyz_wing(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = advanced_techniques.wxy_wings(solver_status, board, window)
-        if kwargs:
-            print('\nBingo: found WXY-Wing')
-            continue
-        kwargs = advanced_techniques.swordfish(solver_status, board, window)
+        kwargs = intermediate_techniques.wxy_wings(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = advanced_techniques.finned_swordfish(solver_status, board, window)
+        kwargs = intermediate_techniques.wxyz_wing(solver_status, board, window)
+        if kwargs:
+            # tmp_counter += 1
+            # print(f"\n{tmp_counter = }")
+            # print('\nBingo: found WXYZ-Wing')
+            continue
+        kwargs = intermediate_techniques.swordfish(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = advanced_techniques.jellyfish(solver_status, board, window)
+        kwargs = intermediate_techniques.finned_swordfish(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = advanced_techniques.sue_de_coq(solver_status, board, window)
+        kwargs = intermediate_techniques.jellyfish(solver_status, board, window)
         if kwargs:
             continue
-        # questionable techniques:
-        kwargs = advanced_techniques.franken_x_wing(solver_status, board, window)
+        # TODO: questionable techniques:
+        kwargs = intermediate_techniques.franken_x_wing(solver_status, board, window)
+        if kwargs:
+            continue
+
+        kwargs = advanced_techniques.empty_rectangle(solver_status, board, window)
+        if kwargs:
+            # tmp_counter += 1
+            # print(f"\nBingo: {tmp_counter = }")
+            continue
+        kwargs = intermediate_techniques.sue_de_coq(solver_status, board, window)
         if kwargs:
             continue
 
         if not is_solved(board, solver_status):        # TODO: for debugging only!
-            # tmp_counter += 1
-            # print(f"\n{tmp_counter = }")
+            tmp_counter += 1
+            print(f"\n{tmp_counter = }")
             pass
 
         return False
