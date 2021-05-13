@@ -286,7 +286,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
         x_wing = kwargs["finned_x_wing"]
     skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
     sue_de_coq = kwargs["sue_de_coq"] if "sue_de_coq" in kwargs else None
-    sword = kwargs["sword"] if "sword" in kwargs else None
+    nodes = kwargs["nodes"] if "nodes" in kwargs else None
     chain = kwargs["chain"] if "chain" in kwargs else None
 
     if iterate is not None and cell_id == iterate:
@@ -313,7 +313,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
-    if sword and cell_id in sword[1:]:
+    if nodes and cell_id in nodes[1:]:
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
@@ -354,7 +354,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
-        if sword and value == sword[0] and cell_id in sword[1:]:
+        if nodes and value == nodes[0] and cell_id in nodes[1:]:
             pygame.draw.rect(window.screen, CYAN,
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],

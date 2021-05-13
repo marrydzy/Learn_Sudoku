@@ -13,7 +13,11 @@ from utils import get_pairs
 
 
 def empty_rectangle(solver_status, board, window):
-    """ TODO """
+    """ The relatively good description of Empty Rectangle strategy is
+     available at Sudoku Coach page (http://www.taupierbw.be/SudokuCoach/SC_EmptyRectangle.shtml)
+     - although it is not complete
+     Rating: 120 - 140 """
+
     by_row_boxes = [[[3, 6], [4, 7], [5, 8]],
                     [[0, 6], [1, 7], [2, 8]],
                     [[0, 3], [1, 4], [2, 5]]]
@@ -32,7 +36,7 @@ def empty_rectangle(solver_status, board, window):
                 if CELL_SQR[idy[0]] != CELL_SQR[idy[1]]:
                     for i in range(2):
                         for j in range(2):
-                            box = by_col_boxes[idx//3][idy[i]//3][j]
+                            box = by_row_boxes[idx//3][idy[i]//3][j] if by_row else by_col_boxes[idx//3][idy[i]//3][j]
                             chord = (box % 3) * 3 + 1
                             box_cells = set(CELLS_IN_SQR[box])
                             chord_cells = set(cells_by_x[chord]).intersection(box_cells)
@@ -63,8 +67,7 @@ def empty_rectangle(solver_status, board, window):
                                             kwargs["house"] = house
                                             kwargs["impacted_cells"] = (impacted_cell,)
                                             kwargs["remove"] = [(val, impacted_cell)]
-                                            kwargs["sword"] = corners   # TODO
-                                            print(f'\nBingo: {by_row = }')
+                                            kwargs["nodes"] = corners
                                             return True
         return False
 

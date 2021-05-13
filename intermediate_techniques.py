@@ -315,7 +315,7 @@ def swordfish(solver_status, board, window):
                         remove_options(solver_status, board, to_remove, window)
                         kwargs["solver_tool"] = "swordfish"
                         kwargs["singles"] = solver_status.naked_singles
-                        kwargs["sword"] = corners
+                        kwargs["nodes"] = corners
                         kwargs["remove"] = to_remove
                         kwargs["impacted_cells"] = impacted_cells
                         kwargs["house"] = house
@@ -395,7 +395,7 @@ def finned_swordfish(solver_status, board, window):
                                     remove_options(solver_status, board, to_remove, window)
                                     kwargs["solver_tool"] = "finned_swordfish"
                                     kwargs["singles"] = solver_status.naked_singles
-                                    kwargs["sword"] = corners
+                                    kwargs["nodes"] = corners
                                     kwargs["remove"] = to_remove
                                     kwargs["impacted_cells"] = impacted_cells
                                     kwargs["house"] = house
@@ -447,7 +447,7 @@ def jellyfish(solver_status, board, window):
                             remove_options(solver_status, board, to_remove, window)
                             kwargs["solver_tool"] = "jellyfish"
                             kwargs["singles"] = solver_status.naked_singles
-                            kwargs["sword"] = corners
+                            kwargs["nodes"] = corners
                             kwargs["remove"] = to_remove
                             kwargs["impacted_cells"] = impacted_cells
                             kwargs["house"] = house
