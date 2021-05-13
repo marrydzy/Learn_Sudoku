@@ -270,9 +270,6 @@ def manual_solver(board, window):
             continue
         kwargs = intermediate_techniques.wxyz_wing(solver_status, board, window)
         if kwargs:
-            # tmp_counter += 1
-            # print(f"\n{tmp_counter = }")
-            # print('\nBingo: found WXYZ-Wing')
             continue
         kwargs = intermediate_techniques.swordfish(solver_status, board, window)
         if kwargs:
@@ -298,8 +295,8 @@ def manual_solver(board, window):
             continue
 
         if not is_solved(board, solver_status):        # TODO: for debugging only!
-            tmp_counter += 1
-            print(f"\n{tmp_counter = }")
+            # tmp_counter += 1
+            # print(f"\n{tmp_counter = }")
             pass
 
         return False

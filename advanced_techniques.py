@@ -22,8 +22,9 @@ def empty_rectangle(solver_status, board, window):
                     [[0, 1], [3, 4], [6, 7]]]
 
     def _find_empty_rectangle(idx, by_row):
-        
-        cells = CELLS_IN_ROW[idx] if by_row else CELLS_IN_COL[idx]
+        cells_by_x = CELLS_IN_ROW if by_row else CELLS_IN_COL
+        cells_by_y = CELLS_IN_COL if by_row else CELLS_IN_ROW
+        cells = cells_by_x[idx]
         opts = ''.join(board[cell] for cell in cells if not is_clue(cell, board, solver_status))
         for val in SUDOKU_VALUES_LIST:
             if opts.count(val) == 2:
@@ -31,44 +32,40 @@ def empty_rectangle(solver_status, board, window):
                 if CELL_SQR[idy[0]] != CELL_SQR[idy[1]]:
                     for i in range(2):
                         for j in range(2):
-                            if by_row:
-                                box = by_row_boxes[idx//3][idy[i]//3][j]
-                                chord = (box // 3) * 3 + 1
-                                box_cells = set(CELLS_IN_SQR[box])
-                            else:
-                                box = by_col_boxes[idx//3][idy[i]//3][j]
-                                chord = (box % 3) * 3 + 1
-                                box_cells = set(CELLS_IN_SQR[box])
-                                chord_cells = set(CELLS_IN_COL[chord]).intersection(box_cells)
-                                cross_cells = box_cells.intersection(chord_cells.union(set(CELLS_IN_ROW[idy[i]])))
-                                rect_corners = box_cells.difference(cross_cells)
-                                corners_values = ''.join(board[cell] for cell in rect_corners)
-                                if corners_values.count(val) == 0:
-                                    hole_cells = list(chord_cells.difference(set(CELLS_IN_ROW[idy[i]])))
-                                    if val in board[hole_cells[0]] or val in board[hole_cells[1]]:
-                                        impacted_cell = CELLS_IN_ROW[idy[(i + 1) % 2]][chord]
-                                        if val in board[impacted_cell]:
-                                            to_remove = [(val, impacted_cell)]
-                                            if to_remove:
-                                                corners = set(cell for cell in CELLS_IN_COL[idx] if val in board[cell])
-                                                if val in board[hole_cells[0]]:
-                                                    corners.add(hole_cells[0])
-                                                if val in board[hole_cells[1]]:
-                                                    corners.add(hole_cells[1])
-                                                corners = list(corners)
-                                                corners.insert(0, val)
-                                                house = set(CELLS_IN_COL[idx]).union(cross_cells)
-                                                solver_status.capture_baseline(board, window)
-                                                solver_status.capture_baseline(board, window)
-                                                if window:
-                                                    window.options_visible = window.options_visible.union(house)
-                                                remove_options(solver_status, board, to_remove, window)
-                                                kwargs["solver_tool"] = "empty_rectangle"
-                                                kwargs["house"] = house
-                                                kwargs["impacted_cells"] = (impacted_cell,)
-                                                kwargs["remove"] = [(val, impacted_cell)]
-                                                kwargs["sword"] = corners   # TODO
-                                                return True
+                            box = by_col_boxes[idx//3][idy[i]//3][j]
+                            chord = (box % 3) * 3 + 1
+                            box_cells = set(CELLS_IN_SQR[box])
+                            chord_cells = set(cells_by_x[chord]).intersection(box_cells)
+                            cross_cells = box_cells.intersection(chord_cells.union(set(cells_by_y[idy[i]])))
+                            rect_corners = box_cells.difference(cross_cells)
+                            corners_values = ''.join(board[cell] for cell in rect_corners)
+                            if corners_values.count(val) == 0:
+                                hole_cells = list(chord_cells.difference(set(cells_by_y[idy[i]])))
+                                if val in board[hole_cells[0]] or val in board[hole_cells[1]]:
+                                    impacted_cell = cells_by_y[idy[(i + 1) % 2]][chord]
+                                    if val in board[impacted_cell]:
+                                        to_remove = [(val, impacted_cell)]
+                                        if to_remove:
+                                            corners = set(cell for cell in cells_by_x[idx] if val in board[cell])
+                                            if val in board[hole_cells[0]]:
+                                                corners.add(hole_cells[0])
+                                            if val in board[hole_cells[1]]:
+                                                corners.add(hole_cells[1])
+                                            corners = list(corners)
+                                            corners.insert(0, val)
+                                            house = set(cells).union(cross_cells)
+                                            solver_status.capture_baseline(board, window)
+                                            solver_status.capture_baseline(board, window)
+                                            if window:
+                                                window.options_visible = window.options_visible.union(house)
+                                            remove_options(solver_status, board, to_remove, window)
+                                            kwargs["solver_tool"] = "empty_rectangle"
+                                            kwargs["house"] = house
+                                            kwargs["impacted_cells"] = (impacted_cell,)
+                                            kwargs["remove"] = [(val, impacted_cell)]
+                                            kwargs["sword"] = corners   # TODO
+                                            print(f'\nBingo: {by_row = }')
+                                            return True
         return False
 
     init_options(board, solver_status)
