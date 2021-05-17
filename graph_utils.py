@@ -214,6 +214,7 @@ def draw_board_features(window, **kwargs):
     x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
     skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
     chain = kwargs["chain"] if "chain" in kwargs else None
+    snake = kwargs["snake"] if "snake" in kwargs else None
 
     if rectangle:
         left = (rectangle[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
@@ -271,9 +272,24 @@ def draw_board_features(window, **kwargs):
             y2 = (chain[node+1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
             pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
 
+    if snake:
+        color = MAGENTA
+        for node in range(len(snake)):
+            x1 = (snake[node] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            y1 = (snake[node] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+            if node + 1 < len(snake):
+                x2 = (snake[node+1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+                y2 = (snake[node+1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+            else:
+                x2 = (snake[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+                y2 = (snake[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+            pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
+
 
 def highlight_options(window, cell_id, new_value, pos, **kwargs):
     """ Highlight pencil marks, as applicable """
+
+    global chain_counter
 
     remove = kwargs["remove"] if "remove" in kwargs else None
     claims = kwargs["claims"] if "claims" in kwargs else None
@@ -671,10 +687,6 @@ def set_methods():
             "naked_twins": "p",
             "omissions": "o",
             "xy_wing": "y",
-            "wxy_wing": "3",
-            "xyz_wing": "1",
-            "wxyz_wing": "4",
-            "remote_pairs": "2",
             "hidden_triplets": "i",
             "hidden_quads": "j",
             "naked_triplets": "t",
@@ -691,7 +703,12 @@ def set_methods():
             "scrub_pencil_marks": "c",
             "iterate": "z",
             "plain_board": "b",
+            "xyz_wing": "1",
+            "remote_pairs": "2",
+            "wxy_wing": "3",
+            "wxyz_wing": "4",
             "empty_rectangle": "5",
+            "coloring": "6",
             }
 
 

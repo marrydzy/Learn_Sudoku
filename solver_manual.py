@@ -259,6 +259,13 @@ def manual_solver(board, window):
         kwargs = intermediate_techniques.finned_x_wing(solver_status, board, window)
         if kwargs:
             continue
+
+        # TODO - positioned here to test
+        kwargs = advanced_techniques.coloring(solver_status, board, window)
+        if kwargs:
+            # print('\nBingo!')
+            continue
+
         kwargs = intermediate_techniques.xy_wing(solver_status, board, window)
         if kwargs:
             continue
@@ -284,7 +291,6 @@ def manual_solver(board, window):
         kwargs = intermediate_techniques.franken_x_wing(solver_status, board, window)
         if kwargs:
             continue
-
         kwargs = advanced_techniques.empty_rectangle(solver_status, board, window)
         if kwargs:
             continue
@@ -293,8 +299,8 @@ def manual_solver(board, window):
             continue
 
         if not is_solved(board, solver_status):        # TODO: for debugging only!
-            # tmp_counter += 1
-            # print(f"\n{tmp_counter = }")
+            tmp_counter += 1
+            print(f"\n{tmp_counter = }")
             pass
 
         return False
