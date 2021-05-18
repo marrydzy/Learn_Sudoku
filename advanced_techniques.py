@@ -113,6 +113,44 @@ def coloring(solver_status, board, window):
             print(f'{nx.algorithms.components.number_connected_components(graph) = }')
             print(f'{list(nx.connected_components(graph)) = }')
             print(f'{list(nx.algorithms.chains.chain_decomposition(graph)) = }')
+            if value == '2':
+                print()
+                chains = list(nx.algorithms.chains.chain_decomposition(graph))
+                chain_nodes = [edge[1] for edge in chains[0]]
+                junctions = [edge[1] for edge in chains[0] if graph.degree[edge[1]] == 3]
+                color = 'g'
+                for node in chain_nodes:
+                    graph.nodes[node]['color'] = color
+                    color = 'y' if color == 'g' else 'g'
+                    print(f'{node = } {graph.nodes[node]["color"] = }')
+                connected_components = list(nx.connected_components(graph))
+                for component in connected_components:
+                    for node in list(component):
+                        if graph.degree[node] == 1:
+                            print(f' - {node = }')
+                            print(f'   {list(nx.algorithms.chains.chain_decomposition(graph, node)) = }')
+                            chains = list(nx.algorithms.chains.chain_decomposition(graph, node))
+                            if chains:
+                                the_fin = []
+                                fin_len = None
+                                for node_t in junctions:
+                                    fin = nx.algorithms.shortest_paths.generic.shortest_path(graph, node, node_t)
+                                    if fin_len is None or len(fin) < fin_len:
+                                        fin_len = len(fin)
+                                        the_fin = fin
+                                pos = -1
+                                cntr = 1
+                                color = graph.nodes[the_fin[pos]]['color']
+                                while cntr < len(the_fin):
+                                    color = 'y' if color == 'g' else 'g'
+                                    pos -= 1
+                                    graph.nodes[the_fin[pos]]['color'] = color
+                                    cntr += 1
+
+                                print(f'   {the_fin = }')
+                                fin_colors = [graph.nodes[fin_node]['color'] for fin_node in the_fin]
+                                print(f'   {fin_colors = }')
+
         chains = list(nx.algorithms.chains.chain_decomposition(graph))
         if chains:
             fins = [node for node in graph.nodes if graph.degree[node] == 1]
