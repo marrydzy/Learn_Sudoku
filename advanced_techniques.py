@@ -10,6 +10,133 @@ from utils import ALL_NBRS, SUDOKU_VALUES_LIST
 from utils import is_clue, init_options, remove_options
 
 
+def _build_graph(value, solver_status, board):
+    graph = nx.Graph()
+    for i in range(9):
+        nodes = [cell for cell in CELLS_IN_ROW[i] if value in board[cell] and not is_clue(cell, board, solver_status)]
+        if len(nodes) == 2:
+            graph.add_nodes_from(nodes)
+            graph.add_edge(nodes[0], nodes[1])
+        nodes = [cell for cell in CELLS_IN_COL[i] if value in board[cell] and not is_clue(cell, board, solver_status)]
+        if len(nodes) == 2:
+            graph.add_nodes_from(nodes)
+            graph.add_edge(nodes[0], nodes[1])
+        nodes = [cell for cell in CELLS_IN_SQR[i] if value in board[cell] and not is_clue(cell, board, solver_status)]
+        if len(nodes) == 2:
+            graph.add_nodes_from(nodes)
+            graph.add_edge(nodes[0], nodes[1])
+    return graph
+
+
+def _assign_chain_nodes_colors(graph, chain_nodes):
+    color = 'g'
+    for node in chain_nodes:
+        graph.nodes[node]['color'] = color
+        color = 'y' if color == 'g' else 'g'
+
+
+def _assign_fin_nodes_colors(graph, fin):
+    pos = -1
+    cntr = 1
+    color = graph.nodes[fin[pos]]['color']
+    while cntr < len(fin):
+        color = 'y' if color == 'g' else 'g'
+        pos -= 1
+        graph.nodes[fin[pos]]['color'] = color
+        cntr += 1
+
+
+def _get_fin(graph, component, chain_nodes, fin_end):
+    junctions = [node for node in chain_nodes if graph.degree[node] == 3]
+    the_fin = []
+    fin_len = None
+    for node_t in junctions:
+        fin = nx.algorithms.shortest_paths.generic.shortest_path(graph, fin_end, node_t)
+        if fin_len is None or len(fin) < fin_len:
+            fin_len = len(fin)
+            the_fin = fin
+    _assign_fin_nodes_colors(graph, the_fin)
+    return the_fin
+
+
+def coloring(solver_status, board, window):
+    """ TODO """
+
+    def _check_chains(value):
+        """ TODO """
+        graph = _build_graph(value, solver_status, board)
+        for component in list(nx.connected_components(graph)):
+            ends = list(node for node in component if graph.degree[node] == 1)
+            if ends:
+                chains = list(nx.algorithms.chains.chain_decomposition(graph, ends[0]))
+                if chains:
+                    # print(f'\n\n{value = } {ends = }\n{chains = }')
+                    # assert(len(chains) == 1)
+                    chain = chains[0]
+                    if chain[0][0] == chain[-1][1]:
+                        chain_nodes = [edge[0] for edge in chain]
+                        _assign_chain_nodes_colors(graph, chain_nodes)
+                        fins = [_get_fin(graph, component, chain_nodes, end) for end in ends]
+                        if _check_if_conflict(graph, chain_nodes, fins, value):
+                            return True
+        return False
+
+    def _check_if_conflict(graph, chain_nodes, fins, value):
+        spider_web = set(chain_nodes)
+        for fin in fins:
+            spider_web = spider_web.union(set(fin))
+
+        impacted_cells = None
+        for i in range(9):
+            house_nodes = list(spider_web.intersection(set(CELLS_IN_ROW[i])))
+            if len(house_nodes) > 1:
+                assert(len(house_nodes) == 2)
+                colors = set(graph.nodes[node]['color'] for node in house_nodes)
+                if len(colors) == 1:
+                    impacted_cells = house_nodes
+                    break
+            house_nodes = list(spider_web.intersection(set(CELLS_IN_COL[i])))
+            if len(house_nodes) > 1:
+                assert (len(house_nodes) == 2)
+                colors = set(graph.nodes[node]['color'] for node in house_nodes)
+                if len(colors) == 1:
+                    impacted_cells = house_nodes
+                    break
+            house_nodes = list(spider_web.intersection(set(CELLS_IN_COL[i])))
+            if len(house_nodes) > 1:
+                assert (len(house_nodes) == 2)
+                colors = set(graph.nodes[node]['color'] for node in house_nodes)
+                if len(colors) == 1:
+                    impacted_cells = house_nodes
+                    break
+
+        if impacted_cells:
+            chain_nodes.append(chain_nodes[0])
+            # print(f'\n{chain_nodes = }')
+            to_remove = [(value, node) for node in impacted_cells]
+            solver_status.capture_baseline(board, window)
+            if window:
+                window.options_visible = window.options_visible.union(spider_web)
+            remove_options(solver_status, board, to_remove, window)
+            corners = list(spider_web.difference(set(impacted_cells)))
+            corners = [(node, graph.nodes[node]['color']) for node in corners]
+            corners.insert(0, value)
+            kwargs["solver_tool"] = "coloring"
+            kwargs["colored_chain"] = corners
+            kwargs["remove"] = to_remove
+            kwargs["impacted_cells"] = impacted_cells
+            kwargs["fins"] = fins
+            kwargs["snake"] = chain_nodes
+            return True
+        return False
+
+    kwargs = {}
+    for val in SUDOKU_VALUES_LIST:
+        if _check_chains(val):
+            return kwargs
+    return kwargs
+
+
 def empty_rectangle(solver_status, board, window):
     """ The relatively good description of Empty Rectangle strategy is
      available at Sudoku Coach page (http://www.taupierbw.be/SudokuCoach/SC_EmptyRectangle.shtml)
@@ -75,129 +202,5 @@ def empty_rectangle(solver_status, board, window):
         if _find_empty_rectangle(indx, True):
             return kwargs
         if _find_empty_rectangle(indx, False):
-            return kwargs
-    return kwargs
-
-
-def coloring(solver_status, board, window):
-
-    def _find_chain(value):
-        graph = nx.Graph()
-        for row in range(9):
-            nodes = list(
-                cell for cell in CELLS_IN_ROW[row] if value in board[cell] and not is_clue(cell, board, solver_status))
-            if len(nodes) == 2:
-                graph.add_nodes_from(nodes)
-                graph.add_edge(nodes[0], nodes[1])
-        for col in range(9):
-            nodes = list(
-                cell for cell in CELLS_IN_COL[col] if value in board[cell] and not is_clue(cell, board, solver_status))
-            if len(nodes) == 2:
-                graph.add_nodes_from(nodes)
-                graph.add_edge(nodes[0], nodes[1])
-        for box in range(9):
-            nodes = list(
-                cell for cell in CELLS_IN_SQR[box] if value in board[cell] and not is_clue(cell, board, solver_status))
-            if len(nodes) == 2:
-                graph.add_nodes_from(nodes)
-                graph.add_edge(nodes[0], nodes[1])
-
-
-        DEBUG = True
-
-        if DEBUG:
-            print()
-            print(f'{value = }')
-            print(f'{list(graph.nodes) = }')
-            print(f'{[(node, graph.degree[node]) for node in graph.nodes]}')
-            print(f'{nx.algorithms.components.number_connected_components(graph) = }')
-            print(f'{list(nx.connected_components(graph)) = }')
-            print(f'{list(nx.algorithms.chains.chain_decomposition(graph)) = }')
-            if value == '2':
-                print()
-                chains = list(nx.algorithms.chains.chain_decomposition(graph))
-                chain_nodes = [edge[1] for edge in chains[0]]
-                junctions = [edge[1] for edge in chains[0] if graph.degree[edge[1]] == 3]
-                color = 'g'
-                for node in chain_nodes:
-                    graph.nodes[node]['color'] = color
-                    color = 'y' if color == 'g' else 'g'
-                    print(f'{node = } {graph.nodes[node]["color"] = }')
-                connected_components = list(nx.connected_components(graph))
-                for component in connected_components:
-                    for node in list(component):
-                        if graph.degree[node] == 1:
-                            print(f' - {node = }')
-                            print(f'   {list(nx.algorithms.chains.chain_decomposition(graph, node)) = }')
-                            chains = list(nx.algorithms.chains.chain_decomposition(graph, node))
-                            if chains:
-                                the_fin = []
-                                fin_len = None
-                                for node_t in junctions:
-                                    fin = nx.algorithms.shortest_paths.generic.shortest_path(graph, node, node_t)
-                                    if fin_len is None or len(fin) < fin_len:
-                                        fin_len = len(fin)
-                                        the_fin = fin
-                                pos = -1
-                                cntr = 1
-                                color = graph.nodes[the_fin[pos]]['color']
-                                while cntr < len(the_fin):
-                                    color = 'y' if color == 'g' else 'g'
-                                    pos -= 1
-                                    graph.nodes[the_fin[pos]]['color'] = color
-                                    cntr += 1
-
-                                print(f'   {the_fin = }')
-                                fin_colors = [graph.nodes[fin_node]['color'] for fin_node in the_fin]
-                                print(f'   {fin_colors = }')
-
-        chains = list(nx.algorithms.chains.chain_decomposition(graph))
-        if chains:
-            fins = [node for node in graph.nodes if graph.degree[node] == 1]
-            for chain in chains:
-                if chain[0][0] == chain[-1][1]:
-                    nodes = [edge[1] for edge in chain]
-                    for fin in fins:
-                        for node in nodes:
-                            if (fin, node) in graph.edges:
-                                corners = []
-                                assert(graph.degree[node] == 3)
-                                corners.append(fin)
-                                corners.extend(nodes[nodes.index(node):])
-                                corners.extend(nodes[:nodes.index(node)])
-                                if DEBUG:
-                                    print(f'{nodes = }')
-                                    print(f'{corners = }')
-                                other_cells = [cell for cell in range(81) if cell not in corners
-                                               and value in board[cell]
-                                               and not is_clue(cell, board, solver_status)]
-                                to_remove = []
-                                impacted_cells = set()
-                                for cell in other_cells:
-                                    impacting_nodes = set(corners).intersection(set(ALL_NBRS[cell]))
-                                    if len(impacting_nodes) > 1:
-                                        for pair in combinations(impacting_nodes, 2):
-                                            indx_1 = corners.index(pair[0])
-                                            indx_2 = corners.index(pair[1])
-                                            if indx_1 % 2 != indx_2 % 2:
-                                                impacted_cells.add(cell)
-                                                to_remove.append((value, cell))
-                                if to_remove:
-                                    solver_status.capture_baseline(board, window)
-                                    if window:
-                                        window.options_visible = window.options_visible.union(set(corners).union(impacted_cells))
-                                    remove_options(solver_status, board, to_remove, window)
-                                    corners.insert(0, value)
-                                    kwargs["solver_tool"] = "coloring"
-                                    kwargs["nodes"] = corners
-                                    kwargs["snake"] = corners[1:]
-                                    kwargs["remove"] = to_remove
-                                    kwargs["impacted_cells"] = impacted_cells
-                                    return True
-        return False
-
-    kwargs = {}
-    for opt in SUDOKU_VALUES_LIST:
-        if _find_chain(opt):
             return kwargs
     return kwargs

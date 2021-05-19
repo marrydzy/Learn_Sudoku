@@ -35,6 +35,8 @@ RED = (255, 0, 0)
 SILVER = (192, 192, 192)
 SPRING_GREEN = (0, 155, 127)
 WHITE = (255, 255, 255)
+YELLOW = (255, 255, 0)
+CHARTREUSE = (127, 255, 0)
 
 LIGHTGREEN = (190, 255, 190)
 LIGHTPINK = (255, 182, 193)
@@ -215,6 +217,7 @@ def draw_board_features(window, **kwargs):
     skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
     chain = kwargs["chain"] if "chain" in kwargs else None
     snake = kwargs["snake"] if "snake" in kwargs else None
+    fins = kwargs["fins"] if "fins" in kwargs else None
 
     if rectangle:
         left = (rectangle[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
@@ -285,6 +288,16 @@ def draw_board_features(window, **kwargs):
                 y2 = (snake[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
             pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
 
+    if fins:
+        color = MAGENTA
+        for fin in fins:
+            for node in range(len(fin) - 1):
+                x1 = (fin[node] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+                y1 = (fin[node] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+                x2 = (fin[node + 1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+                y2 = (fin[node + 1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+                pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
+
 
 def highlight_options(window, cell_id, new_value, pos, **kwargs):
     """ Highlight pencil marks, as applicable """
@@ -304,6 +317,12 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     sue_de_coq = kwargs["sue_de_coq"] if "sue_de_coq" in kwargs else None
     nodes = kwargs["nodes"] if "nodes" in kwargs else None
     chain = kwargs["chain"] if "chain" in kwargs else None
+    colored_chain = kwargs["colored_chain"] if "colored_chain" in kwargs else None
+
+    c_chain = None
+    if colored_chain:
+        c_chain = [node[0] for node in colored_chain[1:]]
+        c_colors = [node[1] for node in colored_chain[1:]]
 
     if iterate is not None and cell_id == iterate:
         pygame.draw.rect(
@@ -330,6 +349,10 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
     if nodes and cell_id in nodes[1:]:
+        pygame.draw.rect(
+            window.screen, Y_WING_LEAF,
+            (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+    if c_chain and cell_id in c_chain:
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
@@ -372,6 +395,13 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if nodes and value == nodes[0] and cell_id in nodes[1:]:
             pygame.draw.rect(window.screen, CYAN,
+                             (pos[0] + window.option_offsets[value][0],
+                              pos[1] + window.option_offsets[value][1],
+                              CELL_SIZE // 3, CELL_SIZE // 3))
+        if c_chain and value == colored_chain[0] and cell_id in c_chain:
+            indx = c_chain.index(cell_id)
+            color = YELLOW if c_colors[indx] == 'y' else LIME
+            pygame.draw.rect(window.screen, color,
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
