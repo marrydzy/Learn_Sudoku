@@ -244,9 +244,6 @@ def manual_solver(board, window):
         kwargs = basic_techniques.omissions(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = intermediate_techniques.remote_pairs(solver_status, board, window)
-        if kwargs:
-            continue
         kwargs = intermediate_techniques.unique_rectangles(solver_status, board, window)
         if kwargs:
             continue
@@ -260,10 +257,20 @@ def manual_solver(board, window):
         if kwargs:
             continue
 
+        kwargs = intermediate_techniques.finned_rccb_mutant_x_wing(solver_status, board, window)
+        if kwargs:
+            # print('\nBingo!')
+            continue
+        kwargs = intermediate_techniques.finned_cbrc_mutant_x_wing(solver_status, board, window)
+        if kwargs:
+            # print('\nBingo!')
+            continue
+
+
+
         # TODO - positioned here to test
         kwargs = advanced_techniques.coloring(solver_status, board, window)
         if kwargs:
-            # print('\nBingo!')
             continue
 
         kwargs = intermediate_techniques.xy_wing(solver_status, board, window)
@@ -287,14 +294,14 @@ def manual_solver(board, window):
         kwargs = intermediate_techniques.jellyfish(solver_status, board, window)
         if kwargs:
             continue
-        # TODO: questionable techniques:
-        kwargs = intermediate_techniques.franken_x_wing(solver_status, board, window)
-        if kwargs:
-            continue
         kwargs = advanced_techniques.empty_rectangle(solver_status, board, window)
         if kwargs:
             continue
         kwargs = intermediate_techniques.sue_de_coq(solver_status, board, window)
+        if kwargs:
+            continue
+        # TODO: questionable techniques:
+        kwargs = intermediate_techniques.franken_x_wing(solver_status, board, window)
         if kwargs:
             continue
 

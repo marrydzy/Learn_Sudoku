@@ -2,7 +2,6 @@
 
 """ SUDOKU SOLVING METHODS """
 
-from itertools import combinations
 import networkx as nx
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
@@ -46,7 +45,7 @@ def _assign_fin_nodes_colors(graph, fin):
         cntr += 1
 
 
-def _get_fin(graph, component, chain_nodes, fin_end):
+def _get_fin(graph, chain_nodes, fin_end):
     junctions = [node for node in chain_nodes if graph.degree[node] == 3]
     the_fin = []
     fin_len = None
@@ -57,6 +56,20 @@ def _get_fin(graph, component, chain_nodes, fin_end):
             the_fin = fin
     _assign_fin_nodes_colors(graph, the_fin)
     return the_fin
+
+
+def _get_u_loop(graph, chain_nodes, other_chain):
+    u_loop = []
+    if len(other_chain) > 1 and other_chain[0][0] != other_chain[-1][1] \
+            and other_chain[0][0] in chain_nodes and other_chain[-1][1] in chain_nodes:
+        color = graph.nodes[other_chain[0][0]]['color']
+        for edge in other_chain:
+            u_loop.append(edge[0])
+            graph.nodes[u_loop[-1]]['color'] = color
+            color = 'y' if color == 'g' else 'g'
+        u_loop.append(other_chain[-1][1])
+        assert(graph.nodes[u_loop[-1]]['color'] == color)
+    return u_loop
 
 
 def coloring(solver_status, board, window):
@@ -70,20 +83,50 @@ def coloring(solver_status, board, window):
             if ends:
                 chains = list(nx.algorithms.chains.chain_decomposition(graph, ends[0]))
                 if chains:
-                    # print(f'\n\n{value = } {ends = }\n{chains = }')
-                    # assert(len(chains) == 1)
                     chain = chains[0]
                     if chain[0][0] == chain[-1][1]:
                         chain_nodes = [edge[0] for edge in chain]
                         _assign_chain_nodes_colors(graph, chain_nodes)
-                        fins = [_get_fin(graph, component, chain_nodes, end) for end in ends]
-                        if _check_if_conflict(graph, chain_nodes, fins, value):
+                        appendixes = [_get_fin(graph, chain_nodes, end) for end in ends]
+                        appendixes.extend([_get_u_loop(graph, chain_nodes, other_chain) for other_chain in chains[1:]])
+                        if _check_if_conflict(graph, chain_nodes, appendixes, value):
+                            return True
+                        if _check_if_pointing(graph, chain_nodes, appendixes, value):
                             return True
         return False
 
-    def _check_if_conflict(graph, chain_nodes, fins, value):
+    def _check_if_pointing(graph, chain_nodes, appendixes, value):
         spider_web = set(chain_nodes)
-        for fin in fins:
+        for fin in appendixes:
+            spider_web = spider_web.union(set(fin))
+
+        impacted_cells = [cell for cell in range(81) if cell not in spider_web and value in board[cell]
+                          and not is_clue(cell, board, solver_status)]
+        for cell in impacted_cells:
+            impacting_web_nodes = spider_web.intersection(set(ALL_NBRS[cell]))
+            web_nodes_colors = set(graph.nodes[node]['color'] for node in impacting_web_nodes)
+            if len(web_nodes_colors) > 1:
+                chain_nodes.append(chain_nodes[0])
+                to_remove = [(value, cell), ]
+                solver_status.capture_baseline(board, window)
+                if window:
+                    window.options_visible = window.options_visible.union(spider_web)
+                remove_options(solver_status, board, to_remove, window)
+                corners = list(spider_web)
+                corners = [(node, graph.nodes[node]['color']) for node in corners]
+                corners.insert(0, value)
+                kwargs["solver_tool"] = "coloring"
+                kwargs["colored_chain"] = corners
+                kwargs["remove"] = to_remove
+                kwargs["impacted_cells"] = [cell, ]
+                kwargs["appendixes"] = appendixes
+                kwargs["snake"] = chain_nodes
+                return True
+        return False
+
+    def _check_if_conflict(graph, chain_nodes, appendixes, value):
+        spider_web = set(chain_nodes)
+        for fin in appendixes:
             spider_web = spider_web.union(set(fin))
 
         impacted_cells = None
@@ -112,7 +155,6 @@ def coloring(solver_status, board, window):
 
         if impacted_cells:
             chain_nodes.append(chain_nodes[0])
-            # print(f'\n{chain_nodes = }')
             to_remove = [(value, node) for node in impacted_cells]
             solver_status.capture_baseline(board, window)
             if window:
@@ -125,7 +167,7 @@ def coloring(solver_status, board, window):
             kwargs["colored_chain"] = corners
             kwargs["remove"] = to_remove
             kwargs["impacted_cells"] = impacted_cells
-            kwargs["fins"] = fins
+            kwargs["appendixes"] = appendixes
             kwargs["snake"] = chain_nodes
             return True
         return False

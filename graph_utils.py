@@ -217,7 +217,7 @@ def draw_board_features(window, **kwargs):
     skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
     chain = kwargs["chain"] if "chain" in kwargs else None
     snake = kwargs["snake"] if "snake" in kwargs else None
-    fins = kwargs["fins"] if "fins" in kwargs else None
+    appendixes = kwargs["appendixes"] if "appendixes" in kwargs else None
 
     if rectangle:
         left = (rectangle[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
@@ -288,14 +288,14 @@ def draw_board_features(window, **kwargs):
                 y2 = (snake[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
             pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
 
-    if fins:
+    if appendixes:
         color = MAGENTA
-        for fin in fins:
-            for node in range(len(fin) - 1):
-                x1 = (fin[node] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-                y1 = (fin[node] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-                x2 = (fin[node + 1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-                y2 = (fin[node + 1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+        for appendix in appendixes:
+            for node in range(len(appendix) - 1):
+                x1 = (appendix[node] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+                y1 = (appendix[node] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+                x2 = (appendix[node + 1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+                y2 = (appendix[node + 1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
                 pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
 
 
@@ -725,6 +725,9 @@ def set_methods():
             "x_wings": "x",
             "finned_x_wings": "f",
             "franken_x_wing": "a",
+            "finned_rccb_mutant_x_wing": "7",
+            "finned_cbrc_mutant_x_wing": "8",
+            "finned_rbcc_mutant_x_wing": "9",
             "skyscraper": "k",
             "swordfish": "s",
             "finned_swordfish": "w",

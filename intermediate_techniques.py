@@ -10,7 +10,7 @@ from collections import defaultdict
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST
 from utils import is_clue, init_options, remove_options
-from utils import get_pairs
+from utils import get_pairs, get_house_pairs
 
 
 def remote_pairs(solver_status, board, window):
@@ -632,7 +632,7 @@ def franken_x_wing(solver_status, board, window):
                                 if window:
                                     window.options_visible = window.options_visible.union(house).union(other_cells)
                                 remove_options(solver_status, board, to_remove, window)
-                                kwargs["solver_tool"] = "franken_x_wings"
+                                kwargs["solver_tool"] = "franken_x_wing"
                                 kwargs["singles"] = solver_status.naked_singles
                                 kwargs["finned_x_wing"] = corners
                                 kwargs["subset"] = [option]
@@ -648,6 +648,113 @@ def franken_x_wing(solver_status, board, window):
         if _find_franken_x_wing(True, opt):
             return kwargs
         if _find_franken_x_wing(False, opt):
+            return kwargs
+    return kwargs
+
+
+def finned_rccb_mutant_x_wing(solver_status, board, window):
+    """ TODO """
+
+    def _find_finned_rccb_mutant_x_wing(box_id):
+        pairs_dict = get_house_pairs(CELLS_IN_SQR[box_id], board)
+        for pair, cells in pairs_dict.items():
+            if len(cells) == 2:
+                row_col = [(CELL_ROW[cells[0]], CELL_COL[cells[1]]),
+                           (CELL_ROW[cells[1]], CELL_COL[cells[0]])]
+                values = (pair[0], pair[1])
+                for value in values:
+                    for row, col in row_col:
+                        col_2 = [CELL_COL[cell] for cell in CELLS_IN_ROW[row]
+                                 if value in board[cell] and CELL_SQR[cell] != box_id]
+                        row_2 = [CELL_ROW[cell] for cell in CELLS_IN_COL[col]
+                                 if value in board[cell] and CELL_SQR[cell] != box_id]
+                        if len(col_2) == 1 and len(row_2) == 1:
+                            impacted_cell = set(CELLS_IN_COL[col_2[0]]).intersection(set(CELLS_IN_ROW[row_2[0]]))
+                            cell = impacted_cell.pop()
+                            if value in board[cell]:
+                                house = set(CELLS_IN_ROW[row]).union(set(CELLS_IN_COL[col]))
+                                impacted_cell = {cell}
+                                to_remove = [(value, cell), ]
+                                corners = [value, cells[0], cells[1], row * 9 + col_2[0], row_2[0] * 9 + col]
+                                solver_status.capture_baseline(board, window)
+                                if window:
+                                    window.options_visible = window.options_visible.union(house).union(impacted_cell)
+                                remove_options(solver_status, board, to_remove, window)
+                                kwargs["solver_tool"] = "finned_rccb_mutant_x_wing"
+                                kwargs["remove"] = to_remove
+                                kwargs["house"] = house
+                                kwargs["impacted_cells"] = impacted_cell
+                                kwargs["finned_x_wing"] = corners
+                                return True
+        return False
+
+    init_options(board, solver_status)
+    kwargs = {}
+    for box in range(9):
+        if _find_finned_rccb_mutant_x_wing(box):
+            return kwargs
+    return kwargs
+
+
+def finned_cbrc_mutant_x_wing(solver_status, board, window):
+    """ TODO """
+
+    def _find_finned_cbrc_mutant_x_wing(by_column, indx):
+        house_1 = set(CELLS_IN_COL[indx]) if by_column else set(CELLS_IN_ROW[indx])
+        pairs_dict = get_house_pairs(house_1, board)
+        for pair, cells in pairs_dict.items():
+            if len(cells) == 2 and CELL_SQR[cells[0]] != CELL_SQR[cells[1]]:
+                row_col = [(CELL_ROW[cells[0]], CELL_COL[cells[0]]),
+                           (CELL_ROW[cells[1]], CELL_COL[cells[1]])]
+                values = (pair[0], pair[1])
+                for value in values:
+                    for row, col in row_col:
+                        house_2 = set(CELLS_IN_ROW[row]) if by_column else set(CELLS_IN_COL[col])
+                        boxes = [box for box in range(9) if set(CELLS_IN_SQR[box]).intersection(house_2)
+                                 and not set(CELLS_IN_SQR[box]).intersection(house_1)]
+                        for box in boxes:
+                            fins = [cell for cell in set(CELLS_IN_SQR[box]).difference(house_2)
+                                    if value in board[cell] and not is_clue(cell, board, solver_status)]
+                            impacted_cell = None
+                            if by_column:
+                                col_2 = CELL_COL[fins[0]] if fins else None
+                                for fin in fins[1: ]:
+                                    col_2 = col_2 if CELL_COL[fin] == col_2 else None
+                                if col_2 is not None:
+                                    row_2 = row_col[0][0] if row == row_col[1][0] else row_col[1][0]
+                                    impacted_cell = row_2 * 9 + col_2
+                            else:
+                                row_2 = CELL_ROW[fins[0]] if fins else None
+                                for fin in fins[1: ]:
+                                    row_2 = row_2 if CELL_ROW[fin] == row_2 else None
+                                if row_2 is not None:
+                                    col_2 = row_col[0][1] if col == row_col[1][1] else row_col[1][1]
+                                    impacted_cell = row_2 * 9 + col_2
+                            if impacted_cell is not None and value in board[impacted_cell]:
+                                house = house_1.union(set(CELLS_IN_SQR[box]))
+                                to_remove = [(value, impacted_cell), ]
+                                corners = [cell for cell in cells]
+                                corners.extend(fins)
+                                corners.insert(0, value)
+                                solver_status.capture_baseline(board, window)
+                                if window:
+                                    window.options_visible = window.options_visible.union(house).union({impacted_cell})
+                                remove_options(solver_status, board, to_remove, window)
+                                kwargs["solver_tool"] = \
+                                    "finned_cbrc_mutant_x_wing" if by_column else "finned_rbcc_mutant_x_wing"
+                                kwargs["remove"] = to_remove
+                                kwargs["house"] = house
+                                kwargs["impacted_cells"] = {impacted_cell}
+                                kwargs["finned_x_wing"] = corners
+                                return True
+        return False
+
+    init_options(board, solver_status)
+    kwargs = {}
+    for i in range(9):
+        if _find_finned_cbrc_mutant_x_wing(True, i):
+            return kwargs
+        if _find_finned_cbrc_mutant_x_wing(False, i):
             return kwargs
     return kwargs
 

@@ -88,7 +88,7 @@ def is_single(board, house, value):
 
 
 def get_options(cell_id, board, solver_status):
-    """ returns set of options of the cell """
+    """ return set of options of the cell """
     return SUDOKU_VALUES_SET.copy() - set(''.join(
         [board[cell] for cell in ALL_NBRS[cell_id] if is_clue(cell, board, solver_status)]))
 
@@ -108,6 +108,20 @@ def get_pairs(board, by_row):
                 pair_item = pairs_dict.pop(pair, defaultdict(list))
                 pair_item[value].append(idx)
                 pairs_dict[pair] = pair_item
+    return pairs_dict
+
+
+def get_house_pairs(house, board):
+    """ return dictionary of pairs in the house (row, column, or box) """
+    # pairs data structure:
+    # {pair: [cell_1, cell_2]}
+    pairs_dict = defaultdict(list)
+    pairs = [board[cell] for cell in house if len(board[cell]) == 2]
+    for pair in set(pairs):
+        if pairs.count(pair) == 2:
+            for cell in house:
+                if board[cell] == pair:
+                    pairs_dict[pair].append(cell)
     return pairs_dict
 
 
