@@ -742,6 +742,7 @@ def set_methods():
             "wxyz_wing": "4",
             "empty_rectangle": "5",
             "coloring": "6",
+            "naked_xy_chain": "9",
             }
 
 

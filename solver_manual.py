@@ -10,7 +10,8 @@ from utils import is_clue, is_solved, set_cell_options, set_neighbours_options
 
 import basic_techniques
 import intermediate_techniques
-import advanced_techniques
+import wings
+import chains
 
 
 class SolverStatus:
@@ -250,39 +251,42 @@ def manual_solver(board, window):
         kwargs = intermediate_techniques.skyscraper(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = intermediate_techniques.x_wings(solver_status, board, window)
+        kwargs = wings.x_wing(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = intermediate_techniques.finned_x_wing(solver_status, board, window)
+        kwargs = wings.finned_x_wing(solver_status, board, window)
         if kwargs:
             continue
-
-        kwargs = intermediate_techniques.finned_rccb_mutant_x_wing(solver_status, board, window)
-        if kwargs:
-            # print('\nBingo!')
-            continue
-        kwargs = intermediate_techniques.finned_cbrc_mutant_x_wing(solver_status, board, window)
+        kwargs = wings.finned_mutant_x_wing(solver_status, board, window)
         if kwargs:
             # print('\nBingo!')
             continue
+        # kwargs = wings.finned_cbrc_mutant_x_wing(solver_status, board, window)
+        # if kwargs:
+            # print('\nBingo!')
+            # continue
 
 
 
         # TODO - positioned here to test
-        kwargs = advanced_techniques.coloring(solver_status, board, window)
+        kwargs = chains.coloring(solver_status, board, window)
         if kwargs:
+            continue
+        kwargs = chains.naked_xy_chain(solver_status, board, window)
+        if kwargs:
+            # print('\nBingo!')
             continue
 
-        kwargs = intermediate_techniques.xy_wing(solver_status, board, window)
+        kwargs = wings.xy_wing(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = intermediate_techniques.xyz_wing(solver_status, board, window)
+        kwargs = wings.xyz_wing(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = intermediate_techniques.wxy_wings(solver_status, board, window)
+        kwargs = wings.wxy_wing(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = intermediate_techniques.wxyz_wing(solver_status, board, window)
+        kwargs = wings.wxyz_wing(solver_status, board, window)
         if kwargs:
             continue
         kwargs = intermediate_techniques.swordfish(solver_status, board, window)
@@ -294,14 +298,14 @@ def manual_solver(board, window):
         kwargs = intermediate_techniques.jellyfish(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = advanced_techniques.empty_rectangle(solver_status, board, window)
+        kwargs = chains.empty_rectangle(solver_status, board, window)
         if kwargs:
             continue
         kwargs = intermediate_techniques.sue_de_coq(solver_status, board, window)
         if kwargs:
             continue
         # TODO: questionable techniques:
-        kwargs = intermediate_techniques.franken_x_wing(solver_status, board, window)
+        kwargs = wings.franken_x_wing(solver_status, board, window)
         if kwargs:
             continue
 
