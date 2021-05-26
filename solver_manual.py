@@ -261,10 +261,6 @@ def manual_solver(board, window):
         if kwargs:
             # print('\nBingo!')
             continue
-        # kwargs = wings.finned_cbrc_mutant_x_wing(solver_status, board, window)
-        # if kwargs:
-            # print('\nBingo!')
-            # continue
 
 
 

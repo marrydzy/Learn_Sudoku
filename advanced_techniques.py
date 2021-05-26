@@ -9,24 +9,6 @@ from utils import ALL_NBRS, SUDOKU_VALUES_LIST
 from utils import is_clue, init_options, remove_options
 
 
-def _build_graph(value, solver_status, board):
-    graph = nx.Graph()
-    for i in range(9):
-        nodes = [cell for cell in CELLS_IN_ROW[i] if value in board[cell] and not is_clue(cell, board, solver_status)]
-        if len(nodes) == 2:
-            graph.add_nodes_from(nodes)
-            graph.add_edge(nodes[0], nodes[1])
-        nodes = [cell for cell in CELLS_IN_COL[i] if value in board[cell] and not is_clue(cell, board, solver_status)]
-        if len(nodes) == 2:
-            graph.add_nodes_from(nodes)
-            graph.add_edge(nodes[0], nodes[1])
-        nodes = [cell for cell in CELLS_IN_SQR[i] if value in board[cell] and not is_clue(cell, board, solver_status)]
-        if len(nodes) == 2:
-            graph.add_nodes_from(nodes)
-            graph.add_edge(nodes[0], nodes[1])
-    return graph
-
-
 def _assign_chain_nodes_colors(graph, chain_nodes):
     color = 'g'
     for node in chain_nodes:
@@ -72,12 +54,92 @@ def _get_u_loop(graph, chain_nodes, other_chain):
     return u_loop
 
 
+def _traverse_path(path, start_value, board):
+    if len(path) < 3:
+        return False
+    exp_value = start_value
+    for node in path:
+        if exp_value not in board[node]:
+            return False
+        exp_value = board[node].replace(exp_value, '')
+    return True if exp_value == start_value else False
+
+
+def naked_xy_chain(solver_status, board, window):
+    """ TODO """
+
+    def _build_graph():
+        bi_value_cells = set(cell for cell in range(81) if len(board[cell]) == 2)
+        graph = nx.Graph()
+        graph.add_nodes_from(bi_value_cells)
+        for cell in bi_value_cells:
+            neighbours = set(ALL_NBRS[cell]).intersection(bi_value_cells)
+            edges = [(cell, other_cell) for other_cell in neighbours
+                     if len(set(board[cell]).intersection(set(board[other_cell]))) == 1]
+            if edges:
+                graph.add_edges_from(edges)
+        return graph
+
+    graph = _build_graph()
+    graph_nodes = set(graph.nodes)
+    graph_edges = set(graph.edges)
+    components = list(nx.connected_components(graph))
+    unresolved = [cell for cell in range(81) if len(board[cell]) > 2]
+    kwargs = {}
+    for cell in unresolved:
+        for component in components:
+            nodes = graph_nodes.intersection(component).intersection(set(ALL_NBRS[cell]))
+            candidates = ''.join(board[node] for node in nodes)
+            for option in board[cell]:
+                if candidates.count(option) == 2:
+                    ends = [node for node in nodes if option in board[node]]
+                    assert(len(ends) == 2)
+                    path = nx.algorithms.shortest_paths.generic.shortest_path(graph, ends[0], ends[1])
+                    if _traverse_path(path, option, board):
+                        # print()
+                        # print(f'{cell = } {board[cell] = } {option = }')
+                        # print(f'{ends = } {path = }')
+                        # print()
+                        to_remove = [(option, cell), ]
+                        path.insert(0, option)
+                        solver_status.capture_baseline(board, window)
+                        if window:
+                            window.options_visible = window.options_visible.union(set(path)).union({cell})
+                        remove_options(solver_status, board, to_remove, window)
+                        kwargs["solver_tool"] = "naked_xy_chain"
+                        kwargs["remove"] = to_remove
+                        kwargs["finned_x_wing"] = path     # TODO!!!
+                        return kwargs
+
+    return kwargs
+
+
 def coloring(solver_status, board, window):
     """ TODO """
 
+    def _build_graph(value):
+        graph = nx.Graph()
+        for i in range(9):
+            nodes = [cell for cell in CELLS_IN_ROW[i] if
+                     value in board[cell] and not is_clue(cell, board, solver_status)]
+            if len(nodes) == 2:
+                graph.add_nodes_from(nodes)
+                graph.add_edge(nodes[0], nodes[1])
+            nodes = [cell for cell in CELLS_IN_COL[i] if
+                     value in board[cell] and not is_clue(cell, board, solver_status)]
+            if len(nodes) == 2:
+                graph.add_nodes_from(nodes)
+                graph.add_edge(nodes[0], nodes[1])
+            nodes = [cell for cell in CELLS_IN_SQR[i] if
+                     value in board[cell] and not is_clue(cell, board, solver_status)]
+            if len(nodes) == 2:
+                graph.add_nodes_from(nodes)
+                graph.add_edge(nodes[0], nodes[1])
+        return graph
+
     def _check_chains(value):
         """ TODO """
-        graph = _build_graph(value, solver_status, board)
+        graph = _build_graph(value)
         for component in list(nx.connected_components(graph)):
             ends = list(node for node in component if graph.degree[node] == 1)
             if ends:

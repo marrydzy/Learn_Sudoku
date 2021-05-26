@@ -69,7 +69,15 @@ def _check_bidirectional_traversing(end_value, path, board):
 
 
 def naked_xy_chain(solver_status, board, window):
-    """ TODO """
+    """ A decent description of the technique is available
+    at: http://www.sudokusnake.com/nakedxychains.php
+    The strategy is assessed as 'Hard', 'Unfair', or 'Diabolical'.
+    Ranking of the method (called XY-Chain) varies widely
+    260 and 900
+    Comments:
+    Building a graph and identifying potential chains (paths) was straightforward.
+    A slightly tricky part was to check for possibility of bidirectional traversing
+    between end nodes of the potential paths """
 
     def _build_graph():
         bi_value_cells = set(cell for cell in range(81) if len(board[cell]) == 2)
@@ -77,29 +85,26 @@ def naked_xy_chain(solver_status, board, window):
         graph.add_nodes_from(bi_value_cells)
         for cell in bi_value_cells:
             neighbours = set(ALL_NBRS[cell]).intersection(bi_value_cells)
-            edges = [(cell, other_cell) for other_cell in neighbours
-                     if len(set(board[cell]).intersection(set(board[other_cell]))) == 1]
-            if edges:
-                graph.add_edges_from(edges)
+            graph.add_edges_from([(cell, other_cell) for other_cell in neighbours
+                                  if len(set(board[cell]).intersection(set(board[other_cell]))) == 1])
         return graph
 
     graph = _build_graph()
-    graph_nodes = set(graph.nodes)
     components = list(nx.connected_components(graph))
     unresolved = [cell for cell in range(81) if len(board[cell]) > 2]
     kwargs = {}
     for cell in unresolved:
         for component in components:
-            nodes = graph_nodes.intersection(component).intersection(set(ALL_NBRS[cell]))
+            nodes = component.intersection(set(ALL_NBRS[cell]))
             candidates = ''.join(board[node] for node in nodes)
-            for option in board[cell]:
-                if candidates.count(option) == 2:
-                    ends = [node for node in nodes if option in board[node]]
+            for candidate in board[cell]:
+                if candidates.count(candidate) == 2:
+                    ends = [node for node in nodes if candidate in board[node]]
                     assert(len(ends) == 2)
                     path = nx.algorithms.shortest_paths.generic.shortest_path(graph, ends[0], ends[1])
-                    if _check_bidirectional_traversing(option, path, board):
-                        to_remove = [(option, cell), ]
-                        path.insert(0, option)
+                    if _check_bidirectional_traversing(candidate, path, board):
+                        to_remove = [(candidate, cell), ]
+                        path.insert(0, candidate)
                         solver_status.capture_baseline(board, window)
                         if window:
                             window.options_visible = window.options_visible.union(set(path)).union({cell})
