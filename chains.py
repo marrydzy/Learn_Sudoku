@@ -2,6 +2,8 @@
 
 """ SUDOKU SOLVING METHODS """
 
+from collections import defaultdict
+
 import networkx as nx
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
@@ -54,6 +56,31 @@ def _get_u_loop(graph, chain_nodes, other_chain):
     return u_loop
 
 
+def _get_strongly_connected_cells(board, solver_status):
+    """ returns dictionary of strongly connected cells
+    connected_cells data format:
+    {(cell_1, cell_2): [candidate_1, candidate_2, ...], ...} """
+
+    def _add_connected(cells):
+        unsolved_cells = [cell for cell in cells if not is_clue(cell, board, solver_status)]
+        if unsolved_cells:
+            candidates = ''.join(board[cell] for cell in unsolved_cells)
+            for value in SUDOKU_VALUES_LIST:
+                if candidates.count(value) == 2:
+                    cells_pair = tuple([cell for cell in unsolved_cells if value in board[cell]])
+                    assert(len(cells_pair) == 2)
+                    connected_cells[cells_pair].append(value)
+                    # if value == '8':
+                        # print(f'{cells_pair = }')
+
+    connected_cells = defaultdict(list)
+    for indx in range(9):
+        _add_connected(CELLS_IN_ROW[indx])
+        _add_connected(CELLS_IN_COL[indx])
+        _add_connected(CELLS_IN_SQR[indx])
+    return connected_cells
+
+
 def _check_bidirectional_traversing(end_value, path, board):
     def _traverse(nodes):
         exp_value = end_value
@@ -61,11 +88,145 @@ def _check_bidirectional_traversing(end_value, path, board):
             exp_value = board[node].replace(exp_value, '')
             if len(exp_value) != 1:
                 return False
+        # print(f'{exp_value = }')
         return True if exp_value == end_value else False
 
     if len(path) < 3:
         return False
     return _traverse(path) and _traverse(path[-1::-1])
+
+
+paths = []
+max_path = 100
+
+
+def _walk(board, graph, path, start_node, start_value, end_node, end_value):
+    """ walks possible paths between start_node and end_node,
+    starting with start value
+    Returns:
+        True if the only value in end_node can be end_value,
+        False otherwise
+    """
+    global paths
+    global max_path
+
+    if len(path) > max_path:
+        return False
+
+    path.append(start_node)
+    # print(f'{start_node = }\t{start_value = }  {path = }')
+    current_node = start_node
+    current_value = start_value
+    assert(start_value in board[start_node])
+    if current_node == end_node:
+        print(f'ended with {start_value}')
+        if current_value == end_value:
+            paths.append(path.copy())
+            max_path = len(path)
+    else:
+        for next_node, attr in graph.adj[current_node].items():
+            # print(f'{next_node = }  {attr = }')
+            if next_node not in path:
+                edge_values = set(attr['candidates'])
+                for value in edge_values:
+                    if value != current_value and value in board[next_node]:
+                        _walk(board, graph, path.copy(), next_node, value, end_node, end_value)
+
+
+def hidden_xy_chain(solver_status, board, window):
+    """ TODO """
+
+    global paths
+
+    # TODO - temporary for development/testing only!
+    if True:
+        board[18] = '68'
+        board[19] = '356'
+        board[30] = '46'
+        board[31] = '256'
+        board[32] = '24'
+        board[33] = '59'
+        board[35] = '13'
+        board[36] = '89'
+        board[44] = '79'
+        board[50] = '78'
+        board[51] = '13'
+        board[62] = '37'
+        board[80] = '48'
+
+    def _dbg_print_adj(node):
+        print(f'\n{node = }  {board[node] = }')
+        for n, attr in graph.adj[node].items():
+            print(f'{n = } \t{attr["candidates"] = }')
+
+    connected_cells = _get_strongly_connected_cells(board, solver_status)
+    graph = nx.Graph()
+    for edge, candidates in connected_cells.items():
+        graph.add_edge(*edge, candidates=candidates)
+
+    """
+    print(f'\n{dict(graph[66]) = }')
+    print(f'\n{dict(graph[48]) = }')
+    print(f'\n{dict(graph[52]) = }')
+    print(f'\n{dict(graph[44]) = }')
+    print(f'\n{dict(graph[26]) = }')
+    print(f'\n{dict(graph[6]) = }')
+    """
+
+    unresolved = [cell for cell in range(81) if len(board[cell]) > 2]
+    kwargs = {}
+
+    for cell in [69,]: # unresolved:
+        for candidate in ['8']: # board[cell]:
+            for component in nx.connected_components(graph):
+                ends = set()
+                nodes = component.intersection(set(ALL_NBRS[cell]))
+                for node_1, node_2, candidates in graph.edges.data('candidates'):
+                    if candidate in candidates:
+                        # assert(node_1 not in nodes or node_2 not in nodes)
+                        if node_1 in nodes:
+                            ends.add(node_1)
+                        if node_2 in nodes:
+                            ends.add(node_2)
+                print(f'\n{ends = }')
+                if len(ends) == 2:
+                    path = []
+                    # path = nx.algorithms.shortest_paths.generic.shortest_path(graph, ends.pop(), ends.pop())
+                    # print(f'{path = }')
+                    # _dbg_print_adj(66)
+                    # _dbg_print_adj(48)
+                    # _dbg_print_adj(12)
+                    visited_nodes = []
+                    _walk(board, graph, visited_nodes, 66, '7', 6, '8')
+                    print()
+                    print(paths)
+                    print()
+                    print(f'{len(paths) = }')
+                    min_length = 100
+                    for p in paths:
+                        min_length = len(p) if len(p) < min_length else min_length
+                        print(f'{len(p) = }')
+                    print()
+                    for p in paths:
+                        if len(p) == min_length:
+                            print(p)
+                            path = p
+                            break
+                    if path:
+                        to_remove = [(candidate, cell), ]
+                        path.insert(0, candidate)
+                        solver_status.capture_baseline(board, window)
+                        if window:
+                            window.options_visible = window.options_visible.union(set(path)).union({cell})
+                        remove_options(solver_status, board, to_remove, window)
+                        kwargs["solver_tool"] = "hidden_xy_chain"
+                        kwargs["impacted_cells"] = [cell, ]
+                        kwargs["remove"] = to_remove
+                        kwargs["finned_x_wing"] = path  # TODO!!!
+                        return kwargs
+
+    # board[69] = '136'   # TODO - for testing purposes only!
+    return kwargs
 
 
 def naked_xy_chain(solver_status, board, window):
@@ -116,6 +277,7 @@ def naked_xy_chain(solver_status, board, window):
                         return kwargs
 
     return kwargs
+
 
 
 def coloring(solver_status, board, window):

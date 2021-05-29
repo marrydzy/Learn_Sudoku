@@ -43,6 +43,7 @@ screen_messages = {
     "empty_rectangle": "'Epmpty Rectangle' technique",
     "coloring": "'Coloring' technique",
     "naked_xy_chain": "'Naked XY Chain' technique",
+    "hidden_xy_chain": "'Hidden XY Chain' techinque",
     "scrub_pencil_marks": "WTF",
     "unique_values": "WTF",
     "unique_rectangles": "WTF",

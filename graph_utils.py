@@ -743,6 +743,7 @@ def set_methods():
             "empty_rectangle": "5",
             "coloring": "6",
             "naked_xy_chain": "9",
+            "hidden_xy_chain": "9",
             }
 
 

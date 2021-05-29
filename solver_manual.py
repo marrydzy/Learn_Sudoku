@@ -272,6 +272,10 @@ def manual_solver(board, window):
         if kwargs:
             # print('\nBingo!')
             continue
+        kwargs = chains.hidden_xy_chain(solver_status, board, window)
+        if kwargs:
+            print('\nBingo!')
+            continue
 
         kwargs = wings.xy_wing(solver_status, board, window)
         if kwargs:
@@ -306,8 +310,8 @@ def manual_solver(board, window):
             continue
 
         if not is_solved(board, solver_status):        # TODO: for debugging only!
-            tmp_counter += 1
-            print(f"\n{tmp_counter = }")
+            # tmp_counter += 1
+            # print(f"\n{tmp_counter = }")
             pass
 
         return False
