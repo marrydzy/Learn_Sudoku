@@ -96,10 +96,6 @@ def _check_bidirectional_traversing(end_value, path, board):
     return _traverse(path) and _traverse(path[-1::-1])
 
 
-paths = []
-max_path = 100
-
-
 def _walk(board, graph, path, start_node, start_value, end_node, end_value):
     """ walks possible paths between start_node and end_node,
     starting with start value
@@ -107,25 +103,22 @@ def _walk(board, graph, path, start_node, start_value, end_node, end_value):
         True if the only value in end_node can be end_value,
         False otherwise
     """
-    global paths
-    global max_path
 
-    if len(path) > max_path:
+    if len(path) > hidden_xy_chain.max_path_length:
         return False
 
     path.append(start_node)
-    # print(f'{start_node = }\t{start_value = }  {path = }')
     current_node = start_node
     current_value = start_value
     assert(start_value in board[start_node])
     if current_node == end_node:
-        print(f'ended with {start_value}')
         if current_value == end_value:
-            paths.append(path.copy())
-            max_path = len(path)
+            hidden_xy_chain.paths.append(path.copy())
+        else:
+            hidden_xy_chain.failures += 1
+        print(f'end node value = {current_value}:  {path = }')
     else:
         for next_node, attr in graph.adj[current_node].items():
-            # print(f'{next_node = }  {attr = }')
             if next_node not in path:
                 edge_values = set(attr['candidates'])
                 for value in edge_values:
@@ -136,7 +129,7 @@ def _walk(board, graph, path, start_node, start_value, end_node, end_value):
 def hidden_xy_chain(solver_status, board, window):
     """ TODO """
 
-    global paths
+    hidden_xy_chain.max_path_length = 50
 
     # TODO - temporary for development/testing only!
     if True:
@@ -154,30 +147,18 @@ def hidden_xy_chain(solver_status, board, window):
         board[62] = '37'
         board[80] = '48'
 
-    def _dbg_print_adj(node):
-        print(f'\n{node = }  {board[node] = }')
-        for n, attr in graph.adj[node].items():
-            print(f'{n = } \t{attr["candidates"] = }')
-
     connected_cells = _get_strongly_connected_cells(board, solver_status)
     graph = nx.Graph()
     for edge, candidates in connected_cells.items():
         graph.add_edge(*edge, candidates=candidates)
 
-    """
-    print(f'\n{dict(graph[66]) = }')
-    print(f'\n{dict(graph[48]) = }')
-    print(f'\n{dict(graph[52]) = }')
-    print(f'\n{dict(graph[44]) = }')
-    print(f'\n{dict(graph[26]) = }')
-    print(f'\n{dict(graph[6]) = }')
-    """
-
     unresolved = [cell for cell in range(81) if len(board[cell]) > 2]
     kwargs = {}
 
-    for cell in [69,]: # unresolved:
-        for candidate in ['8']: # board[cell]:
+    for cell in [69, ]: # unresolved:
+        for candidate in board[cell]:
+            hidden_xy_chain.paths = []
+            hidden_xy_chain.failures = 0
             for component in nx.connected_components(graph):
                 ends = set()
                 nodes = component.intersection(set(ALL_NBRS[cell]))
@@ -188,31 +169,37 @@ def hidden_xy_chain(solver_status, board, window):
                             ends.add(node_1)
                         if node_2 in nodes:
                             ends.add(node_2)
-                print(f'\n{ends = }')
                 if len(ends) == 2:
-                    path = []
-                    # path = nx.algorithms.shortest_paths.generic.shortest_path(graph, ends.pop(), ends.pop())
-                    # print(f'{path = }')
-                    # _dbg_print_adj(66)
-                    # _dbg_print_adj(48)
-                    # _dbg_print_adj(12)
-                    visited_nodes = []
-                    _walk(board, graph, visited_nodes, 66, '7', 6, '8')
-                    print()
-                    print(paths)
-                    print()
-                    print(f'{len(paths) = }')
+                    ends = list(ends)
+                    for start_node in ends:
+                        end_node = ends[1] if start_node == ends[0] else [ends[0]]
+                        start_values = board[start_node].replace(candidate, '')
+                        # (f'\n{candidate = }  {ends = }')
+                        for start_value in start_values:
+                            print(f'\nbuiding chain from {start_node = } to {end_node = } with {start_value = }')
+                            path = []
+                            visited_nodes = []
+                            _walk(board, graph, visited_nodes, start_node, start_value, end_node, candidate)
+                            # print()
+                            # print(hidden_xy_chain.paths)
+                            # print()
+                            # print(f'{len(hidden_xy_chain.paths) = }')
+
                     min_length = 100
-                    for p in paths:
+                    for p in hidden_xy_chain.paths:
                         min_length = len(p) if len(p) < min_length else min_length
-                        print(f'{len(p) = }')
-                    print()
-                    for p in paths:
+                        # print(f'{len(p) = }')
+                    # print()
+                    for p in hidden_xy_chain.paths:
                         if len(p) == min_length:
-                            print(p)
+                            # print(p)
                             path = p
                             break
-                    if path:
+                    if path and hidden_xy_chain.failures == 0:
+                        # print(f'\n{cell = } {candidate = } {start_node = } {start_value = } {end_node = }')
+
+                        print(f'{path = }')
+                        # print(f'failures: {hidden_xy_chain.failures}')
                         to_remove = [(candidate, cell), ]
                         path.insert(0, candidate)
                         solver_status.capture_baseline(board, window)
@@ -225,7 +212,6 @@ def hidden_xy_chain(solver_status, board, window):
                         kwargs["finned_x_wing"] = path  # TODO!!!
                         return kwargs
 
-    # board[69] = '136'   # TODO - for testing purposes only!
     return kwargs
 
 
