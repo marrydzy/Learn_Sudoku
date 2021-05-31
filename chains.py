@@ -104,26 +104,46 @@ def _walk(board, graph, path, start_node, start_value, end_node, end_value):
         False otherwise
     """
 
-    if len(path) > hidden_xy_chain.max_path_length:
-        return False
-
-    path.append(start_node)
     current_node = start_node
     current_value = start_value
-    assert(start_value in board[start_node])
-    if current_node == end_node:
-        if current_value == end_value:
-            hidden_xy_chain.paths.append(path.copy())
+    while current_node != end_node:
+        assert(start_value in board[start_node])
+        path.append(current_node)
+        # print(f'{path = }')
+        if len(path) > hidden_xy_chain.max_path_length:
+            hidden_xy_chain.max_path_length = len(path)
+        next_nodes = set(graph.adj[current_node]).difference(set(path))
+        if not next_nodes:
+            hidden_xy_chain.dead_ends += 1
+            # print('dupa_1')
+            return
+        elif len(next_nodes) == 1:
+            next_node = next_nodes.pop()
+            edge_values = set(graph.edges[(current_node, next_node)]['candidates'])
+            edge_values.discard(current_value)
+            # print(f'node: {current_node}, node value = {current_value},  {next_node = } {edge_values = } \t{path = }')
+            if not edge_values:
+                hidden_xy_chain.dead_ends += 1
+                # print('dupa_2')
+                return
+            assert(len(edge_values) == 1)
+            current_node = next_node
+            current_value = edge_values.pop()
         else:
-            hidden_xy_chain.failures += 1
-        print(f'end node value = {current_value}:  {path = }')
+            # print(f'multi-choice')
+            for next_node in next_nodes:
+                edge_values = set(graph.edges[(current_node, next_node)]['candidates'])
+                edge_values.discard(current_value)
+                if edge_values:
+                    assert (len(edge_values) == 1)
+                    _walk(board, graph, path.copy(), next_node, edge_values.pop(), end_node, end_value)
+            return
+    path.append(current_node)
+    if current_value == end_value:
+        hidden_xy_chain.paths.append(path.copy())
     else:
-        for next_node, attr in graph.adj[current_node].items():
-            if next_node not in path:
-                edge_values = set(attr['candidates'])
-                for value in edge_values:
-                    if value != current_value and value in board[next_node]:
-                        _walk(board, graph, path.copy(), next_node, value, end_node, end_value)
+        hidden_xy_chain.failures += 1
+    # print(f'end node value = {current_value}:  {path = }')
 
 
 def hidden_xy_chain(solver_status, board, window):
@@ -132,7 +152,7 @@ def hidden_xy_chain(solver_status, board, window):
     hidden_xy_chain.max_path_length = 50
 
     # TODO - temporary for development/testing only!
-    if True:
+    if False:
         board[18] = '68'
         board[19] = '356'
         board[30] = '46'
@@ -159,6 +179,8 @@ def hidden_xy_chain(solver_status, board, window):
         for candidate in board[cell]:
             hidden_xy_chain.paths = []
             hidden_xy_chain.failures = 0
+            hidden_xy_chain.dead_ends = 0
+            hidden_xy_chain.max_path_length = 0
             for component in nx.connected_components(graph):
                 ends = set()
                 nodes = component.intersection(set(ALL_NBRS[cell]))
@@ -176,15 +198,17 @@ def hidden_xy_chain(solver_status, board, window):
                         start_values = board[start_node].replace(candidate, '')
                         # (f'\n{candidate = }  {ends = }')
                         for start_value in start_values:
-                            print(f'\nbuiding chain from {start_node = } to {end_node = } with {start_value = }')
-                            path = []
-                            visited_nodes = []
+                            # print()
+                            # print(f'\nbuiding chain from {start_node = } to {end_node = } with {start_value = } and {candidate = }')
+                            # path = []
+                            visited_nodes = [cell, ]
                             _walk(board, graph, visited_nodes, start_node, start_value, end_node, candidate)
                             # print()
                             # print(hidden_xy_chain.paths)
                             # print()
                             # print(f'{len(hidden_xy_chain.paths) = }')
 
+                    path = []
                     min_length = 100
                     for p in hidden_xy_chain.paths:
                         min_length = len(p) if len(p) < min_length else min_length
@@ -197,9 +221,15 @@ def hidden_xy_chain(solver_status, board, window):
                             break
                     if path and hidden_xy_chain.failures == 0:
                         # print(f'\n{cell = } {candidate = } {start_node = } {start_value = } {end_node = }')
+                        path = path[1:]
+                        if False:
+                            print(f'\n{cell = } {candidate = }')
+                            print(f'{path = }')
+                            print(f'{len(hidden_xy_chain.paths) = }')
+                            print(f'{hidden_xy_chain.failures = }')
+                            print(f'{hidden_xy_chain.dead_ends = }')
+                            print(f'{hidden_xy_chain.max_path_length = }')
 
-                        print(f'{path = }')
-                        # print(f'failures: {hidden_xy_chain.failures}')
                         to_remove = [(candidate, cell), ]
                         path.insert(0, candidate)
                         solver_status.capture_baseline(board, window)
