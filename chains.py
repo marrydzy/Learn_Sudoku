@@ -68,16 +68,21 @@ def _get_strongly_connected_cells(board, solver_status):
             for value in SUDOKU_VALUES_LIST:
                 if candidates.count(value) == 2:
                     cells_pair = tuple([cell for cell in unsolved_cells if value in board[cell]])
-                    assert(len(cells_pair) == 2)
+                    assert(len(cells_pair) == 2)    # TODO
                     connected_cells[cells_pair].append(value)
+                    if len(connected_cells[cells_pair]) > 1:
+                        to_remove.add(cells_pair)
                     # if value == '8':
                         # print(f'{cells_pair = }')
 
     connected_cells = defaultdict(list)
+    to_remove = set()
     for indx in range(9):
         _add_connected(CELLS_IN_ROW[indx])
         _add_connected(CELLS_IN_COL[indx])
         _add_connected(CELLS_IN_SQR[indx])
+    # for pair in to_remove:        # TODO
+    #     connected_cells.pop(pair)
     return connected_cells
 
 
@@ -120,8 +125,10 @@ def _walk(board, graph, path, start_node, start_value, end_node, end_value):
     while current_node != end_node:
         if not _try_value(board, current_node, current_value):
             hidden_xy_chain.dead_ends += 1
+            return
         path.append(current_node)
         # print(f'{path = }')
+
         if len(path) > hidden_xy_chain.max_path_length:
             hidden_xy_chain.max_path_length = len(path)
         next_nodes = set(graph.adj[current_node]).difference(set(path))
@@ -139,8 +146,12 @@ def _walk(board, graph, path, start_node, start_value, end_node, end_value):
                 # print('dupa_2')
                 return
             assert(len(edge_values) == 1)
+            # for node in set(graph.adj[current_node]):
+            #     if (current_node, node) in graph.edges:
+            #         graph.remove_edge(current_node, node)
             current_node = next_node
             current_value = edge_values.pop()
+
         else:
             # print(f'multi-choice')
             for next_node in next_nodes:
@@ -148,11 +159,15 @@ def _walk(board, graph, path, start_node, start_value, end_node, end_value):
                 edge_values.discard(current_value)
                 if edge_values:
                     assert (len(edge_values) == 1)
-                    _walk(board.copy(), graph, path.copy(), next_node, edge_values.pop(), end_node, end_value)
+                    _walk(board.copy(), graph.copy(), path.copy(), next_node, edge_values.pop(), end_node, end_value)
             return
     path.append(current_node)
     if current_value == end_value:
-        hidden_xy_chain.paths.append(path.copy())
+        edge_1 = (path[-2], path[-1])
+        edge_2 = (path[1], path[2])
+        if end_value in graph.edges[edge_1]['candidates']:
+            if end_value in graph.edges[edge_2]['candidates']:
+                hidden_xy_chain.paths.append(path.copy())
     else:
         hidden_xy_chain.failures += 1
     # print(f'end node value = {current_value}:  {path = }')
@@ -188,14 +203,16 @@ def hidden_xy_chain(solver_status, board, window):
     kwargs = {}
 
     for cell in unresolved:
-        for candidate in board[cell]:
-            hidden_xy_chain.paths = []
-            hidden_xy_chain.failures = 0
-            hidden_xy_chain.dead_ends = 0
-            hidden_xy_chain.max_path_length = 0
-            for component in nx.connected_components(graph):
+        if cell in graph.nodes:
+            for candidate in board[cell]:
+                hidden_xy_chain.paths = []
+                hidden_xy_chain.failures = 0
+                hidden_xy_chain.dead_ends = 0
+                hidden_xy_chain.max_path_length = 0
+                # for component in nx.connected_components(graph):
                 ends = set()
-                nodes = component.intersection(set(ALL_NBRS[cell]))
+                # nodes = component.intersection(set(ALL_NBRS[cell]))
+                nodes = set(ALL_NBRS[cell])
                 for node_1, node_2, candidates in graph.edges.data('candidates'):
                     if candidate in candidates:
                         # assert(node_1 not in nodes or node_2 not in nodes)
@@ -214,7 +231,7 @@ def hidden_xy_chain(solver_status, board, window):
                             # print(f'\nbuiding chain from {start_node = } to {end_node = } with {start_value = } and {candidate = }')
                             # path = []
                             visited_nodes = [cell, ]
-                            _walk(board.copy(), graph, visited_nodes, start_node, start_value, end_node, candidate)
+                            _walk(board.copy(), graph.copy(), visited_nodes, start_node, start_value, end_node, candidate)
                             # print()
                             # print(hidden_xy_chain.paths)
                             # print()
@@ -244,6 +261,11 @@ def hidden_xy_chain(solver_status, board, window):
                             print(f'{hidden_xy_chain.failures = }')
                             print(f'{hidden_xy_chain.dead_ends = }')
                             print(f'{hidden_xy_chain.max_path_length = }')
+                            node_1 = path[0]
+                            for node_2 in path[1:]:
+                                edge = (node_1, node_2)
+                                print(f'{edge = } {graph.edges[edge]["candidates"] = }')
+                                node_1 = node_2
 
                         to_remove = [(candidate, cell), ]
                         path.insert(0, candidate)
