@@ -318,6 +318,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     nodes = kwargs["nodes"] if "nodes" in kwargs else None
     chain = kwargs["chain"] if "chain" in kwargs else None
     colored_chain = kwargs["colored_chain"] if "colored_chain" in kwargs else None
+    x_chain = kwargs["x_chain"] if "x_chain" in kwargs else None
 
     c_chain = None
     if colored_chain:
@@ -340,7 +341,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
-    if corners and cell_id in corners or x_wing and cell_id in x_wing[1:]:
+    if corners and cell_id in corners or x_wing and cell_id in x_wing[1:] or x_chain and cell_id in x_chain:
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
@@ -405,6 +406,14 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
+        if x_chain and cell_id in x_chain:
+            for candidate, col in x_chain[cell_id]:
+                if value == candidate:
+                    color = CYAN if col == 'c' else YELLOW if col == 'y' else LIME
+                    pygame.draw.rect(window.screen, color,
+                                     (pos[0] + window.option_offsets[value][0],
+                                      pos[1] + window.option_offsets[value][1],
+                                      CELL_SIZE // 3, CELL_SIZE // 3))
         if skyscraper and value == skyscraper[0] and cell_id in skyscraper[1:]:
             pygame.draw.rect(window.screen, CYAN,
                              (pos[0] + window.option_offsets[value][0],

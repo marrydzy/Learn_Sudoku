@@ -262,11 +262,10 @@ def manual_solver(board, window):
             # print('\nBingo!')
             continue
 
-
-
         # TODO - positioned here to test
         kwargs = chains.coloring(solver_status, board, window)
         if kwargs:
+            print('\nBingo!')
             continue
         kwargs = chains.naked_xy_chain(solver_status, board, window)
         if kwargs:
@@ -274,7 +273,7 @@ def manual_solver(board, window):
             continue
         kwargs = chains.hidden_xy_chain(solver_status, board, window)
         if kwargs:
-            print('\nBingo!')
+            # print('\nBingo!')
             continue
 
         kwargs = wings.xy_wing(solver_status, board, window)
