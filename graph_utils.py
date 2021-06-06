@@ -286,7 +286,7 @@ def draw_board_features(window, **kwargs):
             else:
                 x2 = (snake[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
                 y2 = (snake[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-            pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
+            pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=4) # 5)
 
     if appendixes:
         color = MAGENTA
@@ -296,7 +296,7 @@ def draw_board_features(window, **kwargs):
                 y1 = (appendix[node] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
                 x2 = (appendix[node + 1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
                 y2 = (appendix[node + 1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-                pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
+                pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=4) # 5)
 
 
 def highlight_options(window, cell_id, new_value, pos, **kwargs):
@@ -317,13 +317,8 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     sue_de_coq = kwargs["sue_de_coq"] if "sue_de_coq" in kwargs else None
     nodes = kwargs["nodes"] if "nodes" in kwargs else None
     chain = kwargs["chain"] if "chain" in kwargs else None
-    colored_chain = kwargs["colored_chain"] if "colored_chain" in kwargs else None
     x_chain = kwargs["x_chain"] if "x_chain" in kwargs else None
-
-    c_chain = None
-    if colored_chain:
-        c_chain = [node[0] for node in colored_chain[1:]]
-        c_colors = [node[1] for node in colored_chain[1:]]
+    conflicting_cells = kwargs["conflicting_cells"] if "conflicting_cells" in kwargs else None
 
     if iterate is not None and cell_id == iterate:
         pygame.draw.rect(
@@ -353,10 +348,6 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
-    if c_chain and cell_id in c_chain:
-        pygame.draw.rect(
-            window.screen, Y_WING_LEAF,
-            (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
     if skyscraper and cell_id in skyscraper[1:]:
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
@@ -372,7 +363,11 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
-
+        if conflicting_cells and (value, cell_id) in conflicting_cells:
+            pygame.draw.rect(window.screen, (255, 51, 51),
+                             (pos[0] + window.option_offsets[value][0],
+                              pos[1] + window.option_offsets[value][1],
+                              CELL_SIZE // 3, CELL_SIZE // 3))
         if claims and value in new_value and cell_id in claims:
             pygame.draw.rect(window.screen, CYAN,
                              (pos[0] + window.option_offsets[value][0],
@@ -399,17 +394,10 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
-        if c_chain and value == colored_chain[0] and cell_id in c_chain:
-            indx = c_chain.index(cell_id)
-            color = YELLOW if c_colors[indx] == 'y' else LIME
-            pygame.draw.rect(window.screen, color,
-                             (pos[0] + window.option_offsets[value][0],
-                              pos[1] + window.option_offsets[value][1],
-                              CELL_SIZE // 3, CELL_SIZE // 3))
         if x_chain and cell_id in x_chain:
             for candidate, col in x_chain[cell_id]:
                 if value == candidate:
-                    color = CYAN if col == 'c' else YELLOW if col == 'y' else LIME
+                    color = CYAN if col == 'c' else YELLOW if col == 'y' else LIME      # TODO
                     pygame.draw.rect(window.screen, color,
                                      (pos[0] + window.option_offsets[value][0],
                                       pos[1] + window.option_offsets[value][1],
@@ -753,6 +741,7 @@ def set_methods():
             "coloring": "6",
             "naked_xy_chain": "9",
             "hidden_xy_chain": "9",
+            "y_wings": "9",             # TODO!!!
             }
 
 

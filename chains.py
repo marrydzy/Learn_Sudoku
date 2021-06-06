@@ -307,23 +307,17 @@ def coloring(solver_status, board, window):
     """ TODO """
 
     def _build_graph(value):
+        def _for_house(cells):
+            nodes = [cell for cell in cells if
+                     value in board[cell] and not is_clue(cell, board, solver_status)]
+            if len(nodes) == 2:
+                graph.add_edge(nodes[0], nodes[1])
+
         graph = nx.Graph()
         for i in range(9):
-            nodes = [cell for cell in CELLS_IN_ROW[i] if
-                     value in board[cell] and not is_clue(cell, board, solver_status)]
-            if len(nodes) == 2:
-                graph.add_nodes_from(nodes)
-                graph.add_edge(nodes[0], nodes[1])
-            nodes = [cell for cell in CELLS_IN_COL[i] if
-                     value in board[cell] and not is_clue(cell, board, solver_status)]
-            if len(nodes) == 2:
-                graph.add_nodes_from(nodes)
-                graph.add_edge(nodes[0], nodes[1])
-            nodes = [cell for cell in CELLS_IN_SQR[i] if
-                     value in board[cell] and not is_clue(cell, board, solver_status)]
-            if len(nodes) == 2:
-                graph.add_nodes_from(nodes)
-                graph.add_edge(nodes[0], nodes[1])
+            _for_house(CELLS_IN_ROW[i])
+            _for_house(CELLS_IN_COL[i])
+            _for_house(CELLS_IN_SQR[i])
         return graph
 
     def _check_chains(value):
@@ -363,61 +357,58 @@ def coloring(solver_status, board, window):
                 if window:
                     window.options_visible = window.options_visible.union(spider_web)
                 remove_options(solver_status, board, to_remove, window)
-                corners = list(spider_web)
-                corners = [(node, graph.nodes[node]['color']) for node in corners]
-                corners.insert(0, value)
+                x_chain = {node: {(value, graph.nodes[node]['color'])} for node in spider_web}
                 kwargs["solver_tool"] = "coloring"
-                kwargs["colored_chain"] = corners
+                kwargs["x_chain"] = x_chain
                 kwargs["remove"] = to_remove
                 kwargs["impacted_cells"] = [cell, ]
                 kwargs["appendixes"] = appendixes
                 kwargs["snake"] = chain_nodes
+                print('\nBingo!')
                 return True
         return False
 
     def _check_if_conflict(graph, chain_nodes, appendixes, value):
+        """ TODO """
+
+        def _check_direction(cells, impacted_nodes, color):
+            for i in range(9):
+                house_nodes = spider_web.intersection(set(cells[i]))
+                if len(house_nodes) > 1:
+                    assert (len(house_nodes) == 2)
+                    colors = set(graph.nodes[node]['color'] for node in house_nodes)
+                    if len(colors) == 1:
+                        impacted_nodes = impacted_nodes.union(house_nodes)
+                        color = color.union(colors)
+            return impacted_nodes, color
+
         spider_web = set(chain_nodes)
         for fin in appendixes:
             spider_web = spider_web.union(set(fin))
 
-        impacted_cells = None
-        for i in range(9):
-            house_nodes = list(spider_web.intersection(set(CELLS_IN_ROW[i])))
-            if len(house_nodes) > 1:
-                assert(len(house_nodes) == 2)
-                colors = set(graph.nodes[node]['color'] for node in house_nodes)
-                if len(colors) == 1:
-                    impacted_cells = house_nodes
-                    break
-            house_nodes = list(spider_web.intersection(set(CELLS_IN_COL[i])))
-            if len(house_nodes) > 1:
-                assert (len(house_nodes) == 2)
-                colors = set(graph.nodes[node]['color'] for node in house_nodes)
-                if len(colors) == 1:
-                    impacted_cells = house_nodes
-                    break
-            house_nodes = list(spider_web.intersection(set(CELLS_IN_COL[i])))
-            if len(house_nodes) > 1:
-                assert (len(house_nodes) == 2)
-                colors = set(graph.nodes[node]['color'] for node in house_nodes)
-                if len(colors) == 1:
-                    impacted_cells = house_nodes
-                    break
+        impacted_cells = set()
+        conflicting_color = set()
+        impacted_cells, conflicting_color = _check_direction(CELLS_IN_ROW, impacted_cells, conflicting_color)
+        impacted_cells, conflicting_color = _check_direction(CELLS_IN_COL, impacted_cells, conflicting_color)
+        impacted_cells, conflicting_color = _check_direction(CELLS_IN_SQR, impacted_cells, conflicting_color)
 
         if impacted_cells:
+            assert(len(conflicting_color) == 1)
+            conflicting_color = conflicting_color.pop()
             chain_nodes.append(chain_nodes[0])
-            to_remove = [(value, node) for node in impacted_cells]
+            in_conflict = {(value, node) for node in impacted_cells}
+            to_remove = {(value, node) for node in spider_web if graph.nodes[node]['color'] == conflicting_color}
+            impacted_cells = {node for node in spider_web if graph.nodes[node]['color'] == conflicting_color}
             solver_status.capture_baseline(board, window)
             if window:
                 window.options_visible = window.options_visible.union(spider_web)
             remove_options(solver_status, board, to_remove, window)
-            corners = list(spider_web.difference(set(impacted_cells)))
-            corners = [(node, graph.nodes[node]['color']) for node in corners]
-            corners.insert(0, value)
+            x_chain = {node: {(value, graph.nodes[node]['color'])} for node in spider_web.difference(impacted_cells)}
             kwargs["solver_tool"] = "coloring"
-            kwargs["colored_chain"] = corners
+            kwargs["x_chain"] = x_chain
             kwargs["remove"] = to_remove
             kwargs["impacted_cells"] = impacted_cells
+            kwargs["conflicting_cells"] = in_conflict
             kwargs["appendixes"] = appendixes
             kwargs["snake"] = chain_nodes
             return True

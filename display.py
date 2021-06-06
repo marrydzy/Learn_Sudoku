@@ -34,6 +34,7 @@ screen_messages = {
     "finned_cbrc_mutant_x_wing": "'Finned CBRC Mutant X-Wing' technique",
     "franken_x_wing": "'Franken X-Wing' technique",
     "xy_wing": "'XY-wing' technique",
+    "y_wings": "'XY-Wing' techinique",      # TODO !
     "xyz_wing": "'XYZ-Wing' technique",
     "wxy_wing": "'WXY-Wing' technique",
     "wxyz_wing": "'WXYZ-Wing' technique",

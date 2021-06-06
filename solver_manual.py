@@ -265,7 +265,7 @@ def manual_solver(board, window):
         # TODO - positioned here to test
         kwargs = chains.coloring(solver_status, board, window)
         if kwargs:
-            print('\nBingo!')
+            # print('\nBingo!')
             continue
         kwargs = chains.naked_xy_chain(solver_status, board, window)
         if kwargs:
