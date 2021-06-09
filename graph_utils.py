@@ -216,8 +216,7 @@ def draw_board_features(window, **kwargs):
     x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
     skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
     chain = kwargs["chain"] if "chain" in kwargs else None
-    snake = kwargs["snake"] if "snake" in kwargs else None
-    appendixes = kwargs["appendixes"] if "appendixes" in kwargs else None
+    chains = kwargs["chains"] if "chains" in kwargs else None
 
     if rectangle:
         left = (rectangle[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
@@ -275,28 +274,17 @@ def draw_board_features(window, **kwargs):
             y2 = (chain[node+1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
             pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
 
-    if snake:
+    if chains:
         color = MAGENTA
-        for node in range(len(snake)):
-            x1 = (snake[node] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-            y1 = (snake[node] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-            if node + 1 < len(snake):
-                x2 = (snake[node+1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-                y2 = (snake[node+1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-            else:
-                x2 = (snake[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-                y2 = (snake[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-            pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=4) # 5)
-
-    if appendixes:
-        color = MAGENTA
-        for appendix in appendixes:
+        for appendix in chains:
             for node in range(len(appendix) - 1):
                 x1 = (appendix[node] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
                 y1 = (appendix[node] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
                 x2 = (appendix[node + 1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
                 y2 = (appendix[node + 1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-                pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=4) # 5)
+                # line_width = 5 if abs(x2 - x1) == abs(y2 - y1) else 4
+                pygame.draw.line(window.screen, color, (x1, y1), (x2, y2),
+                                 width=5 if abs(x2 - x1) == abs(y2 - y1) else 4)
 
 
 def highlight_options(window, cell_id, new_value, pos, **kwargs):
@@ -317,7 +305,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     sue_de_coq = kwargs["sue_de_coq"] if "sue_de_coq" in kwargs else None
     nodes = kwargs["nodes"] if "nodes" in kwargs else None
     chain = kwargs["chain"] if "chain" in kwargs else None
-    x_chain = kwargs["x_chain"] if "x_chain" in kwargs else None
+    c_chain = kwargs["c_chain"] if "c_chain" in kwargs else None
     conflicting_cells = kwargs["conflicting_cells"] if "conflicting_cells" in kwargs else None
 
     if iterate is not None and cell_id == iterate:
@@ -336,7 +324,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
-    if corners and cell_id in corners or x_wing and cell_id in x_wing[1:] or x_chain and cell_id in x_chain:
+    if corners and cell_id in corners or x_wing and cell_id in x_wing[1:] or c_chain and cell_id in c_chain:
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
@@ -394,8 +382,8 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
-        if x_chain and cell_id in x_chain:
-            for candidate, col in x_chain[cell_id]:
+        if c_chain and cell_id in c_chain:
+            for candidate, col in c_chain[cell_id]:
                 if value == candidate:
                     color = CYAN if col == 'c' else YELLOW if col == 'y' else LIME      # TODO
                     pygame.draw.rect(window.screen, color,
