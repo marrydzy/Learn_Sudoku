@@ -303,19 +303,6 @@ def naked_xy_chain(solver_status, board, window):
     return kwargs
 
 
-def _get_links(graph, component, chains):
-    """ TOdO """
-    links = set()
-    in_chains = set(edge for chain in chains for edge in chain)
-    for edge in graph.edges:
-        edge_t = (edge[1], edge[0])
-        if edge[0] in component and edge not in in_chains and edge_t not in in_chains:
-            links.add(edge)
-    # print(f'{in_chains = }')
-    print(f'{links = }')
-    return links
-
-
 def coloring(solver_status, board, window):
     """ TODO """
 
@@ -333,36 +320,41 @@ def coloring(solver_status, board, window):
             _for_house(CELLS_IN_SQR[i])
         return graph
 
+    def _paint_node(graph, component, c_chain, node, value, color):
+        if node not in component or (value, color) in c_chain[node]:
+            return
+        c_chain[node].add((value, color))
+        color = 'y' if color == 'g' else 'g'
+        for neighbour_node in graph.adj[node]:
+            _paint_node(graph, component, c_chain, neighbour_node, value, color)
+
+    def _get_c_chain(graph, component, value):
+        c_chain = {node: set() for node in component}
+        node = component.pop()
+        component.add(node)
+        _paint_node(graph, component, c_chain, node, value, 'g')
+        return c_chain
+
     def _check_chains(value):
         """ TODO """
         graph = _build_graph(value)
         for component in list(nx.connected_components(graph)):
             ends = list(node for node in component if graph.degree[node] == 1)
             if ends:
-                cntr = 0
+
+                c_chain = _get_c_chain(graph, component, value)
+                # print(f'\n{value = }')
+                # print(f'{c_chain = }')
+
                 chains = list(nx.algorithms.chains.chain_decomposition(graph, ends[0]))
                 if chains:
-
-                    if len(chains) > 1:
-                        for chain in chains:
-                            if chain[0][0] == chain[-1][1]:
-                                cntr += 1
-                    if cntr > 1:
-                        print(f'\n{value = }')
-                        print(f'{len(list(nx.connected_components(graph))) = }')
-                        print(f'{component = }')
-                        print(f'{len(chains) = }')
-                        print(f'{chains = }')
-                        print(f'{ends = }')
-                        links = _get_links(graph, component, chains)
-
                     chain = chains[0]
                     if chain[0][0] == chain[-1][1]:
                         chain_nodes = [edge[0] for edge in chain]
                         _assign_chain_nodes_colors(graph, chain_nodes)
                         appendixes = [_get_fin(graph, chain_nodes, end) for end in ends]
                         appendixes.extend([_get_u_loop(graph, chain_nodes, other_chain) for other_chain in chains[1:]])
-                        if _check_if_conflict(graph, chain_nodes, appendixes, value):
+                        if _check_if_conflict(graph, component, c_chain, value):
                             return True
                         if _check_if_pointing(graph, chain_nodes, appendixes, value):
                             return True
@@ -397,25 +389,21 @@ def coloring(solver_status, board, window):
                 return True
         return False
 
-    def _check_if_conflict(graph, chain_nodes, appendixes, value):
+    def _check_if_conflict(graph, component, c_chain, value):
         """ If in any house (row, column, box) there are two chain cells
-         with the same color, then the value can be removed from all cells 
+         with the same color, then the value can be removed from all cells
          where it is painted with the color """
 
         def _check_houses(houses, impacted_nodes, color):
             for i in range(9):
-                house_nodes = spider_web.intersection(set(houses[i]))
+                house_nodes = component.intersection(set(houses[i]))
                 if len(house_nodes) > 1:
                     assert (len(house_nodes) == 2)
-                    colors = set(graph.nodes[node]['color'] for node in house_nodes)
+                    colors = set(pair[1] for node in house_nodes for pair in c_chain[node])
                     if len(colors) == 1:
                         impacted_nodes = impacted_nodes.union(house_nodes)
                         color = color.union(colors)
             return impacted_nodes, color
-
-        spider_web = set(chain_nodes)
-        for fin in appendixes:
-            spider_web = spider_web.union(set(fin))
 
         impacted_cells = set()
         conflicting_color = set()
@@ -425,22 +413,17 @@ def coloring(solver_status, board, window):
 
         if impacted_cells:
             assert(len(conflicting_color) == 1)
-            chain_nodes.append(chain_nodes[0])
-            chains = [chain_nodes]
-            chains.extend(appendixes)
             conflicting_color = conflicting_color.pop()
-            chain_nodes.append(chain_nodes[0])
             in_conflict = {(value, node) for node in impacted_cells}
-            to_remove = {(value, node) for node in spider_web if graph.nodes[node]['color'] == conflicting_color}
-            impacted_cells = {node for node in spider_web if graph.nodes[node]['color'] == conflicting_color}
+            to_remove = {(value, node) for node in component if (value, conflicting_color) in c_chain[node]}
+            impacted_cells = {node for node in component if (value, conflicting_color) in c_chain[node]}
             solver_status.capture_baseline(board, window)
             if window:
-                window.options_visible = window.options_visible.union(spider_web)
+                window.options_visible = window.options_visible.union(component)
             remove_options(solver_status, board, to_remove, window)
-            c_chain = {node: {(value, graph.nodes[node]['color'])} for node in spider_web.difference(impacted_cells)}
             kwargs["solver_tool"] = "coloring"
-            kwargs["c_chain"] = c_chain
-            kwargs["chains"] = chains
+            kwargs["c_chain"] = {node: c_chain[node] for node in component.difference(impacted_cells)}
+            kwargs["chains"] = [edge for edge in graph.edges if edge[0] in component]
             kwargs["remove"] = to_remove
             kwargs["impacted_cells"] = impacted_cells
             kwargs["conflicting_cells"] = in_conflict
