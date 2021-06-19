@@ -11,7 +11,7 @@ from utils import is_clue, is_solved, set_cell_options, set_neighbours_options
 import basic_techniques
 import intermediate_techniques
 import wings
-import chains
+import coloring
 
 
 class SolverStatus:
@@ -263,15 +263,19 @@ def manual_solver(board, window):
             continue
 
         # TODO - positioned here to test
-        kwargs = chains.coloring(solver_status, board, window)
+        kwargs = coloring.simple_colors(solver_status, board, window)
         if kwargs:
             # print('\nBingo!')
             continue
-        kwargs = chains.naked_xy_chain(solver_status, board, window)
+        kwargs = coloring.multi_colors(solver_status, board, window)
+        if kwargs:
+            print('\nBingo!')
+            continue
+        kwargs = coloring.naked_xy_chain(solver_status, board, window)
         if kwargs:
             # print('\nBingo!')
             continue
-        kwargs = chains.hidden_xy_chain(solver_status, board, window)
+        kwargs = coloring.hidden_xy_chain(solver_status, board, window)
         if kwargs:
             # print('\nBingo!')
             continue
@@ -290,6 +294,7 @@ def manual_solver(board, window):
             continue
         kwargs = intermediate_techniques.swordfish(solver_status, board, window)
         if kwargs:
+            # print('\nBingo!')
             continue
         kwargs = intermediate_techniques.finned_swordfish(solver_status, board, window)
         if kwargs:
@@ -297,7 +302,7 @@ def manual_solver(board, window):
         kwargs = intermediate_techniques.jellyfish(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = chains.empty_rectangle(solver_status, board, window)
+        kwargs = coloring.empty_rectangle(solver_status, board, window)
         if kwargs:
             continue
         kwargs = intermediate_techniques.sue_de_coq(solver_status, board, window)

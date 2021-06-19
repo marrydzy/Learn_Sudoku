@@ -385,7 +385,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
         if c_chain and cell_id in c_chain:
             for candidate, col in c_chain[cell_id]:
                 if value == candidate:
-                    color = CYAN if col == 'c' else YELLOW if col == 'y' else LIME      # TODO
+                    color = CYAN if col == 'c' else MAGENTA if col == 'm' else YELLOW if col == 'y' else LIME      # TODO
                     pygame.draw.rect(window.screen, color,
                                      (pos[0] + window.option_offsets[value][0],
                                       pos[1] + window.option_offsets[value][1],
@@ -727,6 +727,7 @@ def set_methods():
             "wxyz_wing": "4",
             "empty_rectangle": "5",
             "coloring": "6",
+            "multi_colors": "6",
             "naked_xy_chain": "9",
             "hidden_xy_chain": "9",
             "y_wings": "9",             # TODO!!!

@@ -43,6 +43,7 @@ screen_messages = {
     "sue_de_coq": "'Sue de Coq' technique",
     "empty_rectangle": "'Epmpty Rectangle' technique",
     "coloring": "'Coloring' technique",
+    "multi_colors": "'Multi-Colors' technique",
     "naked_xy_chain": "'Naked XY Chain' technique",
     "hidden_xy_chain": "'Hidden XY Chain' techinque",
     "scrub_pencil_marks": "WTF",

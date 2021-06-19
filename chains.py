@@ -304,7 +304,15 @@ def naked_xy_chain(solver_status, board, window):
 
 
 def coloring(solver_status, board, window):
-    """ TODO """
+    """ Basic description of the method is available at: http://www.sudokusnake.com/coloring.php
+     - actually, it covers the second opportunity to eliminate candidates.
+     The technique is also called 'Color Trap' (here it is called 'pointing')
+     Another opportunity to eliminate some candidates is when any house (row, column, or box) includes
+     two or more cells belonging to the web of strongly connected cells that are marked with the same
+     color: then all candidates marked with such color can be eliminated. (The technique is also known
+     as 'Color Wrap')
+     Ranking of the methods is at the level of 200 ('Hard')
+    """
 
     def _build_graph(value):
         def _for_house(cells):
@@ -362,29 +370,44 @@ def coloring(solver_status, board, window):
 
     def _check_if_conflict():
         """ If in any house (row, column, box) there are two chain cells
-         with the same color, then the value can be removed from all cells
-         where it is painted with the color """
+         with the same value color, then the value can be removed from all cells
+         where it is marked with the color """
 
-        def _check_houses(houses, impacted_nodes, color):
+        conflicted_cells = set()
+        conflicting_color = set()
+
+        def _check_houses(houses):
+            impacted_nodes = conflicted_cells
+            impacting_color = conflicting_color
             for i in range(9):
-                house_nodes = component.intersection(set(houses[i]))
+                house_nodes = component.intersection(houses[i])
                 if len(house_nodes) > 1:
                     colors = set(pair[1] for node in house_nodes for pair in c_chain[node])
                     if len(colors) == 1:
                         impacted_nodes = impacted_nodes.union(house_nodes)
-                        color = color.union(colors)
-            return impacted_nodes, color
+                        impacting_color = impacting_color.union(colors)
+                    elif len(house_nodes) > 2:
+                        assert(len(colors) == 2)
+                        nodes_with_color = defaultdict(set)
+                        for node in house_nodes:
+                            assert(len(c_chain[node]) == 1)
+                            vc_pair = c_chain[node].pop()
+                            c_chain[node].add(vc_pair)
+                            nodes_with_color[vc_pair[1]].add(node)
+                        for color in nodes_with_color:
+                            if len(nodes_with_color[color]) > 1:
+                                impacted_nodes = impacted_nodes.union(nodes_with_color[color])
+                                impacting_color.add(color)
+            return impacted_nodes, impacting_color
 
-        impacted_cells = set()
-        conflicting_color = set()
-        impacted_cells, conflicting_color = _check_houses(CELLS_IN_ROW, impacted_cells, conflicting_color)
-        impacted_cells, conflicting_color = _check_houses(CELLS_IN_COL, impacted_cells, conflicting_color)
-        impacted_cells, conflicting_color = _check_houses(CELLS_IN_SQR, impacted_cells, conflicting_color)
+        conflicted_cells, conflicting_color = _check_houses(CELLS_IN_ROW)
+        conflicted_cells, conflicting_color = _check_houses(CELLS_IN_COL)
+        conflicted_cells, conflicting_color = _check_houses(CELLS_IN_SQR)
 
-        if impacted_cells:
+        if conflicted_cells:
             assert(len(conflicting_color) == 1)
             conflicting_color = conflicting_color.pop()
-            in_conflict = {(value, node) for node in impacted_cells}
+            in_conflict = {(value, node) for node in conflicted_cells}
             to_remove = {(value, node) for node in component if (value, conflicting_color) in c_chain[node]}
             impacted_cells = {node for node in component if (value, conflicting_color) in c_chain[node]}
             solver_status.capture_baseline(board, window)

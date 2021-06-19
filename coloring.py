@@ -3,6 +3,7 @@
 """ SUDOKU SOLVING METHODS """
 
 from collections import defaultdict
+from itertools import combinations
 
 import networkx as nx
 
@@ -33,7 +34,7 @@ def _get_strongly_connected_cells(board, solver_status):
     return connected_cells
 
 
-# simple colors utility functions:
+# single-digit techniques utility functions:
 
 def _build_graph(value, board, solver_status):
     def _for_house(cells):
@@ -50,20 +51,28 @@ def _build_graph(value, board, solver_status):
     return graph
 
 
-def _get_c_chain(graph, component, value):
+def _get_c_chain(graph, component, value, colors=('g', 'y')):
     c_chain = {node: set() for node in component}
     node = list(component)[0]
-    _paint_node(graph, component, c_chain, node, value, 'g')
+    _paint_node(graph, component, c_chain, node, value, colors, 0)
     return c_chain
 
 
-def _paint_node(graph, component, c_chain, node, value, color):
-    if node not in component or (value, color) in c_chain[node]:
+def _paint_node(graph, component, c_chain, node, value, colors, color_id):
+    if node not in component or (value, colors[color_id]) in c_chain[node]:
         return
-    c_chain[node].add((value, color))
-    color = 'y' if color == 'g' else 'g'
+    c_chain[node].add((value, colors[color_id]))
+    color_id = (color_id + 1) % 2
     for neighbour_node in graph.adj[node]:
-        _paint_node(graph, component, c_chain, neighbour_node, value, color)
+        _paint_node(graph, component, c_chain, neighbour_node, value, colors, color_id)
+
+
+def _get_chain_colors(c_chain):
+    return {color for node in c_chain for _, color in c_chain[node]}
+
+
+def _get_value_color_nodes(c_chain, value, color):
+    return {node for node in c_chain if (value, color) in c_chain[node]}
 
 
 # XXXXX
@@ -376,6 +385,120 @@ def simple_colors(solver_status, board, window):
                 return kwargs
             if _color_trap():
                 return kwargs
+    return kwargs
+
+
+def multi_colors(solver_status, board, window):
+    """ TODO """
+
+    def _check_components(component_ids):
+        components = [all_components[component_ids[0]], all_components[component_ids[1]]]
+        c_chains = [_get_c_chain(graph, components[0], value, colors=('g', 'y')),
+                    _get_c_chain(graph, components[1], value, colors=('c', 'm'))]
+        if len(c_chains[0]) and len(c_chains[1]):
+            if _find_color_wing(components, c_chains, m_id=0, s_id=1):
+                return True
+            if _find_color_wing(components, c_chains, m_id=1, s_id=0):
+                return True
+            if _find_color_trap(components, c_chains):
+                return True
+        return False
+
+    def _find_color_wing(components, c_chains, m_id, s_id):
+        colors = list(_get_chain_colors(c_chains[m_id]))
+        # color_nodes = [{node for node in components[m_id] if c_chains[m_id][node] == {(value, colors[0])}},
+        #                {node for node in components[m_id] if c_chains[m_id][node] == {(value, colors[1])}}]
+        color_nodes = [_get_value_color_nodes(c_chains[m_id], value, colors[0]),
+                       _get_value_color_nodes(c_chains[m_id], value, colors[1])]
+        edges = {edge for edge in graph.edges if edge[0] in components[s_id]}
+        for edge in edges:
+            for col_id in (0, 1):
+                see_col_a = color_nodes[col_id].intersection(ALL_NBRS[edge[0]])
+                see_col_b = color_nodes[col_id].intersection(ALL_NBRS[edge[1]])
+                if see_col_a and see_col_b:
+                    conflicting_color = colors[col_id]
+                    conflicted_cells = see_col_a.union(see_col_b)
+                    impacted_cells = {node for node in components[m_id]
+                                      if (value, conflicting_color) in c_chains[m_id][node]}
+                    to_remove = {(value, node) for node in impacted_cells}
+                    solver_status.capture_baseline(board, window)
+                    if window:
+                        window.options_visible = window.options_visible.union(components[m_id]).union(
+                            components[s_id])
+                    remove_options(solver_status, board, to_remove, window)
+                    in_conflict = {(value, node) for node in conflicted_cells}
+                    c_chain = {**c_chains[m_id], **c_chains[s_id]}
+                    kwargs["solver_tool"] = "multi_colors"
+                    kwargs["c_chain"] = {node: c_chain[node] for node
+                                         in components[m_id].union(components[s_id]).difference(impacted_cells)}
+                    kwargs["chains"] = [edge for edge in graph.edges
+                                        if edge[0] in components[m_id].union(components[s_id])]
+                    kwargs["remove"] = to_remove
+                    kwargs["impacted_cells"] = impacted_cells
+                    kwargs["conflicting_cells"] = in_conflict
+                    return True
+        return False
+
+    def _find_color_trap(components, c_chains):
+        colors = [list({val_col_pair[1] for node in components[0] for val_col_pair in c_chains[0][node]}),
+                  list({val_col_pair[1] for node in components[1] for val_col_pair in c_chains[1][node]})]
+        color_nodes = [{node for node in components[0] if c_chains[0][node] == {(value, colors[0][0])}},
+                       {node for node in components[0] if c_chains[0][node] == {(value, colors[0][1])}},
+                       {node for node in components[1] if c_chains[1][node] == {(value, colors[1][0])}},
+                       {node for node in components[1] if c_chains[1][node] == {(value, colors[1][1])}}]
+        impacting_subsets = None
+        for node in color_nodes[0]:
+            if color_nodes[2].intersection(ALL_NBRS[node]):
+                impacting_subsets = (color_nodes[1], color_nodes[3])
+                break
+            if color_nodes[3].intersection(ALL_NBRS[node]):
+                impacting_subsets = (color_nodes[1], color_nodes[2])
+                break
+        if not impacting_subsets:
+            for node in color_nodes[1]:
+                if color_nodes[2].intersection(ALL_NBRS[node]):
+                    impacting_subsets = (color_nodes[0], color_nodes[3])
+                    break
+                if color_nodes[3].intersection(ALL_NBRS[node]):
+                    impacting_subsets = (color_nodes[0], color_nodes[2])
+                    break
+        if impacting_subsets:
+            # print(f'\n{colors = }')
+            # print(f'{impacting_subsets = }')
+            other_nodes = {node for node in range(81) if value in board[node]
+                           and not is_clue(node, board, solver_status)
+                           and node not in components[0] and node not in components[1]}
+            impacted_cells = set()
+            to_remove = []
+            for node in other_nodes:
+                if impacting_subsets[0].intersection(ALL_NBRS[node]) \
+                        and impacting_subsets[1].intersection(ALL_NBRS[node]):
+                    impacted_cells.add(node)
+                    to_remove.append((value, node))
+            if to_remove:
+                solver_status.capture_baseline(board, window)
+                if window:
+                    window.options_visible = window.options_visible.union(components[0]).union(
+                        components[1])
+                remove_options(solver_status, board, to_remove, window)
+                kwargs["solver_tool"] = "multi_colors"
+                kwargs["c_chain"] = {**c_chains[0], **c_chains[1]}
+                kwargs["chains"] = [edge for edge in graph.edges
+                                    if edge[0] in components[0].union(components[1])]
+                kwargs["remove"] = to_remove
+                kwargs["impacted_cells"] = impacted_cells
+                # print('\nBingo!')
+                return True
+        return False
+
+    kwargs = {}
+    for value in SUDOKU_VALUES_LIST:
+        graph = _build_graph(value, board, solver_status)
+        all_components = list(nx.connected_components(graph))
+        if len(all_components) > 1:
+            for ids in combinations(range(len(all_components)), 2):
+                if _check_components(ids):
+                    return kwargs
     return kwargs
 
 
