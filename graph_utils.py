@@ -6,6 +6,7 @@ import pygame
 
 from solver_manual import solver_status
 from utils import init_options
+from html_colors import html_color_codes
 
 
 ANIMATION_STEP_TIME = 0.05
@@ -19,33 +20,16 @@ LEFT_MARGIN = 25
 TOP_MARGIN = 60
 BOTTOM_MARGIN = 90
 
-# RGB colors:
-BLACK = (0, 0, 0)
-BLUE = (51, 102, 153)
-CORAL = (255, 127, 80)
-CYAN = (0, 255, 255)
-ORANGE = (255, 165, 0)
-PINK = (255, 192, 203)
+
+# TODO: Obsolete - to be removed!!!
 DARKGREY = (120, 120, 120)
-GAINSBORO = (230, 230, 230)
 GREY = (160, 160, 160)
-LIME = (0, 255, 0)
-MAGENTA = (255, 0, 255)
-RED = (255, 0, 0)
-SILVER = (192, 192, 192)
-SPRING_GREEN = (0, 155, 127)
-WHITE = (255, 255, 255)
-YELLOW = (255, 255, 0)
-CHARTREUSE = (127, 255, 0)
-
-LIGHTGREEN = (190, 255, 190)
 LIGHTPINK = (255, 182, 193)
-LIGHTYELLOW = (255, 255, 224)
 LIGHTGREY = (200, 200, 200)
-LIGHTCORAL = (255, 120, 120)
 
-C_BTN_BORDER = (153, 189, 173)
-C_BTN_FACE = (198, 200, 200)
+
+# C_BTN_BORDER = (153, 189, 173)
+# C_BTN_FACE = (198, 200, 200)
 C_PRESSED_BTN_BORDER = (31, 62, 50)
 C_PRESSED_BTN_FACE = (77, 110, 96)      # (68, 110, 100)
 C_OTHER_CELLS = (255, 250, 190)
@@ -68,10 +52,12 @@ KEYPAD_TO_KEYS = 15
 class Button:
     """ TODO """
     def __init__(self, btn_id, rect, text, font,
-                 border_color=C_BTN_BORDER, face_color=C_BTN_FACE, font_color=(50, 50, 50),
-                 disable_border_color=LIGHTGREY, disable_face_color=WHITE, disable_font_color=GAINSBORO,
-                 pressed_border_color=C_PRESSED_BTN_BORDER, pressed_face_color=C_PRESSED_BTN_BORDER,
-                 pressed_font_color=WHITE):
+                 border_color=html_color_codes["darkseagreen"],
+                 face_color=html_color_codes["lightgray"],
+                 font_color=(50, 50, 50),
+                 disable_border_color=LIGHTGREY, disable_face_color=html_color_codes["white"],
+                 disable_font_color=html_color_codes["gainsboro"], pressed_border_color=C_PRESSED_BTN_BORDER,
+                 pressed_face_color=C_PRESSED_BTN_BORDER, pressed_font_color=html_color_codes["white"]):
         self.btn_id = btn_id
         self.rect = rect
         self.text = text
@@ -164,39 +150,39 @@ def render_clue(window, clue, pos, color):
 def render_options(window, options, pos):
     """ Render cell options (pencil marks) """
     for value in options:
-        digit = window.font_options.render(value, True, BLACK)
+        digit = window.font_options.render(value, True, html_color_codes['black'])
         window.screen.blit(digit, (pos[0] + window.option_offsets[value][0] + window.option_shift_x,
                            pos[1] + window.option_offsets[value][1] + window.option_shift_y))
 
 
 def cell_color(window, cell, **kwargs):
     """ TODO """
-    color = WHITE
+    color = html_color_codes["white"]
     if "house" in kwargs and kwargs["house"] and cell in kwargs["house"]:
-        color = LIGHTYELLOW
+        color = html_color_codes["lightyellow"]
     if "greyed_out" in kwargs and cell in kwargs["greyed_out"]:
-        color = SILVER
+        color = html_color_codes["silver"]
     if "wrong_values" in kwargs and cell in kwargs["wrong_values"]:
-        color = PINK
+        color = html_color_codes["pink"]
     if "conflicted_cells" in kwargs and cell in kwargs["conflicted_cells"]:
-        color = ORANGE
+        color = html_color_codes["orange"]
     if "impacted_cells" in kwargs and cell in kwargs["impacted_cells"]:
         color = C_OTHER_CELLS
     if cell == window.selected_cell or \
             "new_clue" in kwargs and cell == kwargs["new_clue"]:
-        color = LIGHTGREEN
+        color = html_color_codes["greenyellow"]
     if window.critical_error and cell in window.critical_error:
-        color = LIGHTCORAL
+        color = html_color_codes["lightcoral"]
     return color
 
 
 def display_info(window, text):
     """ Display info 'text' starting at the left top corner of the window """
     if text:
-        msg = window.font_text.render(text, True, BLACK)
+        msg = window.font_text.render(text, True, html_color_codes['black'])
         top_margin = (TOP_MARGIN - window.font_text.get_ascent()) // 2
         info_rect = pygame.Rect((LEFT_MARGIN, top_margin, 9 * CELL_SIZE, window.font_text_size+1))
-        pygame.draw.rect(window.screen, GAINSBORO, info_rect)
+        pygame.draw.rect(window.screen, html_color_codes["gainsboro"], info_rect)
         window.screen.set_clip(info_rect)
         window.screen.blit(msg, (LEFT_MARGIN, top_margin))
         window.screen.set_clip(None)
@@ -215,7 +201,7 @@ def draw_board_features(window, **kwargs):
     wxy_wing = kwargs["wxy_wing"] if "wxy_wing" in kwargs else None
     x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
     skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
-    chain = kwargs["chain"] if "chain" in kwargs else None
+    edges = kwargs["edges"] if "edges" in kwargs else None
     chains = kwargs["chains"] if "chains" in kwargs else None
 
     if rectangle:
@@ -224,10 +210,10 @@ def draw_board_features(window, **kwargs):
         right = (rectangle[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
         bottom = (rectangle[2] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
         rect = pygame.Rect(left, top, right - left, bottom - top)
-        pygame.draw.rect(window.screen, MAGENTA, rect, width=4)
+        pygame.draw.rect(window.screen, html_color_codes["magenta"], rect, width=4)
 
     if skyscraper:
-        color = MAGENTA
+        color = html_color_codes["magenta"]
         skyscraper = skyscraper[1:]
         x1 = (skyscraper[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
         y1 = (skyscraper[0] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
@@ -241,7 +227,7 @@ def draw_board_features(window, **kwargs):
         pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
 
     if x_wing:
-        color = MAGENTA
+        color = html_color_codes["magenta"]
         x_wing = sorted(x_wing[1:])
         x1 = (x_wing[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
         y1 = (x_wing[0] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
@@ -263,26 +249,26 @@ def draw_board_features(window, **kwargs):
             x2 = (leaf % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
             y2 = (leaf // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
             width = 4 if x1 == x2 or y1 == y2 else 5
-            pygame.draw.line(window.screen, MAGENTA, root, (x2, y2), width=width)
+            pygame.draw.line(window.screen, html_color_codes["magenta"], root, (x2, y2), width=width)
 
-    if chain:
-        color = MAGENTA
-        for node in range(len(chain) - 1):
-            x1 = (chain[node] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-            y1 = (chain[node] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-            x2 = (chain[node+1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-            y2 = (chain[node+1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-            pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
+    if edges:
+        color = html_color_codes["magenta"]
+        for edge in edges:
+            x1 = (edge[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            y1 = (edge[0] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+            x2 = (edge[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+            y2 = (edge[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+            pygame.draw.line(window.screen, color, (x1, y1), (x2, y2),
+                             width=5 if abs(x2 - x1) == abs(y2 - y1) else 4)
 
     if chains:
-        color = MAGENTA
+        color = html_color_codes["magenta"]
         for appendix in chains:
             for node in range(len(appendix) - 1):
                 x1 = (appendix[node] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
                 y1 = (appendix[node] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
                 x2 = (appendix[node + 1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
                 y2 = (appendix[node + 1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-                # line_width = 5 if abs(x2 - x1) == abs(y2 - y1) else 4
                 pygame.draw.line(window.screen, color, (x1, y1), (x2, y2),
                                  width=5 if abs(x2 - x1) == abs(y2 - y1) else 4)
 
@@ -304,7 +290,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
     sue_de_coq = kwargs["sue_de_coq"] if "sue_de_coq" in kwargs else None
     nodes = kwargs["nodes"] if "nodes" in kwargs else None
-    chain = kwargs["chain"] if "chain" in kwargs else None
+    # chain = kwargs["chain"] if "chain" in kwargs else None
     c_chain = kwargs["c_chain"] if "c_chain" in kwargs else None
     conflicting_cells = kwargs["conflicting_cells"] if "conflicting_cells" in kwargs else None
 
@@ -326,12 +312,14 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
     if corners and cell_id in corners or x_wing and cell_id in x_wing[1:] or c_chain and cell_id in c_chain:
         pygame.draw.rect(
-            window.screen, Y_WING_LEAF,
+            window.screen, html_color_codes['orange'],
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+    """
     if chain and cell_id in chain:
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+    """
     if nodes and cell_id in nodes[1:]:
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
@@ -352,51 +340,50 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if conflicting_cells and (value, cell_id) in conflicting_cells:
-            pygame.draw.rect(window.screen, (255, 51, 51),
+            pygame.draw.rect(window.screen, html_color_codes['orangered'],
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if claims and value in new_value and cell_id in claims:
-            pygame.draw.rect(window.screen, CYAN,
+            pygame.draw.rect(window.screen, html_color_codes["cyan"],
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if claims and (value, cell_id) in claims:
-            pygame.draw.rect(window.screen, CYAN,
+            pygame.draw.rect(window.screen, html_color_codes["cyan"],
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if x_wing and value == x_wing[0] and cell_id in x_wing[1:]:
-            pygame.draw.rect(window.screen, CYAN,
+            pygame.draw.rect(window.screen, html_color_codes["cyan"],
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if xy_wing and value == xy_wing[0] and cell_id in xy_wing[1:] or \
                 wxy_wing and value == wxy_wing[0] and cell_id in wxy_wing[1:]:
-            pygame.draw.rect(window.screen, CYAN,
+            pygame.draw.rect(window.screen, html_color_codes["cyan"],
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if nodes and value == nodes[0] and cell_id in nodes[1:]:
-            pygame.draw.rect(window.screen, CYAN,
+            pygame.draw.rect(window.screen, html_color_codes["cyan"],
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if c_chain and cell_id in c_chain:
-            for candidate, col in c_chain[cell_id]:
+            for candidate, color in c_chain[cell_id]:
                 if value == candidate:
-                    color = CYAN if col == 'c' else MAGENTA if col == 'm' else YELLOW if col == 'y' else LIME      # TODO
-                    pygame.draw.rect(window.screen, color,
+                    pygame.draw.rect(window.screen, html_color_codes[color],
                                      (pos[0] + window.option_offsets[value][0],
                                       pos[1] + window.option_offsets[value][1],
                                       CELL_SIZE // 3, CELL_SIZE // 3))
         if skyscraper and value == skyscraper[0] and cell_id in skyscraper[1:]:
-            pygame.draw.rect(window.screen, CYAN,
+            pygame.draw.rect(window.screen, html_color_codes["cyan"],
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if sue_de_coq and cell_id in sue_de_coq:
-            pygame.draw.rect(window.screen, CYAN,
+            pygame.draw.rect(window.screen, html_color_codes["cyan"],
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
@@ -726,7 +713,9 @@ def set_methods():
             "wxy_wing": "3",
             "wxyz_wing": "4",
             "empty_rectangle": "5",
-            "coloring": "6",
+            # "coloring": "6",
+            "color trap": "6",
+            "color wrap": "6",
             "multi_colors": "6",
             "naked_xy_chain": "9",
             "hidden_xy_chain": "9",

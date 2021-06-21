@@ -13,7 +13,7 @@ from utils import is_clue, init_options, remove_options
 
 
 def _get_strongly_connected_cells(board, solver_status):
-    """ returns dictionary of strongly connected cells
+    """ Return dictionary of strongly connected cells
     connected_cells data format:
     {(cell_1, cell_2): {candidate_1, candidate_2, ...}, ...} """
 
@@ -34,6 +34,24 @@ def _get_strongly_connected_cells(board, solver_status):
     return connected_cells
 
 
+def _get_pair_house(pair):
+    """ Return house of the cells pair """
+    cell_a, cell_b = pair
+    if CELL_ROW[cell_a] == CELL_ROW[cell_b]:
+        return CELLS_IN_ROW[CELL_ROW[cell_a]]
+    if CELL_COL[cell_a] == CELL_COL[cell_b]:
+        return CELLS_IN_COL[CELL_COL[cell_a]]
+    return CELLS_IN_SQR[CELL_SQR[cell_a]]
+
+
+def _get_graph_houses(edges):
+    """ Return complete set of houses of graph edges """
+    houses = set()
+    for edge in edges:
+        houses = houses.union(_get_pair_house(edge))
+    return houses
+
+
 # single-digit techniques utility functions:
 
 def _build_graph(value, board, solver_status):
@@ -51,7 +69,7 @@ def _build_graph(value, board, solver_status):
     return graph
 
 
-def _get_c_chain(graph, component, value, colors=('g', 'y')):
+def _get_c_chain(graph, component, value, colors=('lime', 'yellow')):
     c_chain = {node: set() for node in component}
     node = list(component)[0]
     _paint_node(graph, component, c_chain, node, value, colors, 0)
@@ -155,11 +173,12 @@ def _color_hidden_xy_chain(graph, path, end_value):
         - alternately with 'g' (LIME) or 'y' (YELLOW) for inner edges of the chain 
     """
     xy_chain = defaultdict(set)
-    xy_chain[path[0]].add((end_value, 'c'))
-    xy_chain[path[-1]].add((end_value, 'c'))
+    xy_chain[path[0]].add((end_value, 'cyan'))
+    xy_chain[path[-1]].add((end_value, 'cyan'))
     for idx in range(len(path) - 1):
         colors_used = {value: color for value, color in xy_chain[path[idx]]}
-        colors_available = [color for color in 'lymb' if color not in colors_used.values()]
+        colors_available = [color for color in ('lime', 'yellow', 'magenta', 'aqua', 'moccasin')
+                            if color not in colors_used.values()]
         edge = (path[idx], path[idx+1])
         candidates = graph.edges[edge]['candidates']
         for candidate in candidates:
@@ -169,7 +188,7 @@ def _color_hidden_xy_chain(graph, path, end_value):
                 color = colors_available[0]
                 colors_available = colors_available[1:]
             if idx + 2 == len(path) and candidate == end_value:
-                color = 'c'
+                color = 'cyan'
             xy_chain[path[idx]].add((candidate, color))
             xy_chain[path[idx+1]].add((candidate, color))
     return xy_chain
@@ -309,13 +328,14 @@ def simple_colors(solver_status, board, window):
                 assert(len(web_nodes_colors) == 2)
                 to_remove.append((value, cell))
         if to_remove:
+            edges = [edge for edge in graph.edges if edge[0] in component]
             solver_status.capture_baseline(board, window)
             if window:
-                window.options_visible = window.options_visible.union(component)
+                window.options_visible = window.options_visible.union(_get_graph_houses(edges))
             remove_options(solver_status, board, to_remove, window)
-            kwargs["solver_tool"] = "coloring"
-            kwargs["c_chain"] = {node: c_chain[node] for node in component.difference(impacted_cells)}
-            kwargs["chains"] = [edge for edge in graph.edges if edge[0] in component]
+            kwargs["solver_tool"] = "color trap"
+            kwargs["c_chain"] = c_chain
+            kwargs["edges"] = edges
             kwargs["remove"] = to_remove
             kwargs["impacted_cells"] = [pair[1] for pair in to_remove]
             return True
@@ -363,13 +383,14 @@ def simple_colors(solver_status, board, window):
             in_conflict = {(value, node) for node in conflicted_cells}
             to_remove = {(value, node) for node in component if (value, conflicting_color) in c_chain[node]}
             impacted_cells = {node for node in component if (value, conflicting_color) in c_chain[node]}
+            edges = [edge for edge in graph.edges if edge[0] in component]
             solver_status.capture_baseline(board, window)
             if window:
-                window.options_visible = window.options_visible.union(component)
+                window.options_visible = window.options_visible.union(_get_graph_houses(edges))
             remove_options(solver_status, board, to_remove, window)
-            kwargs["solver_tool"] = "coloring"
+            kwargs["solver_tool"] = "color wrap"
             kwargs["c_chain"] = {node: c_chain[node] for node in component.difference(impacted_cells)}
-            kwargs["chains"] = [edge for edge in graph.edges if edge[0] in component]
+            kwargs["edges"] = edges
             kwargs["remove"] = to_remove
             kwargs["impacted_cells"] = impacted_cells
             kwargs["conflicting_cells"] = in_conflict
@@ -393,8 +414,8 @@ def multi_colors(solver_status, board, window):
 
     def _check_components(component_ids):
         components = [all_components[component_ids[0]], all_components[component_ids[1]]]
-        c_chains = [_get_c_chain(graph, components[0], value, colors=('g', 'y')),
-                    _get_c_chain(graph, components[1], value, colors=('c', 'm'))]
+        c_chains = [_get_c_chain(graph, components[0], value, colors=('lime', 'yellow')),
+                    _get_c_chain(graph, components[1], value, colors=('aqua', 'violet'))]
         if len(c_chains[0]) and len(c_chains[1]):
             if _find_color_wing(components, c_chains, m_id=0, s_id=1):
                 return True
@@ -406,36 +427,35 @@ def multi_colors(solver_status, board, window):
 
     def _find_color_wing(components, c_chains, m_id, s_id):
         colors = list(_get_chain_colors(c_chains[m_id]))
-        # color_nodes = [{node for node in components[m_id] if c_chains[m_id][node] == {(value, colors[0])}},
-        #                {node for node in components[m_id] if c_chains[m_id][node] == {(value, colors[1])}}]
         color_nodes = [_get_value_color_nodes(c_chains[m_id], value, colors[0]),
                        _get_value_color_nodes(c_chains[m_id], value, colors[1])]
         edges = {edge for edge in graph.edges if edge[0] in components[s_id]}
         for edge in edges:
             for col_id in (0, 1):
-                see_col_a = color_nodes[col_id].intersection(ALL_NBRS[edge[0]])
-                see_col_b = color_nodes[col_id].intersection(ALL_NBRS[edge[1]])
-                if see_col_a and see_col_b:
+                see_color_nodes_a = color_nodes[col_id].intersection(ALL_NBRS[edge[0]])
+                see_color_nodes_b = color_nodes[col_id].intersection(ALL_NBRS[edge[1]])
+                if see_color_nodes_a and see_color_nodes_b:
                     conflicting_color = colors[col_id]
-                    conflicted_cells = see_col_a.union(see_col_b)
+                    conflicted_cells = see_color_nodes_a.union(see_color_nodes_b)
                     impacted_cells = {node for node in components[m_id]
                                       if (value, conflicting_color) in c_chains[m_id][node]}
                     to_remove = {(value, node) for node in impacted_cells}
+                    in_conflict = {(value, node) for node in conflicted_cells}
+                    edges = [edge for edge in graph.edges
+                             if edge[0] in components[m_id].union(components[s_id])]
                     solver_status.capture_baseline(board, window)
                     if window:
-                        window.options_visible = window.options_visible.union(components[m_id]).union(
-                            components[s_id])
+                        window.options_visible = window.options_visible.union(_get_graph_houses(edges))
                     remove_options(solver_status, board, to_remove, window)
-                    in_conflict = {(value, node) for node in conflicted_cells}
                     c_chain = {**c_chains[m_id], **c_chains[s_id]}
                     kwargs["solver_tool"] = "multi_colors"
                     kwargs["c_chain"] = {node: c_chain[node] for node
                                          in components[m_id].union(components[s_id]).difference(impacted_cells)}
-                    kwargs["chains"] = [edge for edge in graph.edges
-                                        if edge[0] in components[m_id].union(components[s_id])]
+                    kwargs["edges"] = edges
                     kwargs["remove"] = to_remove
                     kwargs["impacted_cells"] = impacted_cells
                     kwargs["conflicting_cells"] = in_conflict
+                    print('\nmulti colors - color wing')
                     return True
         return False
 
@@ -463,8 +483,6 @@ def multi_colors(solver_status, board, window):
                     impacting_subsets = (color_nodes[0], color_nodes[2])
                     break
         if impacting_subsets:
-            # print(f'\n{colors = }')
-            # print(f'{impacting_subsets = }')
             other_nodes = {node for node in range(81) if value in board[node]
                            and not is_clue(node, board, solver_status)
                            and node not in components[0] and node not in components[1]}
@@ -476,18 +494,18 @@ def multi_colors(solver_status, board, window):
                     impacted_cells.add(node)
                     to_remove.append((value, node))
             if to_remove:
+                edges = [edge for edge in graph.edges
+                         if edge[0] in components[0].union(components[1])]
                 solver_status.capture_baseline(board, window)
                 if window:
-                    window.options_visible = window.options_visible.union(components[0]).union(
-                        components[1])
+                    window.options_visible = window.options_visible.union(_get_graph_houses(edges))
                 remove_options(solver_status, board, to_remove, window)
                 kwargs["solver_tool"] = "multi_colors"
                 kwargs["c_chain"] = {**c_chains[0], **c_chains[1]}
-                kwargs["chains"] = [edge for edge in graph.edges
-                                    if edge[0] in components[0].union(components[1])]
+                kwargs["edges"] = edges
                 kwargs["remove"] = to_remove
                 kwargs["impacted_cells"] = impacted_cells
-                # print('\nBingo!')
+                print('\nmulti colors - color trap')
                 return True
         return False
 

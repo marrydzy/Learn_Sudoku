@@ -265,19 +265,19 @@ def manual_solver(board, window):
         # TODO - positioned here to test
         kwargs = coloring.simple_colors(solver_status, board, window)
         if kwargs:
-            # print('\nBingo!')
+            # print('\nsimple_colors!')
             continue
         kwargs = coloring.multi_colors(solver_status, board, window)
         if kwargs:
-            print('\nBingo!')
+            # print('\nmulti_colors')
             continue
         kwargs = coloring.naked_xy_chain(solver_status, board, window)
         if kwargs:
-            # print('\nBingo!')
+            # print('\nnaked_xy_chain')
             continue
         kwargs = coloring.hidden_xy_chain(solver_status, board, window)
         if kwargs:
-            # print('\nBingo!')
+            # print('\nhidden_xy_chain')
             continue
 
         kwargs = wings.xy_wing(solver_status, board, window)

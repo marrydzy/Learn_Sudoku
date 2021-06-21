@@ -8,10 +8,11 @@ import graph_utils
 from display import screen_messages
 
 # RGB colors:
-from graph_utils import BLACK
-from graph_utils import BLUE
+from html_colors import html_color_codes
+# from graph_utils import BLACK
+# from graph_utils import BLUE
 from graph_utils import GREY
-from graph_utils import GAINSBORO
+# from graph_utils import GAINSBORO
 
 from graph_utils import ANIMATION_STEP_TIME
 
@@ -87,7 +88,7 @@ class AppWindow:
         pygame.display.set_caption('SUDOKU PUZZLE')
         pygame.display.set_icon(pygame.image.load('demon.png'))  # TODO - get a better icon
         self.screen = pygame.display.set_mode(graph_utils.window_size())
-        self.screen.fill(GAINSBORO)
+        self.screen.fill(html_color_codes["gainsboro"])
         graph_utils.set_buttons(self)
 
     def critical_error_event(self, board, **kwargs):
@@ -192,9 +193,9 @@ class AppWindow:
                             cell_id == active_clue and not self.critical_error or
                             cell_id in self.wrong_values and cell_id in self.solver_status.clues_found and
                             not self.critical_error):
-                        graph_utils.render_clue(self, board[cell_id], cell_pos, BLACK)
+                        graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["black"])
                     elif cell_id in self.solver_status.clues_found and len(board[cell_id]) == 1:
-                        graph_utils.render_clue(self, board[cell_id], cell_pos, BLUE)
+                        graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["royalblue"])
                     elif graph_utils.show_pencil_marks(self, cell_id, **kwargs):
                         if solver_tool != "plain_board":
                             graph_utils.highlight_options(self, cell_id, board[cell_id], cell_pos, **kwargs)
@@ -207,10 +208,10 @@ class AppWindow:
 
         for i in range(10):
             line_thickness = 5 if i % 3 == 0 else 1
-            pygame.draw.line(self.screen, BLACK, (LEFT_MARGIN - 2, i * CELL_SIZE + TOP_MARGIN),
+            pygame.draw.line(self.screen, html_color_codes["black"], (LEFT_MARGIN - 2, i * CELL_SIZE + TOP_MARGIN),
                              (LEFT_MARGIN + 9 * CELL_SIZE + 2,
                               i * CELL_SIZE + TOP_MARGIN), line_thickness)
-            pygame.draw.line(self.screen, BLACK, (i * CELL_SIZE + LEFT_MARGIN, TOP_MARGIN),
+            pygame.draw.line(self.screen, html_color_codes["black"], (i * CELL_SIZE + LEFT_MARGIN, TOP_MARGIN),
                              (i * CELL_SIZE + LEFT_MARGIN,
                               TOP_MARGIN + 9 * CELL_SIZE), line_thickness)
         graph_utils.draw_board_features(self, **kwargs)
