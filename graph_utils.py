@@ -1,11 +1,14 @@
 import time
 import sys
 import pygame
+import math
 
 # from icecream import ic
 
+from collections import defaultdict
 from solver_manual import solver_status
 from utils import init_options
+from utils import CELL_ROW, CELL_COL
 from html_colors import html_color_codes
 
 
@@ -54,10 +57,12 @@ class Button:
     def __init__(self, btn_id, rect, text, font,
                  border_color=html_color_codes["darkseagreen"],
                  face_color=html_color_codes["lightgray"],
-                 font_color=(50, 50, 50),
-                 disable_border_color=LIGHTGREY, disable_face_color=html_color_codes["white"],
+                 font_color=(50, 50, 50),   # TODO
+                 disable_border_color=LIGHTGREY,
+                 disable_face_color=html_color_codes["white"],
                  disable_font_color=html_color_codes["gainsboro"], pressed_border_color=C_PRESSED_BTN_BORDER,
-                 pressed_face_color=C_PRESSED_BTN_BORDER, pressed_font_color=html_color_codes["white"]):
+                 pressed_face_color=C_PRESSED_BTN_BORDER,
+                 pressed_font_color=html_color_codes["white"]):
         self.btn_id = btn_id
         self.rect = rect
         self.text = text
@@ -170,7 +175,7 @@ def cell_color(window, cell, **kwargs):
         color = C_OTHER_CELLS
     if cell == window.selected_cell or \
             "new_clue" in kwargs and cell == kwargs["new_clue"]:
-        color = html_color_codes["greenyellow"]
+        color = html_color_codes["palegreen"]
     if window.critical_error and cell in window.critical_error:
         color = html_color_codes["lightcoral"]
     return color
@@ -197,12 +202,13 @@ def draw_board_features(window, **kwargs):
     """ TBD """
 
     rectangle = kwargs["rectangle"] if "rectangle" in kwargs else None
-    xy_wing = kwargs["y_wing"] if "y_wing" in kwargs else None
+    # xy_wing = kwargs["y_wing"] if "y_wing" in kwargs else None
     wxy_wing = kwargs["wxy_wing"] if "wxy_wing" in kwargs else None
     x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
     skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
     edges = kwargs["edges"] if "edges" in kwargs else None
     chains = kwargs["chains"] if "chains" in kwargs else None
+    arcs = kwargs["arcs"] if "arcs" in kwargs else None
 
     if rectangle:
         left = (rectangle[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
@@ -240,7 +246,7 @@ def draw_board_features(window, **kwargs):
         y2 = (x_wing[2] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
         pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
 
-    y_wing = xy_wing if xy_wing else wxy_wing
+    y_wing = wxy_wing
     if y_wing:
         x1 = (y_wing[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
         y1 = (y_wing[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
@@ -253,14 +259,18 @@ def draw_board_features(window, **kwargs):
 
     if edges:
         color = html_color_codes["magenta"]
+        two_way_segments_by_row, two_way_segments_by_col = get_two_way_segments(edges)
         for edge in edges:
-            x1 = (edge[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-            y1 = (edge[0] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-            x2 = (edge[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-            y2 = (edge[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-            pygame.draw.line(window.screen, color, (x1, y1), (x2, y2),
-                             width=5 if abs(x2 - x1) == abs(y2 - y1) else 4)
-
+            if is_overlapping(edge, two_way_segments_by_row, two_way_segments_by_col):
+                _draw_two_way_edge(window, edge, color)
+            else:
+                x1 = (edge[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+                y1 = (edge[0] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+                x2 = (edge[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+                y2 = (edge[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+                pygame.draw.line(window.screen, color, (x1, y1), (x2, y2),
+                                 width=5 if abs(x2 - x1) == abs(y2 - y1) else 4)
+    """
     if chains:
         color = html_color_codes["magenta"]
         for appendix in chains:
@@ -271,6 +281,93 @@ def draw_board_features(window, **kwargs):
                 y2 = (appendix[node + 1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
                 pygame.draw.line(window.screen, color, (x1, y1), (x2, y2),
                                  width=5 if abs(x2 - x1) == abs(y2 - y1) else 4)
+    """
+
+
+def _draw_two_way_edge(window, edge, color):
+    """ Draw an edge that overlaps two-way segment """
+    offset = 0.15 * CELL_SIZE
+    right_down = True
+    horizontal = True
+    if edge[0] < edge[1]:
+        node_a, node_b = edge[0], edge[1]
+    else:
+        right_down = False
+        node_a, node_b = edge[1], edge[0]
+    x1 = (node_a % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+    y1 = (node_a // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+    x2 = (node_b % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
+    y2 = (node_b // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
+    if x1 == x2:
+        horizontal = False
+    segments = [(x1, y1)]
+    if horizontal:
+        if right_down:
+            segments.append((x1+offset, y1+offset))
+            segments.append((x2-offset, y2+offset))
+            segments.append((x2, y2))
+        else:
+            segments.append((x1+offset, y1-offset))
+            segments.append((x2-offset, y2-offset))
+            segments.append((x2, y2))
+    else:
+        if right_down:
+            segments.append((x1+offset, y1+offset))
+            segments.append((x2+offset, y2-offset))
+            segments.append((x2, y2))
+        else:
+            segments.append((x1-offset, y1+offset))
+            segments.append((x2-offset, y2-offset))
+            segments.append((x2, y2))
+    for i in range(3):
+        pygame.draw.line(window.screen, color, segments[i], segments[i+1], width=4 if i == 1 else 5)
+
+
+def get_two_way_segments(edges):
+    """ Get nodes that belong to two or more edges """
+    by_row = defaultdict(list)
+    by_col = defaultdict(list)
+    for edge in edges:
+        cell_id = edge[0] if edge[0] < edge[1] else edge[1]
+        cell_stop = edge[1] if edge[0] < edge[1] else edge[0]
+        if CELL_ROW[edge[0]] == CELL_ROW[edge[1]]:
+            while cell_id < cell_stop:
+                by_row[CELL_ROW[edge[0]]].append(cell_id)
+                cell_id += 1
+        elif CELL_COL[edge[0]] == CELL_COL[edge[1]]:
+            while cell_id < cell_stop:
+                by_col[CELL_COL[edge[0]]].append(cell_id)
+                cell_id += 9
+    in_rows = defaultdict(set)
+    for row in by_row:
+        for cell in by_row[row]:
+            if by_row[row].count(cell) > 1:
+                in_rows[row].add(cell)
+    in_cols = defaultdict(set)
+    for col in by_col:
+        for cell in by_col[col]:
+            if by_col[col].count(cell) > 1:
+                in_cols[col].add(cell)
+    return in_rows, in_cols
+
+
+def is_overlapping(edge, two_way_segments_by_row, two_way_segments_by_col):
+    """ Check if the edge includes two_way_segment """
+    cell_id = edge[0] if edge[0] < edge[1] else edge[1]
+    cell_stop = edge[1] if edge[0] < edge[1] else edge[0]
+    if CELL_ROW[edge[0]] == CELL_ROW[edge[1]]:
+        if CELL_ROW[edge[0]] in two_way_segments_by_row:
+            while cell_id <= cell_stop:
+                if cell_id in two_way_segments_by_row[CELL_ROW[edge[0]]]:
+                    return True
+                cell_id += 1
+    elif CELL_COL[edge[0]] == CELL_COL[edge[1]]:
+        if CELL_COL[edge[0]] in two_way_segments_by_col:
+            while cell_id <= cell_stop:
+                if cell_id in two_way_segments_by_col[CELL_COL[edge[0]]]:
+                    return True
+                cell_id += 9
+    return False
 
 
 def highlight_options(window, cell_id, new_value, pos, **kwargs):
@@ -290,7 +387,6 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
     sue_de_coq = kwargs["sue_de_coq"] if "sue_de_coq" in kwargs else None
     nodes = kwargs["nodes"] if "nodes" in kwargs else None
-    # chain = kwargs["chain"] if "chain" in kwargs else None
     c_chain = kwargs["c_chain"] if "c_chain" in kwargs else None
     conflicting_cells = kwargs["conflicting_cells"] if "conflicting_cells" in kwargs else None
 

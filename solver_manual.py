@@ -288,6 +288,7 @@ def manual_solver(board, window):
             continue
         kwargs = wings.wxy_wing(solver_status, board, window)
         if kwargs:
+            print('\nDupa!')
             continue
         kwargs = wings.wxyz_wing(solver_status, board, window)
         if kwargs:

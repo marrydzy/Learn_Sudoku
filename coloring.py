@@ -170,7 +170,13 @@ def _walk(board, graph, path, start_node, start_value, end_node, end_value):
 def _color_hidden_xy_chain(graph, path, end_value):
     """ Color candidates of strongly connected cells in Hidden XY Chain:
         - with 'c' color (CYAN) for the first and last edge in the chain
-        - alternately with 'g' (LIME) or 'y' (YELLOW) for inner edges of the chain 
+        - alternately with 'g' (LIME) or 'y' (YELLOW) for inner edges of the chain
+    Input Data format:
+        graph: nx.graph
+        path: list of chain nodes
+        end_value: candiate value in the first and last chain node
+    Returns:
+        c_chain: dictionary of chain nodes with set of (option, color) pairs as their values
     """
     xy_chain = defaultdict(set)
     xy_chain[path[0]].add((end_value, 'cyan'))
@@ -192,6 +198,33 @@ def _color_hidden_xy_chain(graph, path, end_value):
             xy_chain[path[idx]].add((candidate, color))
             xy_chain[path[idx+1]].add((candidate, color))
     return xy_chain
+
+
+def _color_naked_xy_chain(graph, path, end_value):
+    """ Color candidates of strongly connected cells forming a chain:
+        - the common candidate in the first and last node of the chain with 'cyan'
+        - strongly connected candidates subsequently with 'lime', 'yellow', and 'moccasin' colors
+    Input Data format:
+        graph: nx.graph
+        path: list of chain nodes
+        end_value: common candidate value in the first and last chain node
+    Returns:
+        c_chain: dictionary of chain nodes with set of (option, color) pairs as their values
+    """
+    c_chain = defaultdict(set)
+    c_chain[path[0]].add((end_value, 'cyan'))
+    c_chain[path[-1]].add((end_value, 'cyan'))
+    colors = ('lime', 'yellow', 'moccasin')
+    color_idx = 0
+    for node_idx in range(len(path)-1):
+        edge = (path[node_idx], path[node_idx+1])
+        values = graph.edges[edge]['candidates']
+        assert(len(values) == 1)
+        value_color_pair = (values.pop(), colors[color_idx])
+        c_chain[path[node_idx]].add(value_color_pair)
+        c_chain[path[node_idx+1]].add(value_color_pair)
+        color_idx = (color_idx + 1) % 3
+    return c_chain
 
 
 def hidden_xy_chain(solver_status, board, window):
@@ -254,20 +287,21 @@ def hidden_xy_chain(solver_status, board, window):
 
 
 def naked_xy_chain(solver_status, board, window):
-    """ A decent description of the technique is available
-    at: http://www.sudokusnake.com/nakedxychains.php
+    """ Remove candidates (options) using XY Wing technique:
+    For explanation of the technique see e.g.:
+     - http://www.sudokusnake.com/nakedxychains.php
     The strategy is assessed as 'Hard', 'Unfair', or 'Diabolical'.
     Ranking of the method (called XY-Chain) varies widely
     260 and 900
-    Comments:
+    Implementation comments:
     Building a graph and identifying potential chains (paths) was straightforward.
-    A slightly tricky part was to check for possibility of bidirectional traversing
-    between end nodes of the potential paths """
+    A slightly tricky part was to add checking for possibility of bidirectional traversing
+    between end nodes of the potential paths
+    """
 
-    def _build_graph():
+    def _build_bi_value_cells_graph():
         bi_value_cells = set(cell for cell in range(81) if len(board[cell]) == 2)
         graph = nx.Graph()
-        graph.add_nodes_from(bi_value_cells)
         for cell in bi_value_cells:
             neighbours = set(ALL_NBRS[cell]).intersection(bi_value_cells)
             graph.add_edges_from(
@@ -275,7 +309,7 @@ def naked_xy_chain(solver_status, board, window):
                  for other_cell in neighbours if len(set(board[cell]).intersection(set(board[other_cell]))) == 1])
         return graph
 
-    graph = _build_graph()
+    graph = _build_bi_value_cells_graph()
     components = list(nx.connected_components(graph))
     unresolved = [cell for cell in range(81) if len(board[cell]) > 2]
     kwargs = {}
@@ -286,23 +320,23 @@ def naked_xy_chain(solver_status, board, window):
             for candidate in board[cell]:
                 if candidates.count(candidate) == 2:
                     ends = [node for node in nodes if candidate in board[node]]
-                    assert(len(ends) == 2)
                     path = nx.algorithms.shortest_paths.generic.shortest_path(graph, ends[0], ends[1])
                     if _check_bidirectional_traversing(candidate, path, board):
-                        # to_remove = [(candidate, cell), ]
                         impacted_cells = {cell for cell in set(ALL_NBRS[path[0]]).intersection(set(ALL_NBRS[path[-1]]))
                                           if not is_clue(cell, board, solver_status)}
                         to_remove = [(candidate, cell) for cell in impacted_cells if candidate in board[cell]]
+                        edges = [(path[n], path[n+1]) for n in range(len(path)-1)]
                         solver_status.capture_baseline(board, window)
                         if window:
-                            window.options_visible = window.options_visible.union(set(path)).union({cell})
+                            window.options_visible = window.options_visible.union(
+                                _get_graph_houses(edges)).union({cell})
                         remove_options(solver_status, board, to_remove, window)
                         kwargs["solver_tool"] = "naked_xy_chain"
                         kwargs["impacted_cells"] = impacted_cells
                         kwargs["remove"] = to_remove
-                        kwargs["c_chain"] = _color_hidden_xy_chain(graph, path, candidate)
+                        kwargs["c_chain"] = _color_naked_xy_chain(graph, path, candidate)
+                        kwargs["edges"] = edges
                         return kwargs
-
     return kwargs
 
 
@@ -455,7 +489,7 @@ def multi_colors(solver_status, board, window):
                     kwargs["remove"] = to_remove
                     kwargs["impacted_cells"] = impacted_cells
                     kwargs["conflicting_cells"] = in_conflict
-                    print('\nmulti colors - color wing')
+                    # print('\nmulti colors - color wing')
                     return True
         return False
 
@@ -505,7 +539,7 @@ def multi_colors(solver_status, board, window):
                 kwargs["edges"] = edges
                 kwargs["remove"] = to_remove
                 kwargs["impacted_cells"] = impacted_cells
-                print('\nmulti colors - color trap')
+                # print('\nmulti colors - color trap')
                 return True
         return False
 

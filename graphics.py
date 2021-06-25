@@ -195,7 +195,7 @@ class AppWindow:
                             not self.critical_error):
                         graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["black"])
                     elif cell_id in self.solver_status.clues_found and len(board[cell_id]) == 1:
-                        graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["royalblue"])
+                        graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["teal"])
                     elif graph_utils.show_pencil_marks(self, cell_id, **kwargs):
                         if solver_tool != "plain_board":
                             graph_utils.highlight_options(self, cell_id, board[cell_id], cell_pos, **kwargs)
