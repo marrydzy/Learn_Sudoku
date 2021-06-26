@@ -286,12 +286,13 @@ def manual_solver(board, window):
         kwargs = wings.xyz_wing(solver_status, board, window)
         if kwargs:
             continue
+        kwargs = wings.wxyz_wing(solver_status, board, window)
+        if kwargs:
+            # print('\nwxyz_wing')
+            continue
         kwargs = wings.wxy_wing(solver_status, board, window)
         if kwargs:
             print('\nDupa!')
-            continue
-        kwargs = wings.wxyz_wing(solver_status, board, window)
-        if kwargs:
             continue
         kwargs = intermediate_techniques.swordfish(solver_status, board, window)
         if kwargs:
@@ -315,8 +316,8 @@ def manual_solver(board, window):
             continue
 
         if not is_solved(board, solver_status):        # TODO: for debugging only!
-            # tmp_counter += 1
-            # print(f"\n{tmp_counter = }")
+            tmp_counter += 1
+            print(f"\n{tmp_counter = }")
             pass
 
         return False
