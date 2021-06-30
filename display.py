@@ -36,8 +36,10 @@ screen_messages = {
     "xy_wing": "'XY-wing' technique",
     "y_wings": "'XY-Wing' techinique",      # TODO !
     "xyz_wing": "'XYZ-Wing' technique",
-    "wxy_wing": "'WXY-Wing' technique",
-    "wxyz_wing": "'WXYZ-Wing' technique",
+    # "wxy_wing": "'WXY-Wing' technique",
+    "wxyz_wing_type_1": "'WXYZ-Wing (Type 1)' technique",
+    "wxyz_wing_type_2": "'WXYZ-Wing (Type 2)' technique",
+    "w_wing": "'W-Wing' technique",
     "remote_pairs": "'Remote Pairs' technique",
     "skyscraper": "'skyscraper' technique",
     "sue_de_coq": "'Sue de Coq' technique",

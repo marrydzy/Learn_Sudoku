@@ -87,6 +87,45 @@ def is_single(board, house, value):
     return None
 
 
+def get_bi_value_cells(board):
+    """ return dictionary of bi-value cells """
+    # 'bi-values' data structure: {(opt_1, opt_2): {cell_1, cell_2, ...}}
+    bi_values = defaultdict(set)
+    for idx in range(81):
+        if len(board[idx]) == 2:
+            bi_values[(board[idx][0], board[idx][1])].add(idx)
+    return bi_values
+
+
+def get_pair_house(pair):
+    """ Return house of the cells pair """
+    cell_a, cell_b = pair
+    if CELL_ROW[cell_a] == CELL_ROW[cell_b]:
+        return CELLS_IN_ROW[CELL_ROW[cell_a]]
+    if CELL_COL[cell_a] == CELL_COL[cell_b]:
+        return CELLS_IN_COL[CELL_COL[cell_a]]
+    return CELLS_IN_SQR[CELL_SQR[cell_a]]
+
+
+def get_strong_links(board):
+    """ return dictionary of strong links """
+
+    strong_links = defaultdict(set)
+
+    def _house_strong_links(house, strong_links):
+        values = ''.join(board[cell] for cell in house if len(board) > 1)
+        for value in set(values):
+            if values.count(value) == 2:
+                pair = tuple([cell for cell in house if value in board[cell]])
+                strong_links[value].add(pair)
+
+    for idx in range(9):
+        _house_strong_links(CELLS_IN_ROW[idx], strong_links)
+        _house_strong_links(CELLS_IN_COL[idx], strong_links)
+        _house_strong_links(CELLS_IN_SQR[idx], strong_links)
+    return strong_links
+
+
 def get_options(cell_id, board, solver_status):
     """ return set of options of the cell """
     return SUDOKU_VALUES_SET.copy() - set(''.join(

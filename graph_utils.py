@@ -172,7 +172,8 @@ def cell_color(window, cell, **kwargs):
     if "conflicted_cells" in kwargs and cell in kwargs["conflicted_cells"]:
         color = html_color_codes["orange"]
     if "impacted_cells" in kwargs and cell in kwargs["impacted_cells"]:
-        color = C_OTHER_CELLS
+        # color = C_OTHER_CELLS
+        color = html_color_codes["palegreen"]
     if cell == window.selected_cell or \
             "new_clue" in kwargs and cell == kwargs["new_clue"]:
         color = html_color_codes["palegreen"]
@@ -807,7 +808,9 @@ def set_methods():
             "xyz_wing": "1",
             "remote_pairs": "2",
             "wxy_wing": "3",
-            "wxyz_wing": "4",
+            "wxyz_wing_type_1": "4",
+            "wxyz_wing_type_2": "4",
+            "w_wing": "4",
             "empty_rectangle": "5",
             # "coloring": "6",
             "color trap": "6",

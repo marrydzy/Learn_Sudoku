@@ -7,9 +7,8 @@ from itertools import combinations
 
 import networkx as nx
 
-from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
-from utils import ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import is_clue, init_options, remove_options
+from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR, CELL_SQR, ALL_NBRS, SUDOKU_VALUES_LIST
+from utils import is_clue, init_options, remove_options, get_pair_house
 
 
 def _get_strongly_connected_cells(board, solver_status):
@@ -34,21 +33,11 @@ def _get_strongly_connected_cells(board, solver_status):
     return connected_cells
 
 
-def _get_pair_house(pair):
-    """ Return house of the cells pair """
-    cell_a, cell_b = pair
-    if CELL_ROW[cell_a] == CELL_ROW[cell_b]:
-        return CELLS_IN_ROW[CELL_ROW[cell_a]]
-    if CELL_COL[cell_a] == CELL_COL[cell_b]:
-        return CELLS_IN_COL[CELL_COL[cell_a]]
-    return CELLS_IN_SQR[CELL_SQR[cell_a]]
-
-
 def _get_graph_houses(edges):
     """ Return complete set of houses of graph edges """
     houses = set()
     for edge in edges:
-        houses = houses.union(_get_pair_house(edge))
+        houses = houses.union(get_pair_house(edge))
     return houses
 
 

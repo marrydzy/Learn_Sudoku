@@ -478,6 +478,7 @@ def omissions(solver_status, board, window):
                 squares = {CELL_SQR[cell] for cell in unsolved if value in board[cell]}
                 if len(squares) == 1:
                     impacted_cells = set(CELLS_IN_SQR[squares.pop()]) - set(cells)
+                    impacted_cells = {cell for cell in impacted_cells if len(board[cell]) > 1}
                     to_remove = [(value, cell) for cell in impacted_cells if value in board[cell]]
                     if to_remove:
                         solver_status.capture_baseline(board, window)
@@ -502,6 +503,7 @@ def omissions(solver_status, board, window):
                     impacted_cells = set(CELLS_IN_ROW[in_rows.pop()]) - set(cells)
                 elif len(in_cols) == 1:
                     impacted_cells = set(CELLS_IN_COL[in_cols.pop()]) - set(cells)
+                impacted_cells = {cell for cell in impacted_cells if len(board[cell]) > 1}
                 to_remove = [(value, cell) for cell in impacted_cells if value in board[cell]]
                 if to_remove:
                     solver_status.capture_baseline(board, window)
