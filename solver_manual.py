@@ -12,6 +12,7 @@ import basic_techniques
 import intermediate_techniques
 import wings
 import coloring
+import questionable
 
 
 class SolverStatus:
@@ -288,7 +289,7 @@ def manual_solver(board, window):
             continue
         kwargs = wings.w_wing(solver_status, board, window)
         if kwargs:
-            print('\nw_wing')
+            # print('\nw_wing')
             continue
         kwargs = wings.wxyz_wing(solver_status, board, window)
         if kwargs:
@@ -311,7 +312,7 @@ def manual_solver(board, window):
         if kwargs:
             continue
         # TODO: questionable techniques:
-        kwargs = wings.franken_x_wing(solver_status, board, window)
+        kwargs = questionable.franken_x_wing(solver_status, board, window)
         if kwargs:
             print('\nfranken_x_wing')
             continue

@@ -8,7 +8,7 @@ from itertools import combinations
 import networkx as nx
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR, CELL_SQR, ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import is_clue, init_options, remove_options, get_pair_house
+from utils import get_stats, is_clue, init_options, remove_options, get_pair_house
 
 
 def _get_strongly_connected_cells(board, solver_status):
@@ -329,9 +329,11 @@ def naked_xy_chain(solver_status, board, window):
     return kwargs
 
 
+@get_stats
 def simple_colors(solver_status, board, window):
-    """ Clear description of the technique is available at:
-    https://www.sudoku9981.com/sudoku-solving/simple-colors.php
+    """ Description of the technique is available at:
+    https://www.sudoku9981.com/sudoku-solving/simple-colors.php or
+    https://www.sudopedia.org/wiki/Simple_Colors
     The technique includes two strategies called:
     Color Trap (https://www.sudoku9981.com/sudoku-solving/color-trap.php), and
     Color Wrap (https://www.sudoku9981.com/sudoku-solving/color-wrap.php
@@ -403,20 +405,18 @@ def simple_colors(solver_status, board, window):
         if conflicted_cells:
             assert(len(conflicting_color) == 1)
             conflicting_color = conflicting_color.pop()
-            in_conflict = {(value, node) for node in conflicted_cells}
             to_remove = {(value, node) for node in component if (value, conflicting_color) in c_chain[node]}
-            impacted_cells = {node for node in component if (value, conflicting_color) in c_chain[node]}
+            for node in conflicted_cells:
+                c_chain[node] = {(value, 'red')}
             edges = [edge for edge in graph.edges if edge[0] in component]
             solver_status.capture_baseline(board, window)
             if window:
                 window.options_visible = window.options_visible.union(_get_graph_houses(edges))
             remove_options(solver_status, board, to_remove, window)
             kwargs["solver_tool"] = "color wrap"
-            kwargs["c_chain"] = {node: c_chain[node] for node in component.difference(impacted_cells)}
+            kwargs["c_chain"] = c_chain
             kwargs["edges"] = edges
             kwargs["remove"] = to_remove
-            kwargs["impacted_cells"] = impacted_cells
-            kwargs["conflicting_cells"] = in_conflict
             return True
         return False
 
@@ -432,8 +432,13 @@ def simple_colors(solver_status, board, window):
     return kwargs
 
 
+@get_stats
 def multi_colors(solver_status, board, window):
-    """ TODO """
+    """ Description of the technique is available at:
+    https://www.sudoku9981.com/sudoku-solving/multi-colors.php or
+    https://www.sudopedia.org/wiki/Multi-Colors
+     Ranking of the methods is at the level of 200 ('Hard')
+    """
 
     def _check_components(component_ids):
         components = [all_components[component_ids[0]], all_components[component_ids[1]]]
@@ -463,7 +468,6 @@ def multi_colors(solver_status, board, window):
                     impacted_cells = {node for node in components[m_id]
                                       if (value, conflicting_color) in c_chains[m_id][node]}
                     to_remove = {(value, node) for node in impacted_cells}
-                    in_conflict = {(value, node) for node in conflicted_cells}
                     edges = [edge for edge in graph.edges
                              if edge[0] in components[m_id].union(components[s_id])]
                     solver_status.capture_baseline(board, window)
@@ -471,14 +475,14 @@ def multi_colors(solver_status, board, window):
                         window.options_visible = window.options_visible.union(_get_graph_houses(edges))
                     remove_options(solver_status, board, to_remove, window)
                     c_chain = {**c_chains[m_id], **c_chains[s_id]}
+                    for node in conflicted_cells:
+                        c_chain[node] = {(value, 'red')}
                     kwargs["solver_tool"] = "multi_colors"
-                    kwargs["c_chain"] = {node: c_chain[node] for node
-                                         in components[m_id].union(components[s_id]).difference(impacted_cells)}
+                    kwargs["c_chain"] = c_chain
                     kwargs["edges"] = edges
                     kwargs["remove"] = to_remove
-                    kwargs["impacted_cells"] = impacted_cells
-                    kwargs["conflicting_cells"] = in_conflict
-                    # print('\nmulti colors - color wing')
+                    # kwargs["conflicting_cells"] = in_conflict
+                    print(f'\n{colors = } {color_nodes = }')
                     return True
         return False
 
@@ -528,7 +532,7 @@ def multi_colors(solver_status, board, window):
                 kwargs["edges"] = edges
                 kwargs["remove"] = to_remove
                 kwargs["impacted_cells"] = impacted_cells
-                # print('\nmulti colors - color trap')
+                # print('\ncolor_trap')
                 return True
         return False
 

@@ -338,7 +338,7 @@ def xyz_wing(solver_status, board, window):
 
 
 def wxyz_wing(solver_status, board, window):
-    """Remove candidates (options) using XY Wing technique
+    """Remove candidates (options) using WXYZ-Wing technique
     https://www.sudoku9981.com/sudoku-solving/wxyz-wing.php
     """
 

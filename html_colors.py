@@ -76,7 +76,7 @@ html_color_codes = {
     'pink': (255, 192, 203),
     'plum': (221, 160, 221),
     'powderblue': (),
-    'red': (),
+    'red': (255, 0, 0),
     'royalblue': (65, 105, 225),
     'saddlebrown': (),
     'salmon': (250, 120, 114),

@@ -389,7 +389,6 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     sue_de_coq = kwargs["sue_de_coq"] if "sue_de_coq" in kwargs else None
     nodes = kwargs["nodes"] if "nodes" in kwargs else None
     c_chain = kwargs["c_chain"] if "c_chain" in kwargs else None
-    conflicting_cells = kwargs["conflicting_cells"] if "conflicting_cells" in kwargs else None
 
     if iterate is not None and cell_id == iterate:
         pygame.draw.rect(
@@ -411,12 +410,6 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
         pygame.draw.rect(
             window.screen, html_color_codes['orange'],
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
-    """
-    if chain and cell_id in chain:
-        pygame.draw.rect(
-            window.screen, Y_WING_LEAF,
-            (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
-    """
     if nodes and cell_id in nodes[1:]:
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
@@ -432,12 +425,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
 
     for value in window.solver_status.board_baseline[cell_id]:
         if remove and (value, cell_id) in remove:
-            pygame.draw.rect(window.screen, GREY,
-                             (pos[0] + window.option_offsets[value][0],
-                              pos[1] + window.option_offsets[value][1],
-                              CELL_SIZE // 3, CELL_SIZE // 3))
-        if conflicting_cells and (value, cell_id) in conflicting_cells:
-            pygame.draw.rect(window.screen, html_color_codes['orangered'],
+            pygame.draw.rect(window.screen, html_color_codes['darkgray'],
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))

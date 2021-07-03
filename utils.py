@@ -4,6 +4,7 @@
 
 import os
 import sys
+import time
 import glob
 import difflib
 
@@ -50,6 +51,23 @@ CELL_SQR = tuple((i // 27) * 3 + (i % 9) // 3 for i in range(81))
 
 class DeadEndException(Exception):      # TODO
     pass
+
+
+def get_stats(func):
+    """ Decorator for getting solver method statistics """
+    def function_wrapper(board, window, lone_singles):
+        function_wrapper.calls += 1
+        start = time.time()
+        ret = func(board, window, lone_singles)
+        function_wrapper.time_in += time.time() - start
+        return ret
+
+    # function_wrapper.board_updated = False
+    function_wrapper.calls = 0
+    function_wrapper.clues = 0
+    function_wrapper.options_removed = 0
+    function_wrapper.time_in = 0
+    return function_wrapper
 
 
 def is_solved(board, solver_status):
@@ -108,21 +126,20 @@ def get_pair_house(pair):
 
 
 def get_strong_links(board):
-    """ return dictionary of strong links """
+    """ return dictionary ({value: {(c1, c2), ...}} of strong links """
 
-    strong_links = defaultdict(set)
-
-    def _house_strong_links(house, strong_links):
+    def _house_strong_links(house):
         values = ''.join(board[cell] for cell in house if len(board) > 1)
         for value in set(values):
             if values.count(value) == 2:
                 pair = tuple([cell for cell in house if value in board[cell]])
                 strong_links[value].add(pair)
 
+    strong_links = defaultdict(set)
     for idx in range(9):
-        _house_strong_links(CELLS_IN_ROW[idx], strong_links)
-        _house_strong_links(CELLS_IN_COL[idx], strong_links)
-        _house_strong_links(CELLS_IN_SQR[idx], strong_links)
+        _house_strong_links(CELLS_IN_ROW[idx])
+        _house_strong_links(CELLS_IN_COL[idx])
+        _house_strong_links(CELLS_IN_SQR[idx])
     return strong_links
 
 
