@@ -74,12 +74,14 @@ def _paint_node(graph, component, c_chain, node, value, colors, color_id):
         _paint_node(graph, component, c_chain, neighbour_node, value, colors, color_id)
 
 
-def _get_chain_colors(c_chain):
-    return {color for node in c_chain for _, color in c_chain[node]}
-
-
-def _get_value_color_nodes(c_chain, value, color):
-    return {node for node in c_chain if (value, color) in c_chain[node]}
+def _get_color_nodes(c_chain, value):
+    """ Return dictionary of c_chain nodes by their color """
+    color_nodes = {}
+    colors = {color for node in c_chain for _, color in c_chain[node]}
+    assert len(colors) == 2
+    for color in colors:
+        color_nodes[color] = {node for node in c_chain if (value, color) in c_chain[node]}
+    return color_nodes
 
 
 # XXXXX
@@ -429,7 +431,7 @@ def simple_colors(solver_status, board, window):
                 return kwargs
             if _color_trap():
                 return kwargs
-    return kwargs
+    return None
 
 
 @get_stats
@@ -445,95 +447,73 @@ def multi_colors(solver_status, board, window):
         c_chains = [_get_c_chain(graph, components[0], value, colors=('lime', 'yellow')),
                     _get_c_chain(graph, components[1], value, colors=('aqua', 'violet'))]
         if len(c_chains[0]) and len(c_chains[1]):
-            if _find_color_wing(components, c_chains, m_id=0, s_id=1):
+            if _find_color_wrap(components, c_chains, m_id=0, s_id=1):
                 return True
-            if _find_color_wing(components, c_chains, m_id=1, s_id=0):
+            if _find_color_wrap(components, c_chains, m_id=1, s_id=0):
                 return True
-            if _find_color_trap(components, c_chains):
+            if _find_color_wing(components, c_chains):
                 return True
         return False
 
-    def _find_color_wing(components, c_chains, m_id, s_id):
-        colors = list(_get_chain_colors(c_chains[m_id]))
-        color_nodes = [_get_value_color_nodes(c_chains[m_id], value, colors[0]),
-                       _get_value_color_nodes(c_chains[m_id], value, colors[1])]
-        edges = {edge for edge in graph.edges if edge[0] in components[s_id]}
-        for edge in edges:
-            for col_id in (0, 1):
-                see_color_nodes_a = color_nodes[col_id].intersection(ALL_NBRS[edge[0]])
-                see_color_nodes_b = color_nodes[col_id].intersection(ALL_NBRS[edge[1]])
+    def _find_color_wrap(components, c_chains, m_id, s_id):
+        color_nodes = _get_color_nodes(c_chains[m_id], value)
+        s_edges = {edge for edge in graph.edges if edge[0] in components[s_id]}
+        for edge in s_edges:
+            for color in color_nodes:
+                see_color_nodes_a = color_nodes[color].intersection(ALL_NBRS[edge[0]])
+                see_color_nodes_b = color_nodes[color].intersection(ALL_NBRS[edge[1]])
                 if see_color_nodes_a and see_color_nodes_b:
-                    conflicting_color = colors[col_id]
-                    conflicted_cells = see_color_nodes_a.union(see_color_nodes_b)
-                    impacted_cells = {node for node in components[m_id]
-                                      if (value, conflicting_color) in c_chains[m_id][node]}
-                    to_remove = {(value, node) for node in impacted_cells}
-                    edges = [edge for edge in graph.edges
-                             if edge[0] in components[m_id].union(components[s_id])]
+                    edges = {edge for edge in graph.edges if edge[0] in components[m_id].union(components[s_id])}
+                    to_remove = {(value, node) for node in color_nodes[color]}
                     solver_status.capture_baseline(board, window)
                     if window:
                         window.options_visible = window.options_visible.union(_get_graph_houses(edges))
                     remove_options(solver_status, board, to_remove, window)
                     c_chain = {**c_chains[m_id], **c_chains[s_id]}
-                    for node in conflicted_cells:
+                    for node in (see_color_nodes_a.pop(), see_color_nodes_b.pop()):
                         c_chain[node] = {(value, 'red')}
-                    kwargs["solver_tool"] = "multi_colors"
+                    kwargs["solver_tool"] = "multi_colors-color_wrap"
                     kwargs["c_chain"] = c_chain
                     kwargs["edges"] = edges
                     kwargs["remove"] = to_remove
-                    # kwargs["conflicting_cells"] = in_conflict
-                    print(f'\n{colors = } {color_nodes = }')
                     return True
         return False
 
-    def _find_color_trap(components, c_chains):
-        colors = [list({val_col_pair[1] for node in components[0] for val_col_pair in c_chains[0][node]}),
-                  list({val_col_pair[1] for node in components[1] for val_col_pair in c_chains[1][node]})]
-        color_nodes = [{node for node in components[0] if c_chains[0][node] == {(value, colors[0][0])}},
-                       {node for node in components[0] if c_chains[0][node] == {(value, colors[0][1])}},
-                       {node for node in components[1] if c_chains[1][node] == {(value, colors[1][0])}},
-                       {node for node in components[1] if c_chains[1][node] == {(value, colors[1][1])}}]
-        impacting_subsets = None
-        for node in color_nodes[0]:
-            if color_nodes[2].intersection(ALL_NBRS[node]):
-                impacting_subsets = (color_nodes[1], color_nodes[3])
-                break
-            if color_nodes[3].intersection(ALL_NBRS[node]):
-                impacting_subsets = (color_nodes[1], color_nodes[2])
-                break
-        if not impacting_subsets:
-            for node in color_nodes[1]:
-                if color_nodes[2].intersection(ALL_NBRS[node]):
-                    impacting_subsets = (color_nodes[0], color_nodes[3])
-                    break
-                if color_nodes[3].intersection(ALL_NBRS[node]):
-                    impacting_subsets = (color_nodes[0], color_nodes[2])
-                    break
-        if impacting_subsets:
-            other_nodes = {node for node in range(81) if value in board[node]
-                           and not is_clue(node, board, solver_status)
-                           and node not in components[0] and node not in components[1]}
-            impacted_cells = set()
-            to_remove = []
-            for node in other_nodes:
-                if impacting_subsets[0].intersection(ALL_NBRS[node]) \
-                        and impacting_subsets[1].intersection(ALL_NBRS[node]):
-                    impacted_cells.add(node)
-                    to_remove.append((value, node))
-            if to_remove:
-                edges = [edge for edge in graph.edges
-                         if edge[0] in components[0].union(components[1])]
-                solver_status.capture_baseline(board, window)
-                if window:
-                    window.options_visible = window.options_visible.union(_get_graph_houses(edges))
-                remove_options(solver_status, board, to_remove, window)
-                kwargs["solver_tool"] = "multi_colors"
-                kwargs["c_chain"] = {**c_chains[0], **c_chains[1]}
-                kwargs["edges"] = edges
-                kwargs["remove"] = to_remove
-                kwargs["impacted_cells"] = impacted_cells
-                # print('\ncolor_trap')
-                return True
+    def _get_second_color(color_nodes_dir, color):
+        colors = list(color_nodes_dir.keys())
+        return colors[1] if color == colors[0] else colors[0]
+
+    def _find_color_wing(components, c_chains):
+        color_nodes = [_get_color_nodes(c_chains[0], value), _get_color_nodes(c_chains[1], value)]
+        for color_0 in color_nodes[0]:
+            for node in color_nodes[0][color_0]:
+                for color_1 in color_nodes[1]:
+                    if color_nodes[1][color_1].intersection(ALL_NBRS[node]):
+                        other_nodes = set(range(81)).difference(components[0].union(components[1]))
+                        other_nodes = {node for node in other_nodes if value in board[node]
+                                       and not is_clue(node, board, solver_status)}
+                        color_a = _get_second_color(color_nodes[0], color_0)
+                        color_b = _get_second_color(color_nodes[1], color_1)
+                        impacted_cells = set()
+                        to_remove = []
+                        for cell in other_nodes:
+                            if color_nodes[0][color_a].intersection(ALL_NBRS[cell]) \
+                                    and color_nodes[1][color_b].intersection(ALL_NBRS[cell]):
+                                impacted_cells.add(cell)
+                                to_remove.append((value, cell))
+                        if to_remove:
+                            edges = [edge for edge in graph.edges
+                                     if edge[0] in components[0].union(components[1])]
+                            solver_status.capture_baseline(board, window)
+                            if window:
+                                window.options_visible = window.options_visible.union(_get_graph_houses(edges))
+                            remove_options(solver_status, board, to_remove, window)
+                            kwargs["solver_tool"] = "multi_colors-color_wing"
+                            kwargs["c_chain"] = {**c_chains[0], **c_chains[1]}
+                            kwargs["edges"] = edges
+                            kwargs["remove"] = to_remove
+                            kwargs["impacted_cells"] = impacted_cells
+                            return True
         return False
 
     kwargs = {}
@@ -544,7 +524,117 @@ def multi_colors(solver_status, board, window):
             for ids in combinations(range(len(all_components)), 2):
                 if _check_components(ids):
                     return kwargs
-    return kwargs
+    return None
+
+
+@get_stats
+def x_colors(solver_status, board, window):
+    """ Description of the technique is available at:
+     https://www.sudopedia.org/wiki/X-Colors
+     The technique includes tow strategies: elimination and contradiction
+     Ranking of the methods is not known
+     TODO: implement a method to highlight identification of exception cells
+    """
+    def _find_exception_cells():
+        cells = set()
+        for houses in (CELLS_IN_SQR, CELLS_IN_ROW, CELLS_IN_COL):
+            for house in houses:
+                colored = color_nodes['lime'].union(color_nodes['yellow'])
+                if not colored.intersection(house):
+                    potential_cells = not_painted_cells.intersection(house)
+                    potential_cells = potential_cells.difference(light_yellows if color == 'lime' else light_greens)
+                    if len(potential_cells) == 1:
+                        cells.add(potential_cells.pop())
+        return cells
+
+    def _get_light_colored(colored_nodes):
+        light_painted = set()
+        for node in colored_nodes:
+            light_painted = light_painted.union({cell for cell in ALL_NBRS[node] if cell in not_painted_cells})
+        return light_painted
+
+    def _check_houses(houses, conflicted_cells):
+        for house in houses:
+            for key in color_nodes:
+                color_cells = color_nodes[key].intersection(house)
+                if len(color_cells) > 1:
+                    conflicted_cells[key] = conflicted_cells[key].union(color_cells)
+
+    def _elimination(to_be_removed):
+        for cell in not_painted_cells:
+            if color_nodes['lime'].intersection(ALL_NBRS[cell]) \
+                    and color_nodes['yellow'].intersection(ALL_NBRS[cell]):
+                to_be_removed.add((value, cell))
+                impacted_cells.add(cell)
+        if to_remove:
+            kwargs["solver_tool"] = "x_colors_elimination"
+            # print('\ncolor_trap')
+            return True
+        return False
+
+    def _contradiction(to_be_removed):
+        conflicted_cells = {'lime': set(), 'yellow': set()}
+        for houses in (CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR):
+            _check_houses(houses, conflicted_cells)
+        assert not (conflicted_cells['lime'] and conflicted_cells['yellow'])
+        conflicted = conflicted_cells['lime'] if conflicted_cells['lime'] else conflicted_cells['yellow']
+        if conflicted:
+            color_true = 'yellow' if conflicted_cells['lime'] else 'lime'
+            for cell in color_nodes[color_true]:
+                impacted_cells.add(cell)
+                for candidate in board[cell]:
+                    if candidate != value:
+                        to_be_removed.add((candidate, cell))
+            for node in conflicted:
+                c_chain[node] = {(value, 'red')}
+            kwargs["solver_tool"] = "x_colors_contradiction"
+            # print('\ncontradiction')
+            return True
+        return False
+
+    kwargs = {}
+    for value in SUDOKU_VALUES_LIST:
+        graph = _build_graph(value, board, solver_status)
+        for component in list(nx.connected_components(graph)):
+            c_chain = _get_c_chain(graph, component, value, colors=('yellow', 'lime'))
+            color_nodes = _get_color_nodes(c_chain, value)
+            with_value = {cell for cell in range(81) if value in board[cell] and len(board[cell]) > 1}
+            not_painted_cells = with_value.difference(color_nodes['lime'].union(color_nodes['yellow']))
+            light_yellows = _get_light_colored(color_nodes['lime'])
+            light_greens = _get_light_colored(color_nodes['yellow'])
+            while True:
+                for color in ('lime', 'yellow'):
+                    exception_cells = _find_exception_cells()
+                    if exception_cells:
+                        for cell in exception_cells:
+                            c_chain[cell] = {(value, color)}
+                            color_nodes[color].add(cell)
+                            not_painted_cells.remove(cell)
+                            if color == 'lime':
+                                light_yellows = light_yellows.union({cell for cell in ALL_NBRS[cell]
+                                                                     if cell in not_painted_cells})
+                            else:
+                                light_greens = light_greens.union({cell for cell in ALL_NBRS[cell]
+                                                                   if cell in not_painted_cells})
+                        break
+                else:
+                    break
+
+            to_remove = set()
+            impacted_cells = set()
+            if _contradiction(to_remove) or _elimination(to_remove):
+                edges = {edge for edge in graph.edges if edge[0] in component}
+                show_options = with_value.union(_get_graph_houses(edges))
+                kwargs["c_chain"] = c_chain
+                kwargs["edges"] = edges
+                kwargs["impacted_cells"] = impacted_cells
+                kwargs["remove"] = to_remove
+                solver_status.capture_baseline(board, window)
+                if window:
+                    window.options_visible = window.options_visible.union(show_options)
+                remove_options(solver_status, board, to_remove, window)
+                return kwargs
+    return None
 
 
 def empty_rectangle(solver_status, board, window):

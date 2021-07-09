@@ -167,6 +167,8 @@ def cell_color(window, cell, **kwargs):
         color = html_color_codes["lightyellow"]
     if "greyed_out" in kwargs and cell in kwargs["greyed_out"]:
         color = html_color_codes["silver"]
+    if "c_chain" in kwargs and cell in kwargs["c_chain"]:
+        color = html_color_codes["orange"]
     if "wrong_values" in kwargs and cell in kwargs["wrong_values"]:
         color = html_color_codes["pink"]
     if "conflicted_cells" in kwargs and cell in kwargs["conflicted_cells"]:
@@ -406,7 +408,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
-    if corners and cell_id in corners or x_wing and cell_id in x_wing[1:] or c_chain and cell_id in c_chain:
+    if corners and cell_id in corners or x_wing and cell_id in x_wing[1:]:
         pygame.draw.rect(
             window.screen, html_color_codes['orange'],
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
@@ -804,6 +806,11 @@ def set_methods():
             "color trap": "6",
             "color wrap": "6",
             "multi_colors": "6",
+            "multi_colors-color_wrap": "6",
+            "multi_colors-color_wing": "6",
+            # "x_colors": "6",
+            "x_colors_elimination": "6",
+            "x_colors_contradiction": "6",
             "naked_xy_chain": "9",
             "hidden_xy_chain": "9",
             "y_wings": "9",             # TODO!!!

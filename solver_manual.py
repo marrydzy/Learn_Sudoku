@@ -272,13 +272,17 @@ def manual_solver(board, window):
         if kwargs:
             # print('\nmulti_colors')
             continue
+        kwargs = coloring.x_colors(solver_status, board, window)
+        if kwargs:
+            # print('\nx-colors')
+            continue
         kwargs = coloring.naked_xy_chain(solver_status, board, window)
         if kwargs:
             # print('\nnaked_xy_chain')
             continue
         kwargs = coloring.hidden_xy_chain(solver_status, board, window)
         if kwargs:
-            # print('\nhidden_xy_chain')
+            print('\nhidden_xy_chain')
             continue
 
         kwargs = wings.xy_wing(solver_status, board, window)
