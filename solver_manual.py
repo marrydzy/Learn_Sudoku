@@ -276,13 +276,17 @@ def manual_solver(board, window):
         if kwargs:
             # print('\nx-colors')
             continue
+        kwargs = coloring.three_d_medusa(solver_status, board, window)
+        if kwargs:
+            # print('\t3D Medusa')
+            continue
         kwargs = coloring.naked_xy_chain(solver_status, board, window)
         if kwargs:
             # print('\nnaked_xy_chain')
             continue
         kwargs = coloring.hidden_xy_chain(solver_status, board, window)
         if kwargs:
-            print('\nhidden_xy_chain')
+            # print('\nhidden_xy_chain')
             continue
 
         kwargs = wings.xy_wing(solver_status, board, window)
@@ -322,8 +326,8 @@ def manual_solver(board, window):
             continue
 
         if not is_solved(board, solver_status):        # TODO: for debugging only!
-            # tmp_counter += 1
-            # print(f"\n{tmp_counter = }")
+            tmp_counter += 1
+            print(f"\n{tmp_counter = }")
             pass
 
         return False

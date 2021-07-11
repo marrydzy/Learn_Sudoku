@@ -51,6 +51,7 @@ screen_messages = {
     # "x_colors": "'X-Colors' technique",
     "x_colors_elimination": "'X-Colors - elimination' technique",
     "x_colors_contradiction": "'X-Colors - contradiction' technique",
+    "3d_medusa": "'3D Medusa' technique",
     "naked_xy_chain": "'Naked XY Chain' technique",
     "hidden_xy_chain": "'Hidden XY Chain' techinque",
     "scrub_pencil_marks": "WTF",

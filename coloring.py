@@ -8,7 +8,8 @@ from itertools import combinations
 import networkx as nx
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR, CELL_SQR, ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, init_options, remove_options, get_pair_house
+from utils import get_stats, is_clue, init_options, remove_options, get_pair_house, get_bi_value_cells
+from utils import get_strong_links
 
 
 def _get_strongly_connected_cells(board, solver_status):
@@ -59,7 +60,8 @@ def _build_graph(value, board, solver_status):
 
 
 def _get_c_chain(graph, component, value, colors=('lime', 'yellow')):
-    c_chain = {node: set() for node in component}
+    # c_chain = {node: set() for node in component}
+    c_chain = defaultdict(set)
     node = list(component)[0]
     _paint_node(graph, component, c_chain, node, value, colors, 0)
     return c_chain
@@ -566,7 +568,7 @@ def x_colors(solver_status, board, window):
                     and color_nodes['yellow'].intersection(ALL_NBRS[cell]):
                 to_be_removed.add((value, cell))
                 impacted_cells.add(cell)
-        if to_remove:
+        if to_remove:   # TODO
             kwargs["solver_tool"] = "x_colors_elimination"
             # print('\ncolor_trap')
             return True
@@ -634,6 +636,203 @@ def x_colors(solver_status, board, window):
                     window.options_visible = window.options_visible.union(show_options)
                 remove_options(solver_status, board, to_remove, window)
                 return kwargs
+    return None
+
+
+def three_d_medusa(solver_status, board, window):
+    """ TODO """
+
+    def _paint_bi_value_cells(links):
+        for cell in bi_value_cells:
+            if cell in c_chain and len(c_chain[cell]) == 1:
+                candidate, color = c_chain[cell].pop()
+                c_chain[cell].add((candidate, color))
+                second_candidate = board[cell].replace(candidate, '')
+                second_color = 'lime' if color == 'yellow' else 'yellow'
+                c_chain[cell].add((second_candidate, second_color))
+                if second_color in colored_nodes[second_candidate]:
+                    colored_nodes[second_candidate][second_color].add(cell)
+                else:
+                    colored_nodes[second_candidate][second_color] = {cell}
+
+                for other_cell in ALL_NBRS[cell]:
+                    condition = ((cell, other_cell) in strong_links[second_candidate] or
+                                 (other_cell, cell) in strong_links[second_candidate])
+                    if condition:
+                        links.add((other_cell, second_candidate, color))
+        return links
+
+    def _paint_conjugate_pairs(links):
+        n_links = set()
+        for node, candidate, color in links:
+            next_color = 'lime' if color == 'yellow' else 'yellow'
+            if (candidate, color) not in c_chain[node]:
+                assert((candidate, next_color) not in c_chain[node])
+                c_chain[node].add((candidate, color))
+                if color in colored_nodes[candidate]:
+                    colored_nodes[candidate][color].add(node)
+                else:
+                    colored_nodes[candidate][color] = {node}
+                for other_cell in ALL_NBRS[node]:
+                    condition = ((node, other_cell) in strong_links[candidate] or
+                                 (other_cell, node) in strong_links[candidate])
+                    if condition:
+                        n_links.add((other_cell, candidate, next_color))
+        return n_links
+
+    def _colored_cells():
+        cells = set()
+        for candidate in colored_nodes:
+            for color in colored_nodes[candidate]:
+                cells = cells.union(colored_nodes[candidate][color])
+        return cells
+
+    def _check_1(to_be_removed):
+        for node in c_chain:
+            colors = [color for _, color in c_chain[node]]
+            if colors.count('lime') > 1 or colors.count('yellow') > 1:
+                false_color = 'lime' if colors.count('lime') > 1 else 'yellow'
+                for cell in c_chain:
+                    for candidate, color in c_chain[cell]:
+                        if color == false_color:
+                            to_be_removed.add((candidate, cell))
+                conflicted = {candidate for candidate, color in c_chain[node] if color == false_color}
+                for candidate in conflicted:
+                    c_chain[node].remove((candidate, false_color))
+                    c_chain[node].add((candidate, 'red'))
+                # print('\n3D Medusa - check #1')
+                return True
+        return False
+
+    def _check_2(to_be_removed):
+        false_color = None
+        conflicted_cells = []
+        for houses in (CELLS_IN_SQR, CELLS_IN_ROW, CELLS_IN_COL):
+            for house in houses:
+                for candidate in colored_nodes:
+                    if 'lime' in colored_nodes[candidate] and \
+                            len(colored_nodes[candidate]['lime'].intersection(house)) > 1:
+                        false_color = 'lime'
+                        conflicted_cells = colored_nodes[candidate]['lime'].intersection(house)
+                    elif 'yellow' in colored_nodes[candidate] and \
+                            len(colored_nodes[candidate]['yellow'].intersection(house)) > 1:
+                        false_color = 'yellow'
+                        conflicted_cells = colored_nodes[candidate]['yellow'].intersection(house)
+                    if false_color:
+                        for cell in c_chain:
+                            for option, color in c_chain[cell]:
+                                if color == false_color:
+                                    to_be_removed.add((option, cell))
+                        for cell in conflicted_cells:
+                            c_chain[cell].remove((candidate, false_color))
+                            c_chain[cell].add((candidate, 'red'))
+                        # print('\n3D Medusa - chaeck #2')
+                        # print(f'{conflicted_cells = }')
+                        return True
+        return False
+
+    def _check_3(to_be_removed):
+        for cell in c_chain:
+            if len(board[cell]) > 2 and len({color for _, color in c_chain[cell]}) == 2:
+                for candidate in board[cell]:
+                    if (candidate, 'lime') not in c_chain[cell] and (candidate, 'yellow') not in c_chain[cell]:
+                        to_be_removed.add((candidate, cell))
+        # if to_be_removed:
+            # print('\n3D Medusa - check #3')
+        return True if to_be_removed else False
+
+    def _check_4(to_be_removed):
+        for candidate in colored_candidates:
+            if 'lime' in colored_nodes[candidate] and 'yellow' in colored_nodes[candidate]:
+                cells_with_candidate = {cell for cell in range(81) if candidate in board[cell] and len(board[cell]) > 1}
+                cells_with_colored = colored_nodes[candidate]['lime'].union(colored_nodes[candidate]['yellow'])
+                other_cells = cells_with_candidate.difference(cells_with_colored)
+                for cell in other_cells:
+                    if colored_nodes[candidate]['lime'].intersection(ALL_NBRS[cell]) and \
+                            colored_nodes[candidate]['yellow'].intersection(ALL_NBRS[cell]):
+                        to_be_removed.add((candidate, cell))
+                        impacted_cells.add(cell)
+        if to_be_removed:
+            # print('\n3D Medusa - check #4')
+            return True
+        return False
+
+    def _check_5(to_be_removed):
+        greens = {}
+        yellows = {}
+        for cell in c_chain:
+            if len(c_chain[cell]) == 1:
+                candidate, color = c_chain[cell].pop()
+                c_chain[cell].add((candidate, color))
+                if color == 'lime':
+                    greens[cell] = (candidate, board[cell].replace(candidate, ''))
+                else:
+                    yellows[cell] = (candidate, board[cell].replace(candidate, ''))
+        for cell in greens:
+            candidate, _ = greens[cell]
+            for node in set(yellows.keys()).intersection(ALL_NBRS[cell]):
+                _, other_candidates = yellows[node]
+                if candidate in other_candidates:
+                    to_be_removed.add((candidate, node))
+                    impacted_cells.add(node)
+        for cell in yellows:
+            candidate, _ = yellows[cell]
+            for node in set(greens.keys()).intersection(ALL_NBRS[cell]):
+                _, other_candidates = greens[node]
+                if candidate in other_candidates:
+                    to_be_removed.add((candidate, node))
+                    impacted_cells.add(node)
+        if to_be_removed:
+            # print('\n3D Medusa - check #5')
+            # print(f'{impacted_cells = }')
+            return True
+        return False
+
+
+    kwargs = {}
+    for value in SUDOKU_VALUES_LIST:
+        graph = _build_graph(value, board, solver_status)
+        for component in list(nx.connected_components(graph)):
+            strong_links = get_strong_links(board)
+            c_chain = _get_c_chain(graph, component, value, colors=('yellow', 'lime'))
+            edges = {edge for edge in graph.edges if edge[0] in component}
+            colored_nodes = defaultdict(dict)
+            colored_nodes[value] = _get_color_nodes(c_chain, value)
+            painted_cells = _colored_cells()
+            bi_value_cells = {cell for cell in range(81) if len(board[cell]) == 2}
+            new_links = set()
+            new_links = _paint_bi_value_cells(new_links)
+            while new_links:
+                new_links = _paint_conjugate_pairs(new_links)
+                new_links = _paint_bi_value_cells(new_links)
+            painted_cells = _colored_cells()
+            colored_candidates = {candidate for candidate in colored_nodes}
+            to_remove = set()
+            impacted_cells = set()
+            while True:
+                if _check_1(to_remove):
+                    break
+                if _check_2(to_remove):
+                    break
+                if _check_3(to_remove):
+                    break
+                if _check_4(to_remove):
+                    break
+                if _check_5(to_remove):
+                    break
+                break
+            if to_remove:
+                solver_status.capture_baseline(board, window)
+                if window:
+                    window.options_visible = window.options_visible.union(painted_cells).union(impacted_cells)
+                remove_options(solver_status, board, to_remove, window)
+                kwargs["solver_tool"] = "3d_medusa"
+                kwargs["c_chain"] = c_chain
+                kwargs["edges"] = edges
+                kwargs["impacted_cells"] = impacted_cells
+                kwargs["remove"] = to_remove
+                return kwargs
+
     return None
 
 
