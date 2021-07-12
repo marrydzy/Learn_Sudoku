@@ -313,7 +313,7 @@ def manual_solver(board, window):
         kwargs = intermediate_techniques.jellyfish(solver_status, board, window)
         if kwargs:
             continue
-        kwargs = coloring.empty_rectangle(solver_status, board, window)
+        kwargs = intermediate_techniques.empty_rectangle(solver_status, board, window)
         if kwargs:
             continue
         kwargs = intermediate_techniques.sue_de_coq(solver_status, board, window)

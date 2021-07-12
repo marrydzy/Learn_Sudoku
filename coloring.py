@@ -656,14 +656,13 @@ def three_d_medusa(solver_status, board, window):
                     colored_nodes[second_candidate][second_color] = {cell}
 
                 for other_cell in ALL_NBRS[cell]:
-                    condition = ((cell, other_cell) in strong_links[second_candidate] or
-                                 (other_cell, cell) in strong_links[second_candidate])
-                    if condition:
+                    if ((cell, other_cell) in strong_links[second_candidate] or
+                            (other_cell, cell) in strong_links[second_candidate]):
                         links.add((other_cell, second_candidate, color))
         return links
 
     def _paint_conjugate_pairs(links):
-        n_links = set()
+        new_links = set()
         for node, candidate, color in links:
             next_color = 'lime' if color == 'yellow' else 'yellow'
             if (candidate, color) not in c_chain[node]:
@@ -674,18 +673,10 @@ def three_d_medusa(solver_status, board, window):
                 else:
                     colored_nodes[candidate][color] = {node}
                 for other_cell in ALL_NBRS[node]:
-                    condition = ((node, other_cell) in strong_links[candidate] or
-                                 (other_cell, node) in strong_links[candidate])
-                    if condition:
-                        n_links.add((other_cell, candidate, next_color))
-        return n_links
-
-    def _colored_cells():
-        cells = set()
-        for candidate in colored_nodes:
-            for color in colored_nodes[candidate]:
-                cells = cells.union(colored_nodes[candidate][color])
-        return cells
+                    if ((node, other_cell) in strong_links[candidate] or
+                            (other_cell, node) in strong_links[candidate]):
+                        new_links.add((other_cell, candidate, next_color))
+        return new_links
 
     def _check_1(to_be_removed):
         for node in c_chain:
@@ -700,7 +691,6 @@ def three_d_medusa(solver_status, board, window):
                 for candidate in conflicted:
                     c_chain[node].remove((candidate, false_color))
                     c_chain[node].add((candidate, 'red'))
-                # print('\n3D Medusa - check #1')
                 return True
         return False
 
@@ -726,8 +716,6 @@ def three_d_medusa(solver_status, board, window):
                         for cell in conflicted_cells:
                             c_chain[cell].remove((candidate, false_color))
                             c_chain[cell].add((candidate, 'red'))
-                        # print('\n3D Medusa - chaeck #2')
-                        # print(f'{conflicted_cells = }')
                         return True
         return False
 
@@ -737,12 +725,10 @@ def three_d_medusa(solver_status, board, window):
                 for candidate in board[cell]:
                     if (candidate, 'lime') not in c_chain[cell] and (candidate, 'yellow') not in c_chain[cell]:
                         to_be_removed.add((candidate, cell))
-        # if to_be_removed:
-            # print('\n3D Medusa - check #3')
         return True if to_be_removed else False
 
     def _check_4(to_be_removed):
-        for candidate in colored_candidates:
+        for candidate in colored_nodes:
             if 'lime' in colored_nodes[candidate] and 'yellow' in colored_nodes[candidate]:
                 cells_with_candidate = {cell for cell in range(81) if candidate in board[cell] and len(board[cell]) > 1}
                 cells_with_colored = colored_nodes[candidate]['lime'].union(colored_nodes[candidate]['yellow'])
@@ -752,10 +738,7 @@ def three_d_medusa(solver_status, board, window):
                             colored_nodes[candidate]['yellow'].intersection(ALL_NBRS[cell]):
                         to_be_removed.add((candidate, cell))
                         impacted_cells.add(cell)
-        if to_be_removed:
-            # print('\n3D Medusa - check #4')
-            return True
-        return False
+        return True if to_be_removed else False
 
     def _check_5(to_be_removed):
         greens = {}
@@ -782,49 +765,29 @@ def three_d_medusa(solver_status, board, window):
                 if candidate in other_candidates:
                     to_be_removed.add((candidate, node))
                     impacted_cells.add(node)
-        if to_be_removed:
-            # print('\n3D Medusa - check #5')
-            # print(f'{impacted_cells = }')
-            return True
-        return False
-
+        return True if to_be_removed else False
 
     kwargs = {}
     for value in SUDOKU_VALUES_LIST:
         graph = _build_graph(value, board, solver_status)
         for component in list(nx.connected_components(graph)):
+            bi_value_cells = {cell for cell in range(81) if len(board[cell]) == 2}
             strong_links = get_strong_links(board)
             c_chain = _get_c_chain(graph, component, value, colors=('yellow', 'lime'))
             edges = {edge for edge in graph.edges if edge[0] in component}
             colored_nodes = defaultdict(dict)
             colored_nodes[value] = _get_color_nodes(c_chain, value)
-            painted_cells = _colored_cells()
-            bi_value_cells = {cell for cell in range(81) if len(board[cell]) == 2}
-            new_links = set()
-            new_links = _paint_bi_value_cells(new_links)
-            while new_links:
-                new_links = _paint_conjugate_pairs(new_links)
-                new_links = _paint_bi_value_cells(new_links)
-            painted_cells = _colored_cells()
-            colored_candidates = {candidate for candidate in colored_nodes}
+            additional_links = _paint_bi_value_cells(set())
+            while additional_links:
+                additional_links = _paint_bi_value_cells(_paint_conjugate_pairs(additional_links))
             to_remove = set()
             impacted_cells = set()
-            while True:
-                if _check_1(to_remove):
-                    break
-                if _check_2(to_remove):
-                    break
-                if _check_3(to_remove):
-                    break
-                if _check_4(to_remove):
-                    break
-                if _check_5(to_remove):
-                    break
-                break
-            if to_remove:
+            if _check_1(to_remove) or _check_2(to_remove) or _check_3(to_remove) or _check_4(to_remove) or \
+                    _check_5(to_remove):
                 solver_status.capture_baseline(board, window)
                 if window:
-                    window.options_visible = window.options_visible.union(painted_cells).union(impacted_cells)
+                    window.options_visible = window.options_visible.union(cell for cell in c_chain).union(
+                        impacted_cells)
                 remove_options(solver_status, board, to_remove, window)
                 kwargs["solver_tool"] = "3d_medusa"
                 kwargs["c_chain"] = c_chain
@@ -832,74 +795,6 @@ def three_d_medusa(solver_status, board, window):
                 kwargs["impacted_cells"] = impacted_cells
                 kwargs["remove"] = to_remove
                 return kwargs
-
     return None
 
 
-def empty_rectangle(solver_status, board, window):
-    """ The relatively good description of Empty Rectangle strategy is
-     available at Sudoku Coach page (http://www.taupierbw.be/SudokuCoach/SC_EmptyRectangle.shtml)
-     - although it is not complete
-     Rating: 120 - 140 """
-
-    by_row_boxes = [[[3, 6], [4, 7], [5, 8]],
-                    [[0, 6], [1, 7], [2, 8]],
-                    [[0, 3], [1, 4], [2, 5]]]
-    by_col_boxes = [[[1, 2], [4, 5], [7, 8]],
-                    [[0, 2], [3, 5], [6, 8]],
-                    [[0, 1], [3, 4], [6, 7]]]
-
-    def _find_empty_rectangle(idx, by_row):
-        cells_by_x = CELLS_IN_ROW if by_row else CELLS_IN_COL
-        cells_by_y = CELLS_IN_COL if by_row else CELLS_IN_ROW
-        cells = cells_by_x[idx]
-        opts = ''.join(board[cell] for cell in cells if not is_clue(cell, board, solver_status))
-        for val in SUDOKU_VALUES_LIST:
-            if opts.count(val) == 2:
-                idy = [j for j in range(9) if val in board[cells[j]]]
-                if CELL_SQR[idy[0]] != CELL_SQR[idy[1]]:
-                    for i in range(2):
-                        for j in range(2):
-                            box = by_row_boxes[idx//3][idy[i]//3][j] if by_row else by_col_boxes[idx//3][idy[i]//3][j]
-                            central_line = (box // 3) * 3 + 1 if by_row else (box % 3) * 3 + 1
-                            box_cells = set(CELLS_IN_SQR[box])
-                            central_line_cells = set(cells_by_x[central_line]).intersection(box_cells)
-                            cross_cells = box_cells.intersection(central_line_cells.union(set(cells_by_y[idy[i]])))
-                            rect_corners = box_cells.difference(cross_cells)
-                            corners_values = ''.join(board[cell] for cell in rect_corners)
-                            if corners_values.count(val) == 0:
-                                hole_cells = list(central_line_cells.difference(set(cells_by_y[idy[i]])))
-                                if val in board[hole_cells[0]] or val in board[hole_cells[1]]:
-                                    impacted_cell = cells_by_y[idy[(i + 1) % 2]][central_line]
-                                    if val in board[impacted_cell]:
-                                        to_remove = [(val, impacted_cell)]
-                                        if to_remove:
-                                            corners = set(cell for cell in cells_by_x[idx] if val in board[cell])
-                                            if val in board[hole_cells[0]]:
-                                                corners.add(hole_cells[0])
-                                            if val in board[hole_cells[1]]:
-                                                corners.add(hole_cells[1])
-                                            corners = list(corners)
-                                            corners.insert(0, val)
-                                            house = set(cells).union(cross_cells)
-                                            solver_status.capture_baseline(board, window)
-                                            solver_status.capture_baseline(board, window)
-                                            if window:
-                                                window.options_visible = window.options_visible.union(house)
-                                            remove_options(solver_status, board, to_remove, window)
-                                            kwargs["solver_tool"] = "empty_rectangle"
-                                            kwargs["house"] = house
-                                            kwargs["impacted_cells"] = (impacted_cell,)
-                                            kwargs["remove"] = [(val, impacted_cell)]
-                                            kwargs["nodes"] = corners
-                                            return True
-        return False
-
-    init_options(board, solver_status)
-    kwargs = {}
-    for indx in range(9):
-        if _find_empty_rectangle(indx, True):
-            return kwargs
-        if _find_empty_rectangle(indx, False):
-            return kwargs
-    return kwargs
