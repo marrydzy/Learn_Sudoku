@@ -27,7 +27,7 @@ screen_messages = {
     "swordfish": "'Swordfish' technique",
     "finned_swordfish": "'Finned Swordfish' technique",
     "jellyfish": "'Jellyfish' technique",
-    "x_wings": "'x-wings' technique",
+    "x_wings": "'X-Wings' technique",
     "finned_x_wings": "'finned-x-wings' technique",
     "finned_rccb_mutant_x_wing": "'Finned RCCB Mutant X-Wing' technique",
     "finned_rbcc_mutant_x_wing": "'Finned RBCC Mutant X-Wing' technique",

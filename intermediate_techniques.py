@@ -125,57 +125,6 @@ def unique_rectangles(solver_status, board, window):
     return {}
 
 
-def swordfish(solver_status, board, window):
-    """ TODO """
-
-    def _find_swordfish(by_row):
-        for opt in SUDOKU_VALUES_LIST:
-            primary_units = {}
-            cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
-            for indx in range(9):
-                at_pos = set(CELL_COL[cell] if by_row else CELL_ROW[cell] for cell in cells[indx]
-                             if opt in board[cell] and not is_clue(cell, board, solver_status))
-                if len(at_pos) == 2:
-                    primary_units[indx] = at_pos
-            if len(primary_units) == 3:
-                secondary_units = set()
-                for indx in primary_units:
-                    secondary_units = secondary_units.union(primary_units[indx])
-                if len(secondary_units) == 3:
-                    impacted_cells = set()
-                    house = set()
-                    cells_t = CELLS_IN_COL if by_row else CELLS_IN_ROW
-                    for indx in secondary_units:
-                        impacted_cells = impacted_cells.union(set(cells_t[indx]))
-                    for indx in primary_units:
-                        impacted_cells = impacted_cells.difference(set(cells[indx]))
-                        house = house.union(set(cells[indx]))
-                    to_remove = [(opt, cell) for cell in impacted_cells if opt in board[cell]]
-                    if to_remove:
-                        corners = [cell for idx in primary_units for cell in cells[idx] if opt in board[cell]]
-                        corners.insert(0, opt)
-                        solver_status.capture_baseline(board, window)
-                        if window:
-                            window.options_visible = window.options_visible.union(set(house))
-                        remove_options(solver_status, board, to_remove, window)
-                        kwargs["solver_tool"] = "swordfish"
-                        kwargs["singles"] = solver_status.naked_singles
-                        kwargs["nodes"] = corners
-                        kwargs["remove"] = to_remove
-                        kwargs["impacted_cells"] = impacted_cells
-                        kwargs["house"] = house
-                        return True
-        return False
-
-    init_options(board, solver_status)
-    kwargs = {}
-    if _find_swordfish(True):
-        return kwargs
-    if _find_swordfish(False):
-        return kwargs
-    return kwargs
-
-
 def finned_swordfish(solver_status, board, window):
     """ TODO """
 
@@ -252,58 +201,6 @@ def finned_swordfish(solver_status, board, window):
     if _find_finned_swordfish(True):
         return kwargs
     if _find_finned_swordfish(False):
-        return kwargs
-    return kwargs
-
-
-def jellyfish(solver_status, board, window):
-    """ TODO """
-
-    def _find_jellyfish(by_row):
-        for opt in SUDOKU_VALUES_LIST:
-            positions = {}
-            cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
-            for indx_1 in range(9):
-                at_pos = set(CELL_COL[cell] if by_row else CELL_ROW[cell] for cell in cells[indx_1]
-                             if opt in board[cell] and not is_clue(cell, board, solver_status))
-                if 0 < len(at_pos) < 5:
-                    positions[indx_1] = at_pos
-            if len(positions) > 3:
-                for quad in combinations(positions.keys(), 4):
-                    indxs_2 = set()
-                    for indx in quad:
-                        indxs_2 = indxs_2.union(positions[indx])
-                    if len(indxs_2) == 4:
-                        impacted_cells = set()
-                        house = set()
-                        cells_t = CELLS_IN_COL if by_row else CELLS_IN_ROW
-                        for indx in indxs_2:
-                            impacted_cells = impacted_cells.union(set(cells_t[indx]))
-                        for indx in quad:
-                            impacted_cells = impacted_cells.difference(set(cells[indx]))
-                            house = house.union(set(cells[indx]))
-                        to_remove = [(opt, cell) for cell in impacted_cells if opt in board[cell]]
-                        if to_remove:
-                            corners = [cell for idx in quad for cell in cells[idx] if opt in board[cell]]   # TODO - check it!
-                            corners.insert(0, opt)
-                            solver_status.capture_baseline(board, window)
-                            if window:
-                                window.options_visible = window.options_visible.union(set(house))
-                            remove_options(solver_status, board, to_remove, window)
-                            kwargs["solver_tool"] = "jellyfish"
-                            kwargs["singles"] = solver_status.naked_singles
-                            kwargs["nodes"] = corners
-                            kwargs["remove"] = to_remove
-                            kwargs["impacted_cells"] = impacted_cells
-                            kwargs["house"] = house
-                            return True
-        return False
-
-    init_options(board, solver_status)
-    kwargs = {}
-    if _find_jellyfish(True):
-        return kwargs
-    if _find_jellyfish(False):
         return kwargs
     return kwargs
 

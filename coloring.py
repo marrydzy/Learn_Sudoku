@@ -1,6 +1,12 @@
 # -*- coding: UTF-8 -*-
 
-""" SUDOKU SOLVING METHODS """
+""" SUDOKU SOLVING METHODS
+
+    important data structures:
+    c_chain:  {node: {(candidate, color), ...}}
+    colored_nodes: {candidate: {color: {cell, ...}, }, }
+"""
+
 
 from collections import defaultdict
 from itertools import combinations
@@ -639,8 +645,18 @@ def x_colors(solver_status, board, window):
     return None
 
 
+@get_stats
 def three_d_medusa(solver_status, board, window):
-    """ TODO """
+    """ Description of the technique is available at:
+     https://www.sudopedia.org/wiki/3D_Medusa
+     The technique includes
+     - same color twice in a cell
+     - same color twice in a unit (house)
+     - two colors in a cell that contains uncolored candidates
+     - uncolored candidate can see two opposite-colored candidates
+     - uncolored candidate can see a colored one, and an oppositely colored candidate in the same cell
+     Ranking of the method is at the level of 320 - 380
+    """
 
     def _paint_bi_value_cells(links):
         for cell in bi_value_cells:
@@ -796,5 +812,3 @@ def three_d_medusa(solver_status, board, window):
                 kwargs["remove"] = to_remove
                 return kwargs
     return None
-
-

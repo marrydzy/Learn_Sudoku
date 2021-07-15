@@ -237,7 +237,7 @@ def draw_board_features(window, **kwargs):
 
     if x_wing:
         color = html_color_codes["magenta"]
-        x_wing = sorted(x_wing[1:])
+        x_wing = sorted(x_wing)
         x1 = (x_wing[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
         y1 = (x_wing[0] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
         x2 = (x_wing[3] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN

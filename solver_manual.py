@@ -10,9 +10,46 @@ from utils import is_clue, is_solved, set_cell_options, set_neighbours_options
 
 import basic_techniques
 import intermediate_techniques
+import fish
 import wings
 import coloring
 import questionable
+
+
+solver_methods = [
+    basic_techniques.open_singles,
+    basic_techniques.visual_elimination,
+    basic_techniques.naked_singles,
+    basic_techniques.hidden_singles,
+    basic_techniques.naked_twins,
+    basic_techniques.hidden_pair,
+    basic_techniques.naked_triplets,
+    basic_techniques.hidden_triplet,
+    basic_techniques.naked_quads,
+    basic_techniques.hidden_quad,
+    basic_techniques.omissions,
+    intermediate_techniques.unique_rectangles,
+    intermediate_techniques.skyscraper,
+    fish.x_wing,
+    fish.swordfish,
+    fish.jellyfish,
+    wings.finned_x_wing,
+    wings.finned_mutant_x_wing,
+    coloring.simple_colors,
+    coloring.multi_colors,
+    coloring.x_colors,
+    coloring.three_d_medusa,
+    coloring.naked_xy_chain,
+    coloring.hidden_xy_chain,
+    wings.xy_wing,
+    wings.xyz_wing,
+    wings.w_wing,
+    wings.wxyz_wing,
+    intermediate_techniques.finned_swordfish,
+    intermediate_techniques.empty_rectangle,
+    intermediate_techniques.sue_de_coq,
+    questionable.franken_x_wing,
+]
 
 
 class SolverStatus:
@@ -189,7 +226,7 @@ def _set_manually(board, window):
     return kwargs
 
 
-tmp_counter = 0     # TODO - for debugging/testing only!
+strategies_failure_counter = 0     # TODO - for debugging/testing only!
 
 
 def manual_solver(board, window):
@@ -198,7 +235,7 @@ def manual_solver(board, window):
      - Each 'technique' function returns kwargs dictionary if the board is updated, empty dictionary otherwise
      - Interactive vs. step-wise execution is controlled by 'window.calculate_next_clue' parameter """
 
-    global tmp_counter  # TODO - for debugging/testing only!
+    global strategies_failure_counter  # TODO - for debugging/testing only!
 
     solver_status.initialize(board)
     kwargs = {"solver_tool": "plain_board"}
@@ -213,121 +250,14 @@ def manual_solver(board, window):
             elif window.show_solution_steps:
                 window.calculate_next_clue = False
 
-        kwargs = basic_techniques.open_singles(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = basic_techniques.visual_elimination(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = basic_techniques.naked_singles(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = basic_techniques.hidden_singles(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = basic_techniques.naked_twins(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = basic_techniques.hidden_pair(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = basic_techniques.naked_triplets(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = basic_techniques.hidden_triplet(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = basic_techniques.naked_quads(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = basic_techniques.hidden_quad(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = basic_techniques.omissions(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = intermediate_techniques.unique_rectangles(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = intermediate_techniques.skyscraper(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = wings.x_wing(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = wings.finned_x_wing(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = wings.finned_mutant_x_wing(solver_status, board, window)
-        if kwargs:
-            # print('\nBingo!')
-            continue
-
-        # TODO - positioned here to test
-        kwargs = coloring.simple_colors(solver_status, board, window)
-        if kwargs:
-            # print('\nsimple_colors!')
-            continue
-        kwargs = coloring.multi_colors(solver_status, board, window)
-        if kwargs:
-            # print('\nmulti_colors')
-            continue
-        kwargs = coloring.x_colors(solver_status, board, window)
-        if kwargs:
-            # print('\nx-colors')
-            continue
-        kwargs = coloring.three_d_medusa(solver_status, board, window)
-        if kwargs:
-            # print('\t3D Medusa')
-            continue
-        kwargs = coloring.naked_xy_chain(solver_status, board, window)
-        if kwargs:
-            # print('\nnaked_xy_chain')
-            continue
-        kwargs = coloring.hidden_xy_chain(solver_status, board, window)
-        if kwargs:
-            # print('\nhidden_xy_chain')
-            continue
-
-        kwargs = wings.xy_wing(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = wings.xyz_wing(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = wings.w_wing(solver_status, board, window)
-        if kwargs:
-            # print('\nw_wing')
-            continue
-        kwargs = wings.wxyz_wing(solver_status, board, window)
-        if kwargs:
-            # print('\nwxyz_wing')
-            continue
-        kwargs = intermediate_techniques.swordfish(solver_status, board, window)
-        if kwargs:
-            # print('\nBingo!')
-            continue
-        kwargs = intermediate_techniques.finned_swordfish(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = intermediate_techniques.jellyfish(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = intermediate_techniques.empty_rectangle(solver_status, board, window)
-        if kwargs:
-            continue
-        kwargs = intermediate_techniques.sue_de_coq(solver_status, board, window)
-        if kwargs:
-            continue
-        # TODO: questionable techniques:
-        kwargs = questionable.franken_x_wing(solver_status, board, window)
-        if kwargs:
-            print('\nfranken_x_wing')
-            continue
-
-        if not is_solved(board, solver_status):        # TODO: for debugging only!
-            tmp_counter += 1
-            print(f"\n{tmp_counter = }")
-            pass
-
-        return False
+        for strategy in solver_methods:
+            kwargs = strategy(solver_status, board, window)
+            if kwargs:
+                break
+        else:
+            if not is_solved(board, solver_status):        # TODO: for debugging only!
+                strategies_failure_counter += 1
+                # print(f"\n{strategies_failure_counter = }")
+                pass
+            return False
+    return True

@@ -12,9 +12,10 @@ from utils import is_clue, init_options, remove_options
 from utils import get_bi_value_cells, get_pairs, get_house_pairs, get_strong_links, get_pair_house
 
 
+"""
 def x_wing(solver_status, board, window):
-    """Remove candidates (options) using X Wing technique
-    (see https://www.learn-sudoku.com/x-wing.html)"""
+    '''Remove candidates (options) using X Wing technique
+    (see https://www.learn-sudoku.com/x-wing.html)'''
 
     def _find_x_wing(by_row):
         pairs_dict = get_pairs(board, by_row)
@@ -55,7 +56,7 @@ def x_wing(solver_status, board, window):
     if _find_x_wing(False):
         return kwargs
     return kwargs
-
+"""
 
 def finned_x_wing(solver_status, board, window):
     """ TODO """
