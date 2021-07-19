@@ -33,7 +33,11 @@ solver_methods = [
     fish.x_wing,
     fish.swordfish,
     fish.jellyfish,
-    wings.finned_x_wing,
+    fish.squirmbag,
+    fish.finned_x_wing,
+    fish.finned_swordfish,
+    fish.finned_jellyfish,
+    fish.finned_squirmbag,
     wings.finned_mutant_x_wing,
     coloring.simple_colors,
     coloring.multi_colors,
@@ -45,7 +49,6 @@ solver_methods = [
     wings.xyz_wing,
     wings.w_wing,
     wings.wxyz_wing,
-    intermediate_techniques.finned_swordfish,
     intermediate_techniques.empty_rectangle,
     intermediate_techniques.sue_de_coq,
     questionable.franken_x_wing,
@@ -71,7 +74,7 @@ class SolverStatus:
         self.reset(board)
 
     def capture_baseline(self, board, window):
-        if window and window.show_solution_steps and not window.animate:
+        if window and window.show_solution_steps:
             self.board_baseline = board.copy()
             self.naked_singles_baseline = self.naked_singles.copy()
             self.clues_found_baseline = self.clues_found.copy()
@@ -257,7 +260,7 @@ def manual_solver(board, window):
         else:
             if not is_solved(board, solver_status):        # TODO: for debugging only!
                 strategies_failure_counter += 1
-                # print(f"\n{strategies_failure_counter = }")
+                print(f"\n{strategies_failure_counter = }")
                 pass
             return False
     return True

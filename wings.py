@@ -126,6 +126,7 @@ def finned_x_wing(solver_status, board, window):
                                     kwargs["remove"] = to_remove
                                     kwargs["house"] = house
                                     kwargs["impacted_cells"] = other_cells
+                                    print('\tfinned X-wing')
                                     return True
         return False
 

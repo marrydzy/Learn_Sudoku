@@ -226,6 +226,13 @@ class AppWindow:
         start = time.time()  # TODO - get rid of it!!!
         solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else "plain_board"   # TODO - simplify it !!!
 
+        if self.animate and solver_tool == "finned_squirmbag":        # TODO - for development & debugging only!
+            self.animate = False
+            self.wait = True
+            graph_utils.set_btn_status(self, True, (pygame.K_a, pygame.K_b))
+            graph_utils.set_btn_status(self, False, (pygame.K_m,))
+            graph_utils.set_keyboard_status(self, True)
+
         if self.handle_input_events(board, **kwargs):
             return True
         self.render_board(board, **kwargs)
