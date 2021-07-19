@@ -129,9 +129,7 @@ def _finned_fish(solver_status, board, window, n):
                             if len(secondary_ids) == n+1 and len(fin_ys) == 1 or \
                                     len(secondary_ids) == n+2 and len(fin_ys) == 2 and \
                                     _get_fin_box((fin_x, fin_ys[1]), by_row) == fin_box:
-                                y_ids = secondary_ids.copy()
-                                for y_id in fin_ys:
-                                    y_ids.remove(y_id)
+                                y_ids = {id_y for id_y in secondary_ids if id_y not in fin_ys}
                                 cells = CELLS_IN_COL if by_row else CELLS_IN_ROW
                                 impacted_cells = {cell for id_y in y_ids for cell in cells[id_y]}
                                 impacted_cells = impacted_cells.intersection(fin_box)
@@ -150,11 +148,6 @@ def _finned_fish(solver_status, board, window, n):
                                     kwargs["remove"] = to_remove
                                     kwargs["impacted_cells"] = {cell for _, cell in to_remove}
                                     kwargs["house"] = houses
-
-                                    # if kwargs["solver_tool"] == "sashimi_squirmbag":
-                                    if n == 5:
-                                        print(f'\t{kwargs["solver_tool"] = }')
-
                                     return True
         return False
 
@@ -200,12 +193,12 @@ def jellyfish(solver_status, board, window):
 
 @get_stats
 def squirmbag(solver_status, board, window):
-    """ TODO """
-    ret = _basic_fish(solver_status, board, window, 5)
-    if ret:
-        # print('\tsquirmbag')
-        pass
-    return ret
+    """ One of the 'Basic Fish' techniques:
+     see description e.g. at:
+     https://www.sudoku9981.com/sudoku-solving/squirmbag.php
+     Rating: 470
+     """
+    return _basic_fish(solver_status, board, window, 5)
 
 
 @get_stats
@@ -228,7 +221,7 @@ def finned_swordfish(solver_status, board, window):
        https://www.sudopedia.org/wiki/Finned_Swordfish), and
      - Sashimi Swordfish (see description e.g. at:
        https://www.sudopedia.org/wiki/Sashimi_Swordfish)
-    Rating: 200 (Finned Swordfish), 300 - 260 (Sashimi Swordfish)
+    Rating: 200 (Finned Swordfish), 240 (Sashimi Swordfish)
     """
     return _finned_fish(solver_status, board, window, 3)
 
@@ -240,11 +233,17 @@ def finned_jellyfish(solver_status, board, window):
        https://www.sudopedia.org/wiki/Finned_Jellyfish), and
      - Sashimi Jellyfish (see description e.g. at:
        https://www.sudopedia.org/wiki/Sashimi_Jellyfish)
-    Rating: 240 (Finned Swordfish), 250 (Sashimi Swordfish)
+    Rating: 240-250 (Finned Jellyfish), 300-260 (Sashimi Jellyfish)
     """
     return _finned_fish(solver_status, board, window, 4)
 
 
 def finned_squirmbag(solver_status, board, window):
+    """ The algorithm covers two of the 'Finned Fish' techniques:
+     - Finned Squirmbag , and
+     - Sashimi Jellyfish
+    Rating: 470 (Finned Squirmbag), 470 (Sashimi Squirmbag)
+    """
+
     return _finned_fish(solver_status, board, window, 5)
 

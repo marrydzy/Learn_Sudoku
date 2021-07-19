@@ -260,7 +260,7 @@ def manual_solver(board, window):
         else:
             if not is_solved(board, solver_status):        # TODO: for debugging only!
                 strategies_failure_counter += 1
-                print(f"\n{strategies_failure_counter = }")
+                # print(f"\n{strategies_failure_counter = }")
                 pass
             return False
     return True
