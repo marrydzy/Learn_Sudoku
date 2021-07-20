@@ -66,7 +66,7 @@ def remote_pairs(solver_status, board, window):
     return {}
 
 
-def unique_rectangles(solver_status, board, window):
+def unique_rectangles_(solver_status, board, window):
     """Remove candidates (options) using Unique Rectangle technique
     (see https://www.learn-sudoku.com/unique-rectangle.html)"""
 
@@ -97,6 +97,7 @@ def unique_rectangles(solver_status, board, window):
                     kwargs["rectangle"] = rect
                     kwargs["remove"] = to_remove
                     kwargs["subset"] = subset
+                    print('\tUniueness Test 1')
                     return True
         return False
 

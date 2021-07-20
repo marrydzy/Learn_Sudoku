@@ -9,6 +9,7 @@ from utils import ALL_NBRS
 from utils import is_clue, is_solved, set_cell_options, set_neighbours_options
 
 import basic_techniques
+import uniqueness_tests
 import intermediate_techniques
 import fish
 import wings
@@ -28,7 +29,7 @@ solver_methods = [
     basic_techniques.naked_quads,
     basic_techniques.hidden_quad,
     basic_techniques.omissions,
-    intermediate_techniques.unique_rectangles,
+    uniqueness_tests.test_1,
     intermediate_techniques.skyscraper,
     fish.x_wing,
     fish.swordfish,
@@ -260,7 +261,7 @@ def manual_solver(board, window):
         else:
             if not is_solved(board, solver_status):        # TODO: for debugging only!
                 strategies_failure_counter += 1
-                # print(f"\n{strategies_failure_counter = }")
+                print(f"\n{strategies_failure_counter = }")
                 pass
             return False
     return True
