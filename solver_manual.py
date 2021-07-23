@@ -31,6 +31,7 @@ solver_methods = [
     basic_techniques.omissions,
     uniqueness_tests.test_1,
     uniqueness_tests.test_2,
+    uniqueness_tests.test_3,
     intermediate_techniques.skyscraper,
     fish.x_wing,
     fish.swordfish,
