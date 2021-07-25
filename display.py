@@ -64,7 +64,8 @@ screen_messages = {
     "scrub_pencil_marks": "WTF",
     "unique_values": "WTF",
     "unique_rectangles": "WTF",
-    "unique_rectangle_test_1": "'"
+    "uniqueness_test_1": "'Uniqueness Test 1' technique",
+    "uniqueness_test_2": "'Uniqueness Test 2' technique",
     "observe": "Dupa Jaś",
     "end_of_game": "Sudoku solved!",
     "conflicting_values": "The entered value conflicts with other cells",

@@ -781,6 +781,8 @@ def set_methods():
             "naked_triplets": "t",
             "naked_quads": "q",
             "unique_rectangles": "r",
+            "uniqueness_test_1": "r",
+            "uniqueness_test_2": "r",
             "x_wings": "x",
             "finned_x_wings": "f",
             "finned_jellyfish": "9",

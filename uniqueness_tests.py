@@ -1,6 +1,19 @@
 # -*- coding: UTF-8 -*-
 
-""" SUDOKU SOLVING METHODS """
+""" SUDOKU SOLVING METHODS
+    Generally, the Unique Rectangle tests consider four cells that form a rectangle
+    whose common candidates are two digits, with one or more of these cells containing
+    extra candidates as well. The 4 cells in the corners of the rectangle belong to
+    exactly 2 rows, 2 columns and 2 boxes.
+    To avoid this deadly pattern, at least one of the extra candidates must be placed.
+    In many of the patterns for the Uniqueness Tests, two cells on one side of the rectangle
+    (i.e., sharing either the same row or the same column) have only the common two candidate
+    digits and no extra candidates. These cells form the floor of the rectangle.
+    The other two cells are called the ceiling.
+
+    For descriptions of each of the uniqueness tests see e.g.:
+    https://www.learn-sudoku.com/unique-rectangle.html
+"""
 
 # 'bi_values' data structure:
 # {'xy': {(row, col, box), ...}}
@@ -8,90 +21,83 @@
 
 from itertools import combinations
 from collections import defaultdict
+# from copy import deepcopy
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR, ALL_NBRS
 from utils import init_options, remove_options, get_stats
 
 
+def _get_bi_values_dictionary(board, cells, by_row=True):
+    bi_values = defaultdict(set)
+    for cell in cells:
+        if len(board[cell]) == 2:
+            bi_values[board[cell]].add((CELL_ROW[cell] if by_row else CELL_COL[cell],
+                                        CELL_COL[cell] if by_row else CELL_ROW[cell],
+                                        CELL_SQR[cell]))
+    return bi_values
+
+
+def _get_rectangle(rows, columns):
+    in_rows = list(rows)
+    in_cols = list(columns)
+    return [in_rows[0] * 9 + in_cols[0], in_rows[0] * 9 + in_cols[1],
+            in_rows[1] * 9 + in_cols[1], in_rows[1] * 9 + in_cols[0]]
+
+
+def _get_c_chain(board, rectangle, bi_value, z_value=None):
+    chain = {}
+    color_1 = 'yellow'
+    color_2 = 'lime'
+    for node in rectangle:
+        if len(board[node]) == 2 or z_value and len(board[node]) == 3:
+            chain[node] = {(bi_value[0], color_1), (bi_value[1], color_2)}
+            if z_value:
+                chain[node].add((z_value, 'cyan'))
+            color_1 = 'lime' if color_1 == 'yellow' else 'yellow'
+            color_2 = 'lime' if color_2 == 'yellow' else 'yellow'
+    return chain
+
+
 @get_stats
 def test_1(solver_status, board, window):
-    """ Remove candidates (options) using Unique Rectangle technique
-    (see https://www.learn-sudoku.com/unique-rectangle.html)
+    """ If there is only one cell in the rectangle that contains extra candidates,
+    then the common candidates can be eliminated from that cell.
     Rating: 100
     """
 
-    def _get_c_chain():
-        c_chain = dict()
-        color_1 = 'yellow'
-        color_2 = 'lime'
-        for node in rectangle:
-            if len(board[node]) == 2:
-                c_chain[node] = {(bi_value[0], color_1), (bi_value[1], color_2)}
-                color_1 = 'lime' if color_1 == 'yellow' else 'yellow'
-                color_2 = 'lime' if color_2 == 'yellow' else 'yellow'
-        return c_chain
-
-    def _get_rectangle():
-        in_rows = list(rows)
-        in_cols = list(cols)
-        return [in_rows[0] * 9 + in_cols[0], in_rows[0] * 9 + in_cols[1],
-                in_rows[1] * 9 + in_cols[1], in_rows[1] * 9 + in_cols[0]]
-
     init_options(board, solver_status)
-    kwargs = {}
-    bi_values = defaultdict(set)
-    for cell in range(81):
-        if len(board[cell]) == 2:
-            bi_values[board[cell]].add((CELL_ROW[cell], CELL_COL[cell], CELL_SQR[cell]))
-
-    for bi_value, positions in bi_values.items():
-        if len(positions) > 2:
-            for troika in combinations(positions, 3):
-                rows = {position[0] for position in troika}
-                cols = {position[1] for position in troika}
-                boxes = {position[2] for position in troika}
-                if len(rows) == 2 and len(cols) == 2 and len(boxes) == 2:
-                    rectangle = _get_rectangle()
+    bi_values = _get_bi_values_dictionary(board, range(81))
+    for bi_value, coordinates in bi_values.items():
+        if len(coordinates) > 2:
+            for triplet in combinations(coordinates, 3):
+                rows = {position[0] for position in triplet}
+                columns = {position[1] for position in triplet}
+                boxes = {position[2] for position in triplet}
+                if len(rows) == 2 and len(columns) == 2 and len(boxes) == 2:
+                    rectangle = _get_rectangle(rows, columns)
                     if all(bi_value[0] in board[corner] and bi_value[1] in board[corner] for corner in rectangle):
                         for corner in rectangle:
                             if len(board[corner]) > 2:
                                 to_remove = {(candidate, corner) for candidate in bi_value}
-                                c_chain = _get_c_chain()
+                                c_chain = _get_c_chain(board, rectangle, bi_value)
                                 solver_status.capture_baseline(board, window)
                                 remove_options(solver_status, board, to_remove, window)
                                 if window:
                                     window.options_visible = window.options_visible.union(rectangle)
-                                kwargs["solver_tool"] = "unique_rectangle_test_1"
-                                kwargs["c_chain"] = c_chain
-                                kwargs["impacted_cells"] = {cell for _, cell in to_remove}
-                                kwargs["remove"] = to_remove
+                                kwargs = {"solver_tool": "uniqueness_test_1",
+                                          "c_chain": c_chain,
+                                          "impacted_cells": {cell for _, cell in to_remove},
+                                          "remove": to_remove, }
                                 return kwargs
     return None
 
 
 @get_stats
 def test_2(solver_status, board, window):
-    """ Remove candidates (options) using Unique Rectangle technique
-    (see https://www.learn-sudoku.com/unique-rectangle.html)
+    """ Suppose both ceiling cells in the rectangle have exactly one extra candidate X.
+    Then X can be eliminated from the cells seen by both of these cells.
     Rating: 100
     """
-
-    def _get_c_chain(floor_a, floor_b, ceiling_a, ceiling_b, bi_value, z_value, by_row):
-        c_chain = defaultdict(set)
-        color_1 = 'yellow'
-        color_2 = 'lime'
-
-        c_chain[ceiling_a] = {(z_value, 'cyan')}
-        c_chain[ceiling_b] = {(z_value, 'cyan')}
-        fa = floor_a[0] * 9 + floor_a[1] if by_row else floor_a[1] * 9 + floor_a[0]
-        fb = floor_b[0] * 9 + floor_b[1] if by_row else floor_b[1] * 9 + floor_b[0]
-        nodes = [fa, fb, ceiling_b, ceiling_a]
-        for node in nodes:
-            c_chain[node].add((bi_value[0], color_1))
-            c_chain[node].add((bi_value[1], color_2))
-            color_1 = 'lime' if color_1 == 'yellow' else 'yellow'
-            color_2 = 'lime' if color_2 == 'yellow' else 'yellow'
-        return c_chain
 
     def _find_xyz(x, y, cells, by_row):
         if by_row:
@@ -104,15 +110,11 @@ def test_2(solver_status, board, window):
         cells_by_y = CELLS_IN_COL if by_row else CELLS_IN_ROW
 
         for floor_id_x in range(9):
-            bi_values.clear()
-            for floor_id_y in range(9):
-                cell = cells_by_x[floor_id_x][floor_id_y]
-                if len(board[cell]) == 2:
-                    bi_values[board[cell]].add((floor_id_x, floor_id_y, CELL_SQR[cell]))
-            for bi_value, positions in bi_values.items():
-                if len(positions) == 2:
-                    floor_a = positions.pop()
-                    floor_b = positions.pop()
+            bi_values = _get_bi_values_dictionary(board, cells_by_x[floor_id_x], by_row)
+            for bi_value, coordinates in bi_values.items():
+                if len(coordinates) == 2:
+                    floor_a = coordinates.pop()
+                    floor_b = coordinates.pop()
                     xa_ids = _find_xyz(bi_value[0], bi_value[1], cells_by_y[floor_a[1]], by_row)
                     xb_ids = _find_xyz(bi_value[0], bi_value[1], cells_by_y[floor_b[1]], by_row)
                     x_ids = xa_ids.intersection(xb_ids)
@@ -127,23 +129,23 @@ def test_2(solver_status, board, window):
                                 if z_candidate in board[cell]:
                                     to_remove.add((z_candidate, cell))
                             if to_remove:
-                                c_chain = _get_c_chain(floor_a, floor_b, ceiling_a, ceiling_b,
-                                                       bi_value, z_candidate, by_row)
+                                rows = (floor_a[0], x_id) if by_row else (floor_a[1], floor_b[1])
+                                columns = (floor_a[1], floor_b[1]) if by_row else (floor_a[0], x_id)
+                                rectangle = _get_rectangle(sorted(rows), sorted(columns))
+                                c_chain = _get_c_chain(board, rectangle, bi_value, z_candidate)
                                 solver_status.capture_baseline(board, window)
                                 remove_options(solver_status, board, to_remove, window)
                                 if window:
                                     window.options_visible = window.options_visible.union(c_chain.keys())
-                                kwargs["solver_tool"] = "unique_rectangles"
+                                kwargs["solver_tool"] = "uniqueness_test_2"
                                 kwargs["c_chain"] = c_chain
                                 kwargs["impacted_cells"] = {cell for _, cell in to_remove}
                                 kwargs["remove"] = to_remove
-                                # print('\tBingo!')
                                 return True
         return False
 
     init_options(board, solver_status)
     kwargs = {}
-    bi_values = defaultdict(set)
     if _check_rectangles(True) or _check_rectangles(False):
         return kwargs
     return None
@@ -151,8 +153,12 @@ def test_2(solver_status, board, window):
 
 @get_stats
 def test_3(solver_status, board, window):
-    """ Remove candidates (options) using Unique Rectangle technique
-    (see https://www.learn-sudoku.com/unique-rectangle.html)
+    """ Suppose both ceiling cells have extra candidates.
+    By treating these two cells as one node, find k - 1 other cells (as nodes)
+    in the same house as these two cells so that the union of the candidates
+    for these k cells has exactly k unique digits. Then the Naked Subset rule
+    can be applied eliminate these k digits from the other cells in the house.
+    The algorithm is implemented for k = 2, 3 and 4
     Rating: 100
     """
 
@@ -208,15 +214,16 @@ def test_3(solver_status, board, window):
         cells_by_y = CELLS_IN_COL if by_row else CELLS_IN_ROW
 
         for floor_id_x in range(9):
-            bi_values.clear()
-            for floor_id_y in range(9):
-                cell = cells_by_x[floor_id_x][floor_id_y]
-                if len(board[cell]) == 2:
-                    bi_values[board[cell]].add((floor_id_x, floor_id_y, CELL_SQR[cell]))
-            for bi_value, positions in bi_values.items():
-                if len(positions) == 2:
-                    floor_a = positions.pop()
-                    floor_b = positions.pop()
+            # bi_values.clear()
+            # for floor_id_y in range(9):
+            #     cell = cells_by_x[floor_id_x][floor_id_y]
+            #     if len(board[cell]) == 2:
+            #        bi_values[board[cell]].add((floor_id_x, floor_id_y, CELL_SQR[cell]))
+            bi_values = _get_bi_values_dictionary(board, cells_by_x[floor_id_x], by_row)
+            for bi_value, coordinates in bi_values.items():
+                if len(coordinates) == 2:
+                    floor_a = coordinates.pop()
+                    floor_b = coordinates.pop()
                     xa_ids = _find_xyz(bi_value[0], bi_value[1], cells_by_y[floor_a[1]], by_row)
                     xb_ids = _find_xyz(bi_value[0], bi_value[1], cells_by_y[floor_b[1]], by_row)
                     x_ids = xa_ids.intersection(xb_ids)
@@ -244,12 +251,13 @@ def test_3(solver_status, board, window):
                                 kwargs["c_chain"] = c_chain
                                 kwargs["impacted_cells"] = {cell for _, cell in to_remove}
                                 kwargs["remove"] = to_remove
+                                print('\tTest 3')
                                 return True
         return False
 
     init_options(board, solver_status)
     kwargs = {}
-    bi_values = defaultdict(set)
+    # bi_values = defaultdict(set)
     c_chain = defaultdict(set)
     to_remove = set()
     if _check_rectangles(True) or _check_rectangles(False):
@@ -300,10 +308,10 @@ def test_4(solver_status, board, window):
                 cell = cells_by_x[floor_id_x][floor_id_y]
                 if len(board[cell]) == 2:
                     bi_values[board[cell]].add((floor_id_x, floor_id_y, CELL_SQR[cell]))
-            for bi_value, positions in bi_values.items():
-                if len(positions) == 2:
-                    floor_a = positions.pop()
-                    floor_b = positions.pop()
+            for bi_value, coordinates in bi_values.items():
+                if len(coordinates) == 2:
+                    floor_a = coordinates.pop()
+                    floor_b = coordinates.pop()
                     xa_ids = _find_xyz(bi_value[0], bi_value[1], cells_by_y[floor_a[1]], by_row)
                     xb_ids = _find_xyz(bi_value[0], bi_value[1], cells_by_y[floor_b[1]], by_row)
                     x_ids = xa_ids.intersection(xb_ids)
