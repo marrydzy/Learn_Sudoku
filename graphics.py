@@ -226,7 +226,7 @@ class AppWindow:
         start = time.time()  # TODO - get rid of it!!!
         solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else "plain_board"   # TODO - simplify it !!!
 
-        if self.animate and solver_tool == "unique_rectangles":        # TODO - for development & debugging only!
+        if self.animate and solver_tool == "uniqueness_test_5":        # TODO - for development & debugging only!
             self.animate = False
             self.wait = True
             self.buttons[pygame.K_m].set_pressed(False)

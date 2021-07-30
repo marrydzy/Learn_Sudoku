@@ -426,11 +426,6 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
 
     for value in window.solver_status.board_baseline[cell_id]:
-        if remove and (value, cell_id) in remove:
-            pygame.draw.rect(window.screen, html_color_codes['darkgray'],
-                             (pos[0] + window.option_offsets[value][0],
-                              pos[1] + window.option_offsets[value][1],
-                              CELL_SIZE // 3, CELL_SIZE // 3))
         if claims and value in new_value and cell_id in claims:
             pygame.draw.rect(window.screen, html_color_codes["cyan"],
                              (pos[0] + window.option_offsets[value][0],
@@ -471,6 +466,11 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if sue_de_coq and cell_id in sue_de_coq:
             pygame.draw.rect(window.screen, html_color_codes["cyan"],
+                             (pos[0] + window.option_offsets[value][0],
+                              pos[1] + window.option_offsets[value][1],
+                              CELL_SIZE // 3, CELL_SIZE // 3))
+        if remove and (value, cell_id) in remove:
+            pygame.draw.rect(window.screen, html_color_codes['darkgray'],
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
@@ -783,6 +783,10 @@ def set_methods():
             "unique_rectangles": "r",
             "uniqueness_test_1": "r",
             "uniqueness_test_2": "r",
+            "uniqueness_test_3": "r",
+            "uniqueness_test_4": "r",
+            "uniqueness_test_5": "r",
+            "uniqueness_test_6": "r",
             "x_wings": "x",
             "finned_x_wings": "f",
             "finned_jellyfish": "9",
