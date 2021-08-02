@@ -9,6 +9,7 @@ import glob
 import difflib
 
 from collections import defaultdict
+from itertools import combinations
 from pathlib import Path
 
 from display import error_message, did_you_mean_message
@@ -103,6 +104,35 @@ def is_single(board, house, value):
             if value in board[cell]:
                 return cell
     return None
+
+
+def get_subsets(board, n_size_subset, als=False):
+    """ generator of dictionaries of n-size subsets:
+     - naked subsets if als == False
+     - als'es if als == True
+     The format of the 'subset' dictionary is: {candidate: {cell_1, ...}, ...}
+     """
+    for cells in (CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR):
+        for house in cells:
+            unsolved = {cell for cell in house if len(board[cell]) > 1}
+            if len(unsolved) > n_size_subset + 1:
+                for subset in combinations(unsolved, n_size_subset):
+                    candidates = set("".join(board[cell_id] for cell_id in subset))
+                    expected_length = n_size_subset if not als else n_size_subset + 1
+                    if len(candidates) == expected_length:
+                        subset_data = defaultdict(set)
+                        for cell in subset:
+                            for candidate in board[cell]:
+                                subset_data[candidate].add(cell)
+                        yield subset_data
+
+
+def get_impacted_cells(board, subset):
+    """ return set of unsolved cells impacted by subset cells """
+    impacted_cells = set(range(81))
+    for cell in subset:
+        impacted_cells = impacted_cells.intersection(ALL_NBRS[cell])
+    return {cell for cell in impacted_cells if len(board[cell]) > 1}
 
 
 def get_bi_value_cells(board):

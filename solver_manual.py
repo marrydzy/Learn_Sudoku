@@ -9,6 +9,8 @@ from utils import ALL_NBRS
 from utils import is_clue, is_solved, set_cell_options, set_neighbours_options
 
 import basic_techniques
+import intersections
+import subsets
 import uniqueness_tests
 import intermediate_techniques
 import fish
@@ -22,13 +24,13 @@ solver_methods = [
     basic_techniques.visual_elimination,
     basic_techniques.naked_singles,
     basic_techniques.hidden_singles,
-    basic_techniques.naked_twins,
-    basic_techniques.hidden_pair,
-    basic_techniques.naked_triplets,
-    basic_techniques.hidden_triplet,
-    basic_techniques.naked_quads,
-    basic_techniques.hidden_quad,
-    basic_techniques.omissions,
+    intersections.locked_candidates,
+    subsets.naked_pair,
+    subsets.hidden_pair,
+    subsets.naked_triplet,
+    subsets.hidden_triplet,
+    subsets.naked_quad,
+    subsets.hidden_quad,
     uniqueness_tests.test_1,
     uniqueness_tests.test_2,
     uniqueness_tests.test_3,
@@ -57,6 +59,8 @@ solver_methods = [
     wings.wxyz_wing,
     intermediate_techniques.empty_rectangle,
     intermediate_techniques.sue_de_coq,
+
+    questionable.almost_locked_candidates,
     questionable.franken_x_wing,
 ]
 
@@ -266,7 +270,7 @@ def manual_solver(board, window):
         else:
             if not is_solved(board, solver_status):        # TODO: for debugging only!
                 strategies_failure_counter += 1
-                print(f"\n{strategies_failure_counter = }")
+                # print(f"\n{strategies_failure_counter = }")
                 pass
             return False
     return True

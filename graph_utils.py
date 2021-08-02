@@ -772,14 +772,18 @@ def set_methods():
             "naked_singles": "n",
             "hidden_singles": "u",
             "unique_values": "u",
-            "hidden_pairs": "h",
-            "naked_twins": "p",
-            "omissions": "o",
+            "hidden_pairs": "h",    # TODO - obsolete!
+            "hidden_pair": "h",
+            "naked_pair": "p",
+            "naked_twins": "p",     # TODO - obsolete!
+            "omissions": "o",       # TODO - obsolete!
+            "locked_candidates_type_1": "o",
+            "locked_candidates_type_2": "o",
             "xy_wing": "y",
-            "hidden_triplets": "i",
-            "hidden_quads": "j",
-            "naked_triplets": "t",
-            "naked_quads": "q",
+            "hidden_triplet": "i",
+            "hidden_quad": "j",
+            "naked_triplet": "t",
+            "naked_quad": "q",
             "unique_rectangles": "r",
             "uniqueness_test_1": "r",
             "uniqueness_test_2": "r",
@@ -828,6 +832,7 @@ def set_methods():
             "naked_xy_chain": "9",
             "hidden_xy_chain": "9",
             "y_wings": "9",             # TODO!!!
+            "almost_locked_candidates": "0",
             }
 
 

@@ -2,8 +2,68 @@
 
 """ SUDOKU SOLVING METHODS """
 
+from itertools import combinations
+from collections import defaultdict
+
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR, SUDOKU_VALUES_LIST
-from utils import is_clue, init_options, remove_options
+from utils import is_clue, init_options, remove_options, get_bi_value_cells
+
+
+def almost_locked_candidates(solver_status, board, window):
+    """ TODO """
+
+    def _get_c_chain(locked_cells, locked_candidate):
+        chain = defaultdict(set)
+        for cell in locked_cells:
+            chain[cell].add((locked_candidate, 'cyan'))
+        return chain
+
+    bi_value_cells = get_bi_value_cells(board)
+    for bi_value, cells in bi_value_cells.items():
+        if len(cells) > 2:
+            for xy_pair in combinations(cells, 2):
+                if CELL_ROW[xy_pair[0]] != CELL_ROW[xy_pair[1]] and \
+                        CELL_COL[xy_pair[0]] != CELL_COL[xy_pair[1]] and \
+                        CELL_SQR[xy_pair[0]] != CELL_SQR[xy_pair[1]]:
+                    line = None
+                    box = None
+                    row_0 = CELLS_IN_ROW[CELL_ROW[xy_pair[0]]]
+                    col_0 = CELLS_IN_COL[CELL_COL[xy_pair[0]]]
+                    box_0 = CELLS_IN_SQR[CELL_SQR[xy_pair[0]]]
+                    row_1 = CELLS_IN_ROW[CELL_ROW[xy_pair[1]]]
+                    col_1 = CELLS_IN_COL[CELL_COL[xy_pair[1]]]
+                    box_1 = CELLS_IN_SQR[CELL_SQR[xy_pair[1]]]
+                    if set(row_0).intersection(box_1):
+                        line = row_0
+                        box = box_1
+                    elif set(col_0).intersection(box_1):
+                        line = col_0
+                        box = box_1
+                    elif set(row_1).intersection(box_0):
+                        line= row_1
+                        box = box_0
+                    elif set(col_1).intersection(box_0):
+                        line = col_1
+                        box = box_0
+
+                    if line and box:
+                        other_line_cells = {cell for cell in line if cell not in box and cell not in xy_pair}
+                        if not {candidate for cell in other_line_cells for candidate in board[cell]}.intersection(bi_value):
+                            impacted_cells = {cell for cell in box if cell not in line and cell not in xy_pair}
+                            to_remove = {(digit, cell) for digit in bi_value for cell in impacted_cells
+                                         if digit in board[cell]}
+                            if to_remove:
+                                solver_status.capture_baseline(board, window)
+                                remove_options(solver_status, board, to_remove, window)
+                                if window:
+                                    window.options_visible = window.options_visible.union(box).union(line)
+                                print('\tAlmost Locked Candidates')
+                                return {
+                                    "solver_tool": "almost_locked_candidates",
+                                    "house": box,
+                                    "remove": to_remove,
+                                    "c_chain": _get_c_chain(xy_pair, bi_value)}
+    return None
 
 
 def franken_x_wing(solver_status, board, window):

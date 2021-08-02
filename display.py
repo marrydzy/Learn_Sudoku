@@ -17,13 +17,17 @@ screen_messages = {
     "visual_elimination": "'Visual Elimination' technique:",
     "naked_singles": "'Naked Single' technique:",
     "hidden_singles": "'Hidden Single' technique:",
-    "hidden_pairs": "'Hidden Pair' technique:",
-    "hidden_triplets": "'Hidden Triplet' technique:",
-    "hidden_quads": "'Hidden Quad' technique:",
-    "naked_twins": "'Naked Pair' techniques:",
-    "naked_triplets": "'Naked Triplet' technique:",
-    "naked_quads": "'Naked Quad' technique:",
-    "omissions": "'Locked Candidate' technique:",
+    "hidden_pairs": "'Hidden Pair' technique:",     # TODO - obsolete!
+    "hidden_pair": "'Hidden Pair' technique:",
+    "hidden_triplet": "'Hidden Triplet' technique:",
+    "hidden_quad": "'Hidden Quad' technique:",
+    "naked_twins": "'Naked Pair' technique",        # TODO - obsolete!
+    "naked_pair": "'Naked Pair' technique",
+    "naked_triplet": "'Naked Triplet' technique",
+    "naked_quad": "'Naked Quad' technique",
+    "omissions": "'Locked Candidates' technique",   # TODO - obsolete!
+    "locked_candidates_type_1": "'Locked Candidates - Type 1 (Pointing)' technique",
+    "locked_candidates_type_2": "'Locked Candidates - Type 2 (Claiming)' technique",
     "swordfish": "'Swordfish' technique",
     "finned_swordfish": "'Finned Swordfish' technique",
     "jellyfish": "'Jellyfish' technique",
@@ -41,7 +45,7 @@ screen_messages = {
     "sashimi_squirmbag": "'Sashimi Suirmbag' technique",
     "franken_x_wing": "'Franken X-Wing' technique",
     "xy_wing": "'XY-wing' technique",
-    "y_wings": "'XY-Wing' techinique",      # TODO !
+    "y_wings": "'XY-Wing' techinique",              # TODO - obsolete!
     "xyz_wing": "'XYZ-Wing' technique",
     "wxyz_wing_type_1": "'WXYZ-Wing (Type 1)' technique",
     "wxyz_wing_type_2": "'WXYZ-Wing (Type 2)' technique",
@@ -75,7 +79,8 @@ screen_messages = {
     "conflicting_values": "The entered value conflicts with other cells",
     "wrong_values": "Incorrect value entered!",
     "critical_error": "DUPA JAŚ !!!",
-    "iterate": "Iterating ..."
+    "iterate": "Iterating ...",
+    "almost_locked_candidates": "'Almost Locked Candidates' technique"
 }
 
 DEBUG = False
