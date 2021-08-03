@@ -16,6 +16,7 @@ import intermediate_techniques
 import fish
 import wings
 import coloring
+import almost_locket_set
 import questionable
 
 
@@ -57,6 +58,7 @@ solver_methods = [
     wings.xyz_wing,
     wings.w_wing,
     wings.wxyz_wing,
+    almost_locket_set.als_xz,
     intermediate_techniques.empty_rectangle,
     intermediate_techniques.sue_de_coq,
 

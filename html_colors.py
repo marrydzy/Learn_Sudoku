@@ -73,6 +73,7 @@ html_color_codes = {
     'palegoldenrod': (238, 232, 170),
     'palegreen': (152, 251, 152),
     'peachpuff': (255, 218, 185),
+    'peru': (205, 133, 63),
     'pink': (255, 192, 203),
     'plum': (221, 160, 221),
     'powderblue': (),

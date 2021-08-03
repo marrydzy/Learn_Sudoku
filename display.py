@@ -80,7 +80,8 @@ screen_messages = {
     "wrong_values": "Incorrect value entered!",
     "critical_error": "DUPA JAŚ !!!",
     "iterate": "Iterating ...",
-    "almost_locked_candidates": "'Almost Locked Candidates' technique"
+    "almost_locked_candidates": "'Almost Locked Candidates' technique",
+    "als_xz": "'ALS-XZ' technique",
 }
 
 DEBUG = False
