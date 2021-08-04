@@ -58,7 +58,10 @@ solver_methods = [
     wings.xyz_wing,
     wings.w_wing,
     wings.wxyz_wing,
+
     almost_locket_set.als_xz,
+    almost_locket_set.als_xy_wing,
+
     intermediate_techniques.empty_rectangle,
     intermediate_techniques.sue_de_coq,
 

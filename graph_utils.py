@@ -169,8 +169,12 @@ def cell_color(window, cell, **kwargs):
         color = html_color_codes["silver"]
     if "c_chain" in kwargs and cell in kwargs["c_chain"]:
         color = html_color_codes["orange"]
-    if "d_chain" in kwargs and cell in kwargs["d_chain"]:
+    if "chain_a" in kwargs and cell in kwargs["chain_a"]:
+        color = html_color_codes["orange"]
+    if "chain_b" in kwargs and cell in kwargs["chain_b"]:
         color = html_color_codes["peru"]
+    if "chain_c" in kwargs and cell in kwargs["chain_c"]:
+        color = html_color_codes["lightcoral"]
     if "wrong_values" in kwargs and cell in kwargs["wrong_values"]:
         color = html_color_codes["pink"]
     if "conflicted_cells" in kwargs and cell in kwargs["conflicted_cells"]:
@@ -393,7 +397,10 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     sue_de_coq = kwargs["sue_de_coq"] if "sue_de_coq" in kwargs else None
     nodes = kwargs["nodes"] if "nodes" in kwargs else None
     c_chain = kwargs["c_chain"] if "c_chain" in kwargs else None
-    d_chain = kwargs["d_chain"] if "d_chain" in kwargs else None
+    chain_a = kwargs["chain_a"] if "chain_a" in kwargs else None
+    chain_b = kwargs["chain_b"] if "chain_b" in kwargs else None
+    chain_c = kwargs["chain_c"] if "chain_c" in kwargs else None
+
 
     if iterate is not None and cell_id == iterate:
         pygame.draw.rect(
@@ -462,13 +469,14 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                                      (pos[0] + window.option_offsets[value][0],
                                       pos[1] + window.option_offsets[value][1],
                                       CELL_SIZE // 3, CELL_SIZE // 3))
-        if d_chain and cell_id in d_chain:
-            for candidate, color in d_chain[cell_id]:
-                if value == candidate:
-                    pygame.draw.rect(window.screen, html_color_codes[color],
-                                     (pos[0] + window.option_offsets[value][0],
-                                      pos[1] + window.option_offsets[value][1],
-                                      CELL_SIZE // 3, CELL_SIZE // 3))
+        for chain in (chain_a, chain_b, chain_c):
+            if chain and cell_id in chain:
+                for candidate, color in chain[cell_id]:
+                    if value == candidate:
+                        pygame.draw.rect(window.screen, html_color_codes[color],
+                                         (pos[0] + window.option_offsets[value][0],
+                                          pos[1] + window.option_offsets[value][1],
+                                          CELL_SIZE // 3, CELL_SIZE // 3))
         if skyscraper and value == skyscraper[0] and cell_id in skyscraper[1:]:
             pygame.draw.rect(window.screen, html_color_codes["cyan"],
                              (pos[0] + window.option_offsets[value][0],
@@ -844,6 +852,7 @@ def set_methods():
             "y_wings": "9",             # TODO!!!
             "almost_locked_candidates": "0",
             "als_xz": "0",
+            "als_xy_wing": "0",
             }
 
 
