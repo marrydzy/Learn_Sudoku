@@ -16,7 +16,7 @@ import intermediate_techniques
 import fish
 import wings
 import coloring
-import almost_locket_set
+import almost_locked_set
 import questionable
 
 
@@ -59,11 +59,12 @@ solver_methods = [
     wings.w_wing,
     wings.wxyz_wing,
 
-    almost_locket_set.als_xz,
-    almost_locket_set.als_xy_wing,
-
     intermediate_techniques.empty_rectangle,
     intermediate_techniques.sue_de_coq,
+
+    almost_locked_set.als_xz,
+    almost_locked_set.death_blossom,
+    almost_locked_set.als_xy_wing,
 
     questionable.almost_locked_candidates,
     questionable.franken_x_wing,
@@ -268,6 +269,8 @@ def manual_solver(board, window):
             elif window.show_solution_steps:
                 window.calculate_next_clue = False
 
+        if is_solved(board, solver_status):
+            return True
         for strategy in solver_methods:
             kwargs = strategy(solver_status, board, window)
             if kwargs:

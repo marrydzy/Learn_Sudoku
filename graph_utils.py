@@ -853,6 +853,7 @@ def set_methods():
             "almost_locked_candidates": "0",
             "als_xz": "0",
             "als_xy_wing": "0",
+            "death_blossom": "0",
             }
 
 

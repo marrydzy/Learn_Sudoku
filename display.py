@@ -83,6 +83,7 @@ screen_messages = {
     "almost_locked_candidates": "'Almost Locked Candidates' technique",
     "als_xz": "'ALS-XZ' technique",
     "als_xy_wing": "'ALS-XY-Wing' technique",
+    "death_blossom": "'Death Blossom' technique",
 }
 
 DEBUG = False
