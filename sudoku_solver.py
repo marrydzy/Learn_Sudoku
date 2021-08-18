@@ -234,7 +234,7 @@ def run_solver(progress_bar=None):
         if data["graph_display"].solved_board is None and "solved_board" in data:
             data["graph_display"].solved_board = data["solved_board"]
 
-    ret_code = methods[0](board, data["graph_display"])
+    ret_code = methods[0](board, data["graph_display"], lone_singles)
 
     if not ret_code:
         ret_code = apply_standard_techniques()

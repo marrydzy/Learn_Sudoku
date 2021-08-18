@@ -7,6 +7,7 @@ from collections import defaultdict
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR
 from utils import ALL_NBRS
 from utils import is_clue, is_solved, set_cell_options, set_neighbours_options
+from utils import get_stats
 
 import basic_techniques
 import intersections
@@ -62,6 +63,7 @@ solver_methods = [
     intermediate_techniques.empty_rectangle,
     intermediate_techniques.sue_de_coq,
 
+    almost_locked_set.als_xy,
     almost_locked_set.als_xz,
     almost_locked_set.death_blossom,
     almost_locked_set.als_xy_wing,
@@ -248,7 +250,8 @@ def _set_manually(board, window):
 strategies_failure_counter = 0     # TODO - for debugging/testing only!
 
 
-def manual_solver(board, window):
+@get_stats
+def manual_solver(board, window, _):
     """ Main solver loop:
      - The algorithm draws current board and waits until a predefined event happens
      - Each 'technique' function returns kwargs dictionary if the board is updated, empty dictionary otherwise
@@ -278,7 +281,7 @@ def manual_solver(board, window):
         else:
             if not is_solved(board, solver_status):        # TODO: for debugging only!
                 strategies_failure_counter += 1
-                # print(f"\n{strategies_failure_counter = }")
+                print(f"\n{strategies_failure_counter = }")
                 pass
             return False
     return True

@@ -33,26 +33,23 @@ def _get_c_chain(als_a=None, als_b=None, als_c=None, x=None, y=None, z=None):
     chain_b = defaultdict(set)
     chain_c = defaultdict(set)
     als_es = ((als_a, chain_a), (als_b, chain_b), (als_c, chain_c))
-    color_x = 'yellow'
-    color_y = 'yellow'
-    color_z = 'lime'
+    color_x = 'peachpuff'
+    color_y = 'lime'
+    color_z = 'yellow'
     for als, chain in als_es:
         if als:
             cells = {cell for candidate in als for cell in als[candidate]}
             for cell in cells:
                 for candidate in als:
-                    if candidate == x:
+                    if als != als_c and candidate == x:
                         chain[cell].add((candidate, color_x))
-                    elif candidate == y:
+                    elif (als != als_b or not als_c) and candidate == y:
                         chain[cell].add((candidate, color_y))
-                    elif candidate == z:
+                    elif als != als_a and candidate == z:
                         chain[cell].add((candidate, color_z))
-                    else:
+                    elif als != als_c:
                         chain[cell].add((candidate, 'cyan'))
-            color_x = 'lime' if color_x == 'yellow' else 'yellow'
-            color_y = 'lime' if color_y == 'yellow' else 'yellow'
-            color_z = 'lime' if color_z == 'yellow' else 'yellow'
-    return chain_b, chain_a, chain_c
+    return chain_a, chain_b, chain_c
 
 
 def _get_alses(board):
@@ -75,6 +72,68 @@ def _get_alses_with_restricted_common(stem, candidate, alses):
     return connected_alses
 
 
+def _check_if_overlap(als_a, als_b):
+    cells_a = {cell for candidate in als_a for cell in als_a[candidate]}
+    cells_b = {cell for candidate in als_b for cell in als_b[candidate]}
+    return bool(cells_a.intersection(cells_b))
+
+
+def _select_2_petals(all_petals, stem_candidates):
+    for petal_1 in all_petals[stem_candidates[0]]:
+        cells_1 = {cell for candidate in petal_1 for cell in petal_1[candidate]}
+        for petal_2 in all_petals[stem_candidates[1]]:
+            cells_2 = {cell for candidate in petal_2 for cell in petal_2[candidate]}
+            blossom_cells = cells_1.union(cells_2)
+            petals_lengths = len(cells_1) + len(cells_2)
+            if len(blossom_cells) == petals_lengths:
+                possible_candidates = set(petal_1).intersection(petal_2)
+                possible_candidates = possible_candidates.difference(stem_candidates)
+                blossom = {}
+                for candidate in possible_candidates:
+                    blossom[candidate] = petal_1[candidate].union(petal_2[candidate])
+                yield blossom
+
+
+def _select_3_petals(all_petals, stem_candidates):
+    for petal_1 in all_petals[stem_candidates[0]]:
+        cells_1 = {cell for candidate in petal_1 for cell in petal_1[candidate]}
+        for petal_2 in all_petals[stem_candidates[1]]:
+            cells_2 = {cell for candidate in petal_2 for cell in petal_2[candidate]}
+            for petal_3 in all_petals[stem_candidates[2]]:
+                cells_3 = {cell for candidate in petal_3 for cell in petal_3[candidate]}
+                blossom_cells = cells_1.union(cells_2).union(cells_3)
+                petals_lengths = len(cells_1) + len(cells_2) + len(cells_3)
+                if len(blossom_cells) == petals_lengths:
+                    possible_candidates = set(petal_1).intersection(petal_2).intersection(petal_3)
+                    possible_candidates = possible_candidates.difference(stem_candidates)
+                    blossom = {}
+                    for candidate in possible_candidates:
+                        blossom[candidate] = petal_1[candidate].union(petal_2[candidate]).union(petal_3[candidate])
+                    yield blossom
+
+
+def _select_4_petals(all_petals, stem_candidates):
+    for petal_1 in all_petals[stem_candidates[0]]:
+        cells_1 = {cell for candidate in petal_1 for cell in petal_1[candidate]}
+        for petal_2 in all_petals[stem_candidates[1]]:
+            cells_2 = {cell for candidate in petal_2 for cell in petal_2[candidate]}
+            for petal_3 in all_petals[stem_candidates[2]]:
+                cells_3 = {cell for candidate in petal_3 for cell in petal_3[candidate]}
+                for petal_4 in all_petals[stem_candidates[3]]:
+                    cells_4 = {cell for candidate in petal_4 for cell in petal_4[candidate]}
+                    blossom_cells = cells_1.union(cells_2).union(cells_3).union(cells_4)
+                    petals_lengths = len(cells_1) + len(cells_2) + len(cells_3) + len(cells_4)
+                    if len(blossom_cells) == petals_lengths:
+                        possible_candidates = set(petal_1).intersection(petal_2).intersection(
+                            petal_3).intersection(petal_4)
+                        possible_candidates = possible_candidates.difference(stem_candidates)
+                        blossom = {}
+                        for candidate in possible_candidates:
+                            blossom[candidate] = petal_1[candidate].union(petal_2[candidate]).union(
+                                petal_3[candidate]).union(petal_4[candidate])
+                        yield blossom
+
+
 @get_stats
 def als_xz(solver_status, board, window):
     """  The ALS-XZ rule says that if A and B are Almost Locked Sets (or ALSes),
@@ -91,7 +150,9 @@ def als_xz(solver_status, board, window):
     als_es = _get_alses(board)
     for als_a, als_b in combinations(als_es, 2):
         common_values = set(als_a).intersection(als_b)
-        impacted_cells = {cell for cell in range(81) if len(board[cell]) > 1}.difference(als_a).difference(als_b)
+        cells_a = {cell for candidate in als_a for cell in als_a[candidate]}
+        cells_b = {cell for candidate in als_b for cell in als_b[candidate]}
+        impacted_cells = {cell for cell in range(81) if len(board[cell]) > 1}.difference(cells_a).difference(cells_b)
         if len(common_values) > 1 and impacted_cells:
             for x in _get_restricted_commons(als_a, als_b, common_values):
                 for z in common_values.difference((x,)):
@@ -99,17 +160,15 @@ def als_xz(solver_status, board, window):
                     if common_neighbours:
                         to_remove = {(z, cell) for cell in common_neighbours if z in board[cell]}
                         if to_remove:
-                            cells_a = {cell for candidate in als_a for cell in als_a[candidate]}
-                            cells_b = {cell for candidate in als_b for cell in als_b[candidate]}
-                            c_chain, d_chain, _ = _get_c_chain(als_a=als_a, als_b=als_b, x=x, z=z)
+                            chain_a, chain_b, _ = _get_c_chain(als_a=als_a, als_b=als_b, x=z, y=x)
                             solver_status.capture_baseline(board, window)
                             remove_options(solver_status, board, to_remove, window)
                             if window:
                                 window.options_visible = window.options_visible.union(cells_a).union(
                                     cells_b).union(common_neighbours)
                             return {"solver_tool": "als_xz",
-                                    "chain_a": c_chain,
-                                    "chain_b": d_chain,
+                                    "chain_a": chain_a,
+                                    "chain_b": chain_b,
                                     "remove": to_remove,
                                     "impacted_cells": {cell for _, cell in to_remove}, }
     return None
@@ -127,11 +186,27 @@ def als_xy_wing(solver_status, board, window):
     Rating: 320-350
     """
     als_es = _get_alses(board)
-    for als_1, als_2, als_3 in combinations(als_es, 3):
-        for als_a, als_b, als_c in ((als_1, als_2, als_3), (als_2, als_3, als_1), (als_1, als_3, als_2)):
-            common_values = set(als_a).intersection(als_b).intersection(als_c)
-            impacted_cells = {cell for cell in range(81) if len(board[cell]) > 1}.difference(als_a).difference(als_b)
-            if common_values and impacted_cells:
+    als_cells = {}
+    unresolved = {cell for cell in range(81) if len(board[cell]) > 1}
+    for idx_0, idx_1, idx_2 in combinations(range(len(als_es)), 3):
+        common_values = set(als_es[idx_0]).intersection(als_es[idx_1]).intersection(als_es[idx_2])
+        if not common_values:
+            continue
+        if idx_0 not in als_cells:
+            als_cells[idx_0] = {cell for candidate in als_es[idx_0] for cell in als_es[idx_0][candidate]}
+        if idx_1 not in als_cells:
+            als_cells[idx_1] = {cell for candidate in als_es[idx_1] for cell in als_es[idx_1][candidate]}
+        if idx_2 not in als_cells:
+            als_cells[idx_2] = {cell for candidate in als_es[idx_2] for cell in als_es[idx_2][candidate]}
+        for idx_a, idx_b, idx_c in ((idx_0, idx_1, idx_2), (idx_1, idx_2, idx_0), (idx_0, idx_2, idx_1)):
+            als_a = als_es[idx_a]
+            cells_a = als_cells[idx_a]
+            als_b = als_es[idx_b]
+            cells_b = als_cells[idx_b]
+            als_c = als_es[idx_c]
+            cells_c = als_cells[idx_c]
+            impacted_cells = unresolved.difference(cells_a).difference(cells_b)
+            if impacted_cells:
                 for y in _get_restricted_commons(als_a, als_c, set(als_a).intersection(als_c)):
                     for z in _get_restricted_commons(als_b, als_c, set(als_b).intersection(als_c)):
                         if y != z:
@@ -140,11 +215,8 @@ def als_xy_wing(solver_status, board, window):
                                 if common_neighbours:
                                     to_remove = {(x, cell) for cell in common_neighbours if x in board[cell]}
                                     if to_remove:
-                                        cells_a = {cell for candidate in als_a for cell in als_a[candidate]}
-                                        cells_b = {cell for candidate in als_b for cell in als_b[candidate]}
-                                        cells_c = {cell for candidate in als_c for cell in als_c[candidate]}
-                                        chain_a, chain_b, chain_c = _get_c_chain(als_a=als_a, als_b=als_c, als_c=als_b,
-                                                                                 x=y, y=z, z=x)
+                                        chain_a, chain_b, chain_c = _get_c_chain(als_a=als_a, als_b=als_b, als_c=als_c,
+                                                                                 x=x, y=y, z=z)
                                         impacted_cells = {cell for _, cell in to_remove}.difference(
                                             cells_a).difference(cells_b).difference(cells_c)
                                         solver_status.capture_baseline(board, window)
@@ -170,53 +242,90 @@ def death_blossom(solver_status, board, window):
 
     unresolved = {cell for cell in range(81) if len(board[cell]) > 1}
     als_es = _get_alses(board)
-    for stem_size in (3, ):
+    for stem_size in (2, 3, 4):
         stems = {cell for cell in range(81) if len(board[cell]) == stem_size}
         for stem in stems:
-            petals = {}
+            all_petals = {}
             for candidate in board[stem]:
                 candidate_petals = _get_alses_with_restricted_common(stem, candidate, als_es)
                 if candidate_petals:
-                    petals[candidate] = candidate_petals
-            if len(petals) == len(board[stem]):
-                # print(f'{stem = } with candidates: {board[stem]}')
-                # for candidate in petals:
-                #     print(f'{len(petals[candidate]) = }')
+                    all_petals[candidate] = candidate_petals
+            if len(all_petals) == len(board[stem]):
                 stem_candidates = board[stem]
-                for petal_1 in petals[stem_candidates[0]]:
-                    cells_1 = {cell for candidate in petal_1 for cell in petal_1[candidate]}
-                    for petal_2 in petals[stem_candidates[1]]:
-                        cells_2 = {cell for candidate in petal_2 for cell in petal_2[candidate]}
-                        for petal_3 in petals[stem_candidates[2]]:
-                            cells_3 = {cell for candidate in petal_3 for cell in petal_3[candidate]}
-                            petals_cells = cells_1.union(cells_2).union(cells_3)
-                            cells_lengths = len(cells_1) + len(cells_2) + len(cells_3)
-                            if len(petals_cells) == cells_lengths:
-                                # print(f'found petals')
-                                impacted_cells = unresolved.difference(petals_cells)
-                                # impacted_cells = impacted_cells.intersection(unresolved)
-                                possible_candidates = set(petal_1).intersection(petal_2).intersection(petal_3)
-                                possible_candidates = possible_candidates.difference(stem_candidates)
-                                if possible_candidates:
-                                    # print(f'\t{possible_candidates = }')
-                                    to_remove = set()
-                                    for cell in impacted_cells:
-                                        if possible_candidates.intersection(board[cell]):
-                                            cell_neighbours = set(ALL_NBRS[cell])
-                                            for candidate in possible_candidates.intersection(board[cell]):
-                                                all_cells = petal_1[candidate].union(petal_2[candidate]).union(petal_3[candidate])
-                                                if all_cells.intersection(cell_neighbours) == all_cells:
-                                                    # print('\tBingo!')
-                                                    to_remove.add((candidate, cell))
-                                    if to_remove:
-                                        solver_status.capture_baseline(board, window)
-                                        remove_options(solver_status, board, to_remove, window)
-                                        if window:
-                                            window.options_visible = window.options_visible.union(cells_1).union(
-                                                cells_2).union(cells_3)
-                                        print('\tDeath Blossom')
-                                        return {"solver_tool": "death_blossom",
-                                                "remove": to_remove,
-                                                }
+                for blossom in _select_2_petals(all_petals, stem_candidates) if stem_size == 2 \
+                        else (_select_3_petals(all_petals, stem_candidates) if stem_size == 3
+                              else _select_4_petals(all_petals, stem_candidates)):
+                    blossom_cells = {cell for petal in blossom for cell in petal}
+                    impacted_cells = unresolved.difference(blossom_cells)
+                    possible_candidates = set(blossom)
+                    to_remove = set()
+                    for cell in impacted_cells:
+                        if possible_candidates.intersection(board[cell]):
+                            cell_neighbours = set(ALL_NBRS[cell])
+                            for candidate in possible_candidates.intersection(board[cell]):
+                                candidate_cells = blossom[candidate]
+                                if candidate_cells.intersection(cell_neighbours) == candidate_cells:
+                                    to_remove.add((candidate, cell))
+                    if to_remove:
+                        solver_status.capture_baseline(board, window)
+                        remove_options(solver_status, board, to_remove, window)
+                        if window:
+                            window.options_visible = window.options_visible.union(blossom_cells)
+                        # print('\tDeath Blossom')
+                        return {"solver_tool": "death_blossom",
+                                "remove": to_remove, }
+    return None
 
+
+@get_stats
+def als_xy(solver_status, board, window):
+    """  TODO
+    Rating:
+    """
+    als_es = _get_alses(board)
+    for als_a, als_b in combinations(als_es, 2):
+        if _check_if_overlap(als_a, als_b):
+            continue
+        common_values = set(als_a).intersection(als_b)
+        impacted_cells = {cell for cell in range(81) if len(board[cell]) > 1}.difference(als_a).difference(als_b)
+        if len(common_values) > 1 and impacted_cells:
+            restricted_commons = _get_restricted_commons(als_a, als_b, common_values)
+            if len(restricted_commons) == 2:
+                to_remove = set()
+                x = list(restricted_commons)[0]
+                y = list(restricted_commons)[1]
+                for cell in impacted_cells:
+                    if x in board[cell] and set(ALL_NBRS[cell]).intersection(als_a[x]) == als_a[x] and \
+                            set(ALL_NBRS[cell]).intersection(als_b[x]) == als_b[x]:
+                        to_remove.add((x, cell))
+                    if y in board[cell] and set(ALL_NBRS[cell]).intersection(als_a[y]) == als_a[y] and \
+                            set(ALL_NBRS[cell]).intersection(als_b[y]) == als_b[y]:
+                        to_remove.add((y, cell))
+                # if to_remove:
+                #     print('\tBingo!')
+                for z in set(als_a).difference(restricted_commons):
+                    for cell in impacted_cells:
+                        if z in board[cell] and set(ALL_NBRS[cell]).intersection(als_a[z]) == als_a[z]:
+                            to_remove.add((z, cell))
+                for z in set(als_b).difference(restricted_commons):
+                    for cell in impacted_cells:
+                        if z in board[cell] and set(ALL_NBRS[cell]).intersection(als_b[z]) == als_b[z]:
+                            to_remove.add((z, cell))
+                if to_remove:
+                    cells_a = {cell for candidate in als_a for cell in als_a[candidate]}
+                    cells_b = {cell for candidate in als_b for cell in als_b[candidate]}
+                    c_chain, d_chain, _ = _get_c_chain(als_a=als_a, als_b=als_b,
+                                                       x=restricted_commons.pop(), z=restricted_commons.pop())
+                    solver_status.capture_baseline(board, window)
+                    remove_options(solver_status, board, to_remove, window)
+                    if window:
+                        window.options_visible = window.options_visible.union(cells_a).union(
+                            cells_b).union(impacted_cells)
+                    # print(f'\n{cells_a = }, \n{cells_b = }, \n{restricted_commons = }')
+                    return {"solver_tool": "als_xy",
+                            "chain_a": c_chain,
+                            "chain_b": d_chain,
+                            "remove": to_remove,
+                            "impacted_cells": {cell for _, cell in to_remove
+                                               if cell not in cells_a.union(cells_b)}, }
     return None

@@ -401,7 +401,6 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     chain_b = kwargs["chain_b"] if "chain_b" in kwargs else None
     chain_c = kwargs["chain_c"] if "chain_c" in kwargs else None
 
-
     if iterate is not None and cell_id == iterate:
         pygame.draw.rect(
             window.screen, LIGHTPINK,
@@ -853,6 +852,7 @@ def set_methods():
             "almost_locked_candidates": "0",
             "als_xz": "0",
             "als_xy_wing": "0",
+            "als_xy": "0",
             "death_blossom": "0",
             }
 
