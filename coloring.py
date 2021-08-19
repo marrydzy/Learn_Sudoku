@@ -15,7 +15,7 @@ import networkx as nx
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR, CELL_SQR, ALL_NBRS, SUDOKU_VALUES_LIST
 from utils import get_stats, is_clue, init_options, remove_options, get_pair_house, get_bi_value_cells
-from utils import get_strong_links
+from utils import get_strong_links, DeadEndException
 
 
 def _get_strongly_connected_cells(board, solver_status):
@@ -143,7 +143,9 @@ def _walk(board, graph, path, start_node, start_value, end_node, end_value):
             edge_values.discard(current_value)
             if not edge_values:
                 return
-            assert(len(edge_values) == 1)
+            # assert(len(edge_values) == 1)
+            if len(edge_values) != 1:
+                raise DeadEndException
             current_node = next_node
             current_value = edge_values.pop()
 

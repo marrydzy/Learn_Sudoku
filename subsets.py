@@ -36,7 +36,7 @@ def _hidden_subset(solver_status, board, window, subset_size, method_name):
                 continue
             candidates = set("".join(board[cell] for cell in unsolved))
 
-            assert len(unsolved) == len(candidates)
+            # assert len(unsolved) == len(candidates)   TODO
 
             candidates_positions = {candidate: {cell for cell in unsolved if candidate in board[cell]}
                                     for candidate in candidates}

@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
-from utils import is_clue, get_options, init_options, remove_options, get_subsets, get_impacted_cells
+from utils import is_clue, get_options, init_options, remove_options, DeadEndException, get_subsets, get_impacted_cells
 
 
 def open_singles(solver_status, board, window):
@@ -32,8 +32,11 @@ def open_singles(solver_status, board, window):
                 for value, cell in value_cells.items():
                     if len(cell) != 1:
                         screwed.extend(cell)
-                window.critical_error = tuple(screwed)
+                # if window:        TODO
+                #     window.critical_error = tuple(screwed)
+                # else:
                 board[cell_id] = ''.join(value for value in missing_value)
+                raise DeadEndException
             else:
                 board[cell_id] = missing_value.pop()
                 solver_status.clues_found.add(cell_id)

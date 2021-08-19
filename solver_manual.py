@@ -105,6 +105,33 @@ class SolverStatus:
         self.clues_found = self.clues_found_baseline.copy()
         window.options_visible = self.options_visible_baseline.copy()
 
+    def restore(self, solver_status_baseline):
+        self.options_set = solver_status_baseline.options_set
+        self.clues_defined.clear()
+        for cell in solver_status_baseline.clues_defined:
+            self.clues_defined.add(cell)
+        self.clues_found.clear()
+        for cell in solver_status_baseline.clues_found:
+            self.clues_found.add(cell)
+        self.naked_singles.clear()
+        for cell in solver_status_baseline.naked_singles:
+            self.naked_singles.add(cell)
+        self.board_baseline.clear()
+        for cell in solver_status_baseline.board_baseline:
+            self.board_baseline.append(cell)
+        self.naked_singles_baseline.clear()
+        for cell in solver_status_baseline.naked_singles_baseline:
+            self.naked_singles_baseline.add(cell)
+        self.clues_found_baseline.clear()
+        for cell in solver_status_baseline.naked_singles_baseline:
+            self.clues_found_baseline.add(cell)
+        self.options_visible_baseline.clear()
+        for cell in solver_status_baseline.options_visible_baseline:
+            self.options_visible_baseline.add(cell)
+        self.conflicted_cells.clear()
+        for cell in solver_status_baseline.conflicted_cells:
+            self.conflicted_cells.add(cell)
+
     def reset(self, board):
         self.options_set = False
         self.clues_found.clear()
@@ -251,7 +278,7 @@ strategies_failure_counter = 0     # TODO - for debugging/testing only!
 
 
 @get_stats
-def manual_solver(board, window, _):
+def manual_solver(board, window, count_strategies_failures):
     """ Main solver loop:
      - The algorithm draws current board and waits until a predefined event happens
      - Each 'technique' function returns kwargs dictionary if the board is updated, empty dictionary otherwise
@@ -259,7 +286,8 @@ def manual_solver(board, window, _):
 
     global strategies_failure_counter  # TODO - for debugging/testing only!
 
-    solver_status.initialize(board)
+    if strategies_failure_counter == 0 or not window:
+        solver_status.initialize(board)
     kwargs = {"solver_tool": "plain_board"}
     while True:
         if window:
@@ -280,8 +308,9 @@ def manual_solver(board, window, _):
                 break
         else:
             if not is_solved(board, solver_status):        # TODO: for debugging only!
-                strategies_failure_counter += 1
-                print(f"\n{strategies_failure_counter = }")
-                pass
+                if count_strategies_failures:
+                    strategies_failure_counter += 1
+                    print(f"\n{strategies_failure_counter = }")
+                    pass
             return False
     return True

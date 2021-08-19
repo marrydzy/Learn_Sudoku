@@ -8,6 +8,7 @@ TO-DO:
       detailed results (verbose > 1)
 """
 
+import copy
 import sys
 import os
 import re
@@ -27,7 +28,8 @@ import graph_utils
 import sudoku_ocr
 import opts
 import research
-from utils import is_solved
+from utils import is_solved, DeadEndException
+from utils import ALL_NBRS, remove_options
 
 
 RESEARCH = False
@@ -40,6 +42,7 @@ boards = {}
 board = []
 board_image_stack = []
 iter_stack = []
+solver_status_stack = []
 
 methods = []
 lone_singles = []
@@ -81,26 +84,16 @@ def apply_standard_techniques():
     if is_solved(board, solver_status):
         return True
 
-    report_stats = bool(config["method_stats"] and data["current_loop"] == 0)
-    board_changed = True
+    report_stats = bool(config["method_stats"] and data["current_loop"] == 0)   # TODO - changes in get_stats wrapper
 
-    while board_changed:
-        if lone_singles:
-            if not _erase_pencil_marks():
-                return False
-        if is_solved(board, solver_status):
-            return True
-
-        for method in methods[1:]:      # TODO - manual solution
-            ret = method(board, window, lone_singles, report_stats)
-            if ret is False:
-                return False
-            elif ret is True:
-                board_changed = True
-                break
-            else:
-                board_changed = False
-    return True
+    if lone_singles:
+        if not _erase_pencil_marks():
+            return False
+    try:
+        manual_solver(board, data["graph_display"], False)
+        return True
+    except DeadEndException:
+        return False
 
 
 def next_cell_to_resolve():
@@ -139,7 +132,7 @@ def next_cell_to_resolve():
     return next_cell, clue_options
 
 
-def find_cells_values():
+def apply_brute_force():
     """ resolve the sudoku puzzle by recursively finding values of empty cells """
     next_cell, clue_iterator = next_cell_to_resolve()
     if next_cell is None:
@@ -151,15 +144,28 @@ def find_cells_values():
 
     board_image_stack.append(board.copy())
     iter_stack.append(clue_iterator)
+    solver_status_stack.append(copy.deepcopy(solver_status))
+
+    window = data["graph_display"]
 
     for value in iter_stack[-1]:
         data["iter_counter"] += 1
         _recreate_board()
-        if config["graphical_mode"] and data["graph_display"]:  # TODO - redundant?
-            solver_status.capture_baseline(board, data["graph_display"])      # TODO
-        lone_singles.clear()
-        board[next_cell] = value
-        lone_singles.append(next_cell)
+        solver_status.restore(solver_status_stack[-1])
+
+        # board[next_cell] = value
+        # print(f'\n{next_cell = }, {board[next_cell] = }, {value = }')
+        to_remove = [(v, next_cell) for v in board[next_cell] if v != value]
+        solver_status.capture_baseline(board, window)
+        if window:
+            window.options_visible = window.options_visible.union({next_cell})
+        remove_options(solver_status, board, to_remove, window)
+
+        # if config["graphical_mode"] and data["graph_display"]:  # TODO - redundant?
+        #     solver_status.capture_baseline(board, data["graph_display"])      # TODO
+        # lone_singles.clear()
+        # board[next_cell] = value
+        # lone_singles.append(next_cell)
 
         if config["output_opts"]["iterations"] and data["current_loop"] == config["repeat"] - 1:
             display.iteration(config, data, board, next_cell, value)
@@ -168,12 +174,15 @@ def find_cells_values():
                                          next_cell % 9 + 1, value, board[next_cell], ))
 
         if config["graphical_mode"]:
-            graph_utils.display_info(data["graph_display"], "Iterate")
-            data["graph_display"].draw_board(board, solver_tool="iterate", iterate=next_cell)
+            # graph_utils.display_info(data["graph_display"], "Iterate")
+            # window.draw_board(board, solver_tool="iterate", iterate=next_cell)
+            # window.draw_board(board, solver_tool="iterate", impacted_cells={next_cell}, remove=to_remove)
+            window.draw_board(board, solver_tool="iterate", remove=to_remove, c_chain={next_cell: {(value, 'lime')}})
 
-        if apply_standard_techniques() and find_cells_values():
+        if apply_standard_techniques() and apply_brute_force():
             iter_stack.pop()
             board_image_stack.pop()
+            solver_status_stack.pop()
             if RESEARCH:
                 research.collect_stats(data, "run_end")
             return True
@@ -181,6 +190,7 @@ def find_cells_values():
     iter_stack.pop()
     _recreate_board()
     board_image_stack.pop()
+    solver_status_stack.pop()
     return False
 
 
@@ -234,12 +244,12 @@ def run_solver(progress_bar=None):
         if data["graph_display"].solved_board is None and "solved_board" in data:
             data["graph_display"].solved_board = data["solved_board"]
 
-    ret_code = methods[0](board, data["graph_display"], lone_singles)
+    ret_code = methods[0](board, data["graph_display"], True)
 
     if not ret_code:
-        ret_code = apply_standard_techniques()
-        if ret_code and not is_solved(board, solver_status):
-            ret_code = find_cells_values()
+        # ret_code = apply_standard_techniques()
+        # if ret_code and not is_solved(board, solver_status):
+        ret_code = apply_brute_force()
     data["resolution_time"] = time.time() - start_time
 
     if data["graph_display"]:   # TODO
