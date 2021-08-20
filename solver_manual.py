@@ -20,6 +20,10 @@ import coloring
 import almost_locked_set
 import questionable
 
+board_image_stack = []
+iter_stack = []
+solver_status_stack = []
+
 
 solver_methods = [
     basic_techniques.open_singles,
@@ -274,6 +278,16 @@ def _set_manually(board, window):
     return kwargs
 
 
+def _clear_stacks(board):
+    """ Clear stacks used by apply_brute_force()
+    TODO - this is a temporary solution!
+    """
+    if board_image_stack and is_solved(board, solver_status):
+        board_image_stack.clear()
+        iter_stack.clear()
+        solver_status_stack.clear()
+
+
 strategies_failure_counter = 0     # TODO - for debugging/testing only!
 
 
@@ -286,11 +300,10 @@ def manual_solver(board, window, count_strategies_failures):
 
     global strategies_failure_counter  # TODO - for debugging/testing only!
 
-    if strategies_failure_counter == 0 or not window:
-        solver_status.initialize(board)
     kwargs = {"solver_tool": "plain_board"}
     while True:
         if window:
+            _clear_stacks(board)
             window.draw_board(board, **kwargs)
             kwargs = _set_manually(board, window)
             if kwargs:

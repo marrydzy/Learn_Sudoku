@@ -19,7 +19,8 @@ import math
 from progress.bar import Bar
 
 from solver_manual import manual_solver
-from solver_manual import solver_status
+from solver_manual import solver_status, board_image_stack, iter_stack, solver_status_stack
+
 
 import solver_methods
 import display
@@ -28,8 +29,7 @@ import graph_utils
 import sudoku_ocr
 import opts
 import research
-from utils import is_solved, DeadEndException
-from utils import ALL_NBRS, remove_options
+from utils import is_solved, remove_options, DeadEndException
 
 
 RESEARCH = False
@@ -40,55 +40,16 @@ data = {}
 
 boards = {}
 board = []
-board_image_stack = []
-iter_stack = []
-solver_status_stack = []
 
 methods = []
-lone_singles = []
+lone_singles = []   # TODO
 
 
 def apply_standard_techniques():
     """
-    For each cell that have been marked as 'solved' (was added to lone_singles)
-    eliminate its value from options (pencil marks) in cell's row, column, and block
-    (see Lone Singles at: https://www.learn-sudoku.com/lone-singles.html)
-     - Then apply other solving techniques until no new lone singles are identified
-       or the puzzle is solved.
+    TODO
     """
 
-    def _erase_pencil_marks():
-        if window:
-            graph_utils.display_info(window, "Naked Singles")
-            solver_status.capture_baseline(board, window)
-
-        while lone_singles:
-            cell = lone_singles.pop(0)
-            value = board[cell]
-            to_remove = []
-            for one_cell in solver_methods.ALL_NBRS[cell]:
-                if value in board[one_cell]:
-                    to_remove.append((value, one_cell))
-                    board[one_cell] = board[one_cell].replace(value, "")
-                    if len(board[one_cell]) == 1:
-                        lone_singles.append(one_cell)
-                    elif not board[one_cell]:
-                        return False
-            if window:
-                window.draw_board(board, solver_tool="scrub_pencil_marks",
-                                  new_clue=cell, remove=to_remove, singles=lone_singles,
-                                  house=solver_methods.ALL_NBRS[cell])
-        return True
-
-    window = data["graph_display"] if config['graphical_mode'] else None
-    if is_solved(board, solver_status):
-        return True
-
-    report_stats = bool(config["method_stats"] and data["current_loop"] == 0)   # TODO - changes in get_stats wrapper
-
-    if lone_singles:
-        if not _erase_pencil_marks():
-            return False
     try:
         manual_solver(board, data["graph_display"], False)
         return True
@@ -133,50 +94,40 @@ def next_cell_to_resolve():
 
 
 def apply_brute_force():
-    """ resolve the sudoku puzzle by recursively finding values of empty cells """
+    """ try to resolve the sudoku puzzle by guessing value of an empty cell and then
+    calling stack of standard techniques
+    The sequence is repeated recursively until the puzzle is solved
+    """
+
     next_cell, clue_iterator = next_cell_to_resolve()
     if next_cell is None:
         return True
 
-    def _recreate_board():
+    def _restore_board():
         for cell_id, value in enumerate(board_image_stack[-1]):
             board[cell_id] = value
 
     board_image_stack.append(board.copy())
     iter_stack.append(clue_iterator)
     solver_status_stack.append(copy.deepcopy(solver_status))
-
     window = data["graph_display"]
-
     for value in iter_stack[-1]:
         data["iter_counter"] += 1
-        _recreate_board()
+        _restore_board()
         solver_status.restore(solver_status_stack[-1])
 
-        # board[next_cell] = value
-        # print(f'\n{next_cell = }, {board[next_cell] = }, {value = }')
-        to_remove = [(v, next_cell) for v in board[next_cell] if v != value]
+        to_remove = {(option, next_cell) for option in board[next_cell] if option != value}
         solver_status.capture_baseline(board, window)
         if window:
             window.options_visible = window.options_visible.union({next_cell})
         remove_options(solver_status, board, to_remove, window)
-
-        # if config["graphical_mode"] and data["graph_display"]:  # TODO - redundant?
-        #     solver_status.capture_baseline(board, data["graph_display"])      # TODO
-        # lone_singles.clear()
-        # board[next_cell] = value
-        # lone_singles.append(next_cell)
 
         if config["output_opts"]["iterations"] and data["current_loop"] == config["repeat"] - 1:
             display.iteration(config, data, board, next_cell, value)
         if config["stats"]:
             data["current_path"].append((data["current_loop"], next_cell // 9 + 1,
                                          next_cell % 9 + 1, value, board[next_cell], ))
-
-        if config["graphical_mode"]:
-            # graph_utils.display_info(data["graph_display"], "Iterate")
-            # window.draw_board(board, solver_tool="iterate", iterate=next_cell)
-            # window.draw_board(board, solver_tool="iterate", impacted_cells={next_cell}, remove=to_remove)
+        if window:
             window.draw_board(board, solver_tool="iterate", remove=to_remove, c_chain={next_cell: {(value, 'lime')}})
 
         if apply_standard_techniques() and apply_brute_force():
@@ -188,7 +139,7 @@ def apply_brute_force():
             return True
 
     iter_stack.pop()
-    _recreate_board()
+    _restore_board()
     board_image_stack.pop()
     solver_status_stack.pop()
     return False
@@ -223,8 +174,9 @@ def run_solver(progress_bar=None):
     """Initialize the current sudoku board and resolve the puzzle.
     Return: True if the sudoku puzzle was solved, False otherwise
     """
-    start_time = time.time()        # TODO
+    start_time = time.time()            # TODO
     init_board()
+    solver_status.initialize(board)     # TODO
     data["iter_counter"] = 0
     config["is_solved"] = False
     display.puzzle_filename(config, data)
@@ -250,6 +202,7 @@ def run_solver(progress_bar=None):
         # ret_code = apply_standard_techniques()
         # if ret_code and not is_solved(board, solver_status):
         ret_code = apply_brute_force()
+
     data["resolution_time"] = time.time() - start_time
 
     if data["graph_display"]:   # TODO
@@ -293,6 +246,7 @@ def _update_all_paths_data():
 def _solve_sudoku_puzzle():
     """ solve a sudoku puzzle and output results according to command line options """
     loop_start = -1 if config["guess"] else 0
+    # solver_status.initialize(board)
     if config["repeat"] == 1:
         for data["current_loop"] in range(loop_start, 1):
             ret = run_solver()
@@ -446,7 +400,7 @@ def main():
             else:
                 for data["current_sudoku"] in range(config["first_id"], config["last_id"] + 1):
                     if not config["output_opts"]["results_in_line"]:
-                        display.puzzle_id(config, data)     # TO DO
+                        display.puzzle_id(config, data)     # TODO
                     _solve_sudoku_puzzle()
     elif config["image"]:
         _picture_ocr()
