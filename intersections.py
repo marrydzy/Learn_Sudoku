@@ -4,7 +4,7 @@
 
 from collections import defaultdict
 
-from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
+from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import SUDOKU_VALUES_SET
 from utils import get_stats, init_options, remove_options
 
@@ -32,7 +32,7 @@ def locked_candidates(solver_status, board, window):
         The surplus candidates are eliminated from the part of the line that does not intersect with this box.
         Rating: 50
         """
-        for house in CELLS_IN_SQR:
+        for house in CELLS_IN_BOX:
             options = SUDOKU_VALUES_SET - {board[cell] for cell in house if len(board[cell]) == 1}
             unsolved = {cell for cell in house if len(board[cell]) > 1}
             for a_digit in options:
@@ -69,9 +69,9 @@ def locked_candidates(solver_status, board, window):
                 options = SUDOKU_VALUES_SET - {board[cell] for cell in house if len(board[cell]) == 1}
                 unsolved = {cell for cell in house if len(board[cell]) > 1}
                 for a_digit in options:
-                    boxes = {CELL_SQR[cell] for cell in unsolved if a_digit in board[cell]}
+                    boxes = {CELL_BOX[cell] for cell in unsolved if a_digit in board[cell]}
                     if len(boxes) == 1:
-                        impacted_cells = set(CELLS_IN_SQR[boxes.pop()]).difference(house)
+                        impacted_cells = set(CELLS_IN_BOX[boxes.pop()]).difference(house)
                         to_remove = {(a_digit, cell) for cell in impacted_cells if a_digit in board[cell]}
                         if to_remove:
                             solver_status.capture_baseline(board, window)

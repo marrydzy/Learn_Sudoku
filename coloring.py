@@ -13,8 +13,8 @@ from itertools import combinations
 
 import networkx as nx
 
-from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR, CELL_SQR, ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, init_options, remove_options, get_pair_house, get_bi_value_cells
+from utils import CELLS_IN_ROW, CELLS_IN_COL, ALL_NBRS, SUDOKU_VALUES_LIST
+from utils import get_stats, is_clue, remove_options, get_pair_house
 from utils import get_strong_links, DeadEndException
 
 

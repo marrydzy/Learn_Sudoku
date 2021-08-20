@@ -5,10 +5,9 @@
 from itertools import combinations
 from collections import defaultdict
 
-from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
+from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST
 from utils import is_clue, init_options, remove_options
-from utils import get_pairs, get_house_pairs
 
 
 def remote_pairs(solver_status, board, window):
@@ -106,7 +105,7 @@ def unique_rectangles_(solver_status, board, window):
     pairs = defaultdict(list)
     for i in range(81):
         if len(board[i]) == 2:
-            pairs[board[i]].append((CELL_ROW[i], CELL_COL[i], CELL_SQR[i]))
+            pairs[board[i]].append((CELL_ROW[i], CELL_COL[i], CELL_BOX[i]))
 
     for pair, positions in pairs.items():
         if len(positions) > 2:
@@ -194,14 +193,14 @@ def sue_de_coq(solver_status, board, window):
     """ TODO """
 
     def _find_sue_de_coq_type_1(box, by_rows):
-        for cell_1 in CELLS_IN_SQR[box]:
+        for cell_1 in CELLS_IN_BOX[box]:
             if len(board[cell_1]) == 2:
                 if by_rows:
                     indexes = [row for row in range((box // 3) * 3, (box // 3) * 3 + 3) if row != CELL_ROW[cell_1]]
                 else:
                     indexes = [col for col in range((box % 3) * 3, (box % 3) * 3 + 3) if col != CELL_COL[cell_1]]
                 for indx in indexes:
-                    cells_b = set(CELLS_IN_SQR[box])
+                    cells_b = set(CELLS_IN_BOX[box])
                     cells_1 = set(CELLS_IN_ROW[indx]) if by_rows else set(CELLS_IN_COL[indx])
                     cells_2 = [cell for cell in cells_1.difference(cells_b)
                                if not is_clue(cell, board, solver_status)]
@@ -246,14 +245,14 @@ def sue_de_coq(solver_status, board, window):
         return False
 
     def _find_sue_de_coq_type_2(box, by_rows):
-        for cell_1 in CELLS_IN_SQR[box]:
+        for cell_1 in CELLS_IN_BOX[box]:
             if len(board[cell_1]) == 2:
                 if by_rows:
                     indexes = [row for row in range((box // 3) * 3, (box // 3) * 3 + 3) if row != CELL_ROW[cell_1]]
                 else:
                     indexes = [col for col in range((box % 3) * 3, (box % 3) * 3 + 3) if col != CELL_COL[cell_1]]
                 for indx in indexes:
-                    cells_b = set(CELLS_IN_SQR[box])
+                    cells_b = set(CELLS_IN_BOX[box])
                     cells_1 = set(CELLS_IN_ROW[indx]) if by_rows else set(CELLS_IN_COL[indx])
                     cells_2 = [cell for cell in cells_1.difference(cells_b)
                                if not is_clue(cell, board, solver_status)]
@@ -336,12 +335,12 @@ def empty_rectangle(solver_status, board, window):
         for val in SUDOKU_VALUES_LIST:
             if opts.count(val) == 2:
                 idy = [j for j in range(9) if val in board[cells[j]]]
-                if CELL_SQR[idy[0]] != CELL_SQR[idy[1]]:
+                if CELL_BOX[idy[0]] != CELL_BOX[idy[1]]:
                     for i in range(2):
                         for j in range(2):
                             box = by_row_boxes[idx//3][idy[i]//3][j] if by_row else by_col_boxes[idx//3][idy[i]//3][j]
                             central_line = (box // 3) * 3 + 1 if by_row else (box % 3) * 3 + 1
-                            box_cells = set(CELLS_IN_SQR[box])
+                            box_cells = set(CELLS_IN_BOX[box])
                             central_line_cells = set(cells_by_x[central_line]).intersection(box_cells)
                             cross_cells = box_cells.intersection(central_line_cells.union(set(cells_by_y[idy[i]])))
                             rect_corners = box_cells.difference(cross_cells)

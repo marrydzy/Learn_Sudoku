@@ -5,7 +5,7 @@
 import itertools
 from collections import defaultdict
 
-from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR
+from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX
 from utils import get_stats, init_options, remove_options, get_subsets, get_impacted_cells
 
 
@@ -29,7 +29,7 @@ def _hidden_subset(solver_status, board, window, subset_size, method_name):
     """
 
     init_options(board, solver_status)
-    for cells in (CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR):
+    for cells in (CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX):
         for house in cells:
             unsolved = {cell for cell in house if len(board[cell]) > 1}
             if len(unsolved) <= subset_size:

@@ -4,7 +4,7 @@
 
 from collections import defaultdict
 
-from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR
+from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX
 from utils import ALL_NBRS
 from utils import is_clue, is_solved, set_cell_options, set_neighbours_options
 from utils import get_stats
@@ -26,7 +26,7 @@ solver_status_stack = []
 
 
 solver_methods = [
-    basic_techniques.open_singles,
+    basic_techniques.full_house,
     basic_techniques.visual_elimination,
     basic_techniques.naked_singles,
     basic_techniques.hidden_singles,
@@ -237,7 +237,7 @@ def _check_board_integrity(board, window):
     for i in range(9):
         _check_house(CELLS_IN_ROW[i])
         _check_house(CELLS_IN_COL[i])
-        _check_house(CELLS_IN_SQR[i])
+        _check_house(CELLS_IN_BOX[i])
     solver_status.conflicted_cells = list(set(solver_status.conflicted_cells))
 
     if window.solved_board:

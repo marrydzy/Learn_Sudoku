@@ -5,7 +5,7 @@
 from itertools import combinations
 from collections import defaultdict
 
-from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR, ALL_NBRS
+from utils import ALL_NBRS
 from utils import get_stats, get_subsets, remove_options
 
 

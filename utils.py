@@ -30,7 +30,7 @@ def neighbour_cells(cell):
     """ return tuple of all cells crossing with the given cell """
     cells = set(CELLS_IN_ROW[cell // 9]).union(
         set(CELLS_IN_COL[cell % 9]).union(
-            set(CELLS_IN_SQR[(cell // 27) * 3 + (cell % 9) // 3])
+            set(CELLS_IN_BOX[(cell // 27) * 3 + (cell % 9) // 3])
         )
     )
     cells.discard(cell)
@@ -39,7 +39,7 @@ def neighbour_cells(cell):
 
 CELLS_IN_ROW = tuple(tuple(n for n in range(i * 9, (i + 1) * 9)) for i in range(9))
 CELLS_IN_COL = tuple(tuple(n for n in range(i, 81, 9)) for i in range(9))
-CELLS_IN_SQR = tuple(box_cells(i) for i in range(9))
+CELLS_IN_BOX = tuple(box_cells(i) for i in range(9))
 
 ALL_NBRS = tuple(neighbour_cells(i) for i in range(81))
 SUDOKU_VALUES_LIST = list('123456789')
@@ -47,7 +47,7 @@ SUDOKU_VALUES_SET = set('123456789')
 
 CELL_ROW = tuple(i // 9 for i in range(81))
 CELL_COL = tuple(i % 9 for i in range(81))
-CELL_SQR = tuple((i // 27) * 3 + (i % 9) // 3 for i in range(81))
+CELL_BOX = tuple((i // 27) * 3 + (i % 9) // 3 for i in range(81))
 
 
 class DeadEndException(Exception):      # TODO
@@ -63,11 +63,11 @@ def get_stats(func):
         function_wrapper.time_in += time.time() - start
         return ret
 
-    # function_wrapper.board_updated = False
     function_wrapper.calls = 0
     function_wrapper.clues = 0
     function_wrapper.options_removed = 0
     function_wrapper.time_in = 0
+    function_wrapper.rating = 0
     return function_wrapper
 
 
@@ -82,7 +82,7 @@ def is_solved(board, solver_status):
         if clues != SUDOKU_VALUES_SET:
             return False
     for box in range(9):
-        clues = set(''.join(board[cell] for cell in CELLS_IN_SQR[box] if is_clue(cell, board, solver_status)))
+        clues = set(''.join(board[cell] for cell in CELLS_IN_BOX[box] if is_clue(cell, board, solver_status)))
         if clues != SUDOKU_VALUES_SET:
             return False
     return True
@@ -112,7 +112,7 @@ def get_subsets(board, n_size_subset, als=False):
      - als'es if als == True
      The format of the 'subset' dictionary is: {candidate: {cell_1, ...}, ...}
      """
-    for cells in (CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR):
+    for cells in (CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX):
         for house in cells:
             unsolved = {cell for cell in house if len(board[cell]) > 1}
             if len(unsolved) > n_size_subset + 1:
@@ -152,7 +152,7 @@ def get_pair_house(pair):
         return CELLS_IN_ROW[CELL_ROW[cell_a]]
     if CELL_COL[cell_a] == CELL_COL[cell_b]:
         return CELLS_IN_COL[CELL_COL[cell_a]]
-    return CELLS_IN_SQR[CELL_SQR[cell_a]]
+    return CELLS_IN_BOX[CELL_BOX[cell_a]]
 
 
 def get_strong_links(board):
@@ -169,7 +169,7 @@ def get_strong_links(board):
     for idx in range(9):
         _house_strong_links(CELLS_IN_ROW[idx])
         _house_strong_links(CELLS_IN_COL[idx])
-        _house_strong_links(CELLS_IN_SQR[idx])
+        _house_strong_links(CELLS_IN_BOX[idx])
     return strong_links
 
 

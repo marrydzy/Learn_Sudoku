@@ -64,7 +64,7 @@ def _set_data_defaults(data):
     data["stat_iterations"] = []  # values of the number of iterations
     data["stat_runs"] = []  # runs per iteration statistic
     data["stat_unique_paths"] = []  # number of unique paths per iteration statistic
-    data["graph_display"] = None
+    data["graph_display"] = None    # placeholder for AppWindow class instance
 
     # TODO
     data["stat_opts"] = []  # options statistics TO-DO

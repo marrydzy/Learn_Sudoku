@@ -5,7 +5,7 @@
 import time
 import itertools
 
-from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
+from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import ALL_NBRS, SUDOKU_VALUES_SET
 from solver_manual import solver_status
 
@@ -76,7 +76,7 @@ def unique_values(board, window, lone_singles):
     for i in range(9):
         _solve_lone_singles(CELLS_IN_ROW[i])
         _solve_lone_singles(CELLS_IN_COL[i])
-        _solve_lone_singles(CELLS_IN_SQR[i])
+        _solve_lone_singles(CELLS_IN_BOX[i])
     if unique_values.board_updated:
         pass
         # print('unique_values')
@@ -142,7 +142,7 @@ def hidden_pairs(board, window, _):
     for i in range(9):
         _find_pairs(CELLS_IN_ROW[i])
         _find_pairs(CELLS_IN_COL[i])
-        _find_pairs(CELLS_IN_SQR[i])
+        _find_pairs(CELLS_IN_BOX[i])
     if hidden_pairs.board_updated:
         pass
         # print(hidden_pairs)
@@ -207,7 +207,7 @@ def naked_twins(board, window, lone_singles):
             break
         if not _find_pairs(CELLS_IN_COL[i]):
             break
-        if not _find_pairs(CELLS_IN_SQR[i]):
+        if not _find_pairs(CELLS_IN_BOX[i]):
             break
     else:
         if naked_twins.board_updated:
@@ -239,8 +239,8 @@ def omissions(board, window, lone_singles):
             for cell in unsolved:
                 if value in board[cell]:
                     if block is None:
-                        block = CELL_SQR[cell]
-                    elif CELL_SQR[cell] != block:
+                        block = CELL_BOX[cell]
+                    elif CELL_BOX[cell] != block:
                         break
             else:
                 if block is None or not _prune_block_options(block, value, cells):
@@ -250,7 +250,7 @@ def omissions(board, window, lone_singles):
     def _prune_block_options(block, value, col_row_cells):
         claims = [(value, cell) for cell in col_row_cells]
         to_remove = []
-        other_cells = set(CELLS_IN_SQR[block]) - set(col_row_cells)
+        other_cells = set(CELLS_IN_BOX[block]) - set(col_row_cells)
         for cell in other_cells:
             if value in board[cell]:
                 to_remove.append((value, cell))
@@ -316,7 +316,7 @@ def omissions(board, window, lone_singles):
             break
         if not _in_row_col(CELLS_IN_COL[i]):
             break
-        if not _in_block(CELLS_IN_SQR[i]):
+        if not _in_block(CELLS_IN_BOX[i]):
             break
     else:
         if omissions.board_updated:
@@ -373,7 +373,7 @@ def naked_triplets(board, window, lone_singles):
             break
         if not _find_triplets(CELLS_IN_COL[i]):
             break
-        if not _find_triplets(CELLS_IN_SQR[i]):
+        if not _find_triplets(CELLS_IN_BOX[i]):
             break
     else:
         if naked_triplets.board_updated:
@@ -436,7 +436,7 @@ def hidden_triplets(board, window, _):
     for i in range(9):
         _find_triplets(CELLS_IN_ROW[i])
         _find_triplets(CELLS_IN_COL[i])
-        _find_triplets(CELLS_IN_SQR[i])
+        _find_triplets(CELLS_IN_BOX[i])
     if hidden_triplets.board_updated:
         pass
         # print('hidden_triplets')
@@ -493,7 +493,7 @@ def hidden_quads(board, window, _):
     for i in range(9):
         _find_quads(CELLS_IN_ROW[i])
         _find_quads(CELLS_IN_COL[i])
-        _find_quads(CELLS_IN_SQR[i])
+        _find_quads(CELLS_IN_BOX[i])
     if hidden_quads.board_updated:
         pass
         # print('hidden_quads')
@@ -548,7 +548,7 @@ def naked_quads(board, window, lone_singles):
             break
         if not _find_quads(CELLS_IN_COL[i]):
             break
-        if not _find_quads(CELLS_IN_SQR[i]):
+        if not _find_quads(CELLS_IN_BOX[i]):
             break
     else:
         if naked_quads.board_updated:
@@ -768,9 +768,9 @@ def unique_rectangles(board, window, lone_singles):
     for i in range(81):
         if len(board[i]) == 2:
             if board[i] in pairs:
-                pairs[board[i]].append((CELL_ROW[i], CELL_COL[i], CELL_SQR[i]))
+                pairs[board[i]].append((CELL_ROW[i], CELL_COL[i], CELL_BOX[i]))
             else:
-                pairs[board[i]] = [(CELL_ROW[i], CELL_COL[i], CELL_SQR[i]), ]
+                pairs[board[i]] = [(CELL_ROW[i], CELL_COL[i], CELL_BOX[i]), ]
 
     for pair, positions in pairs.items():
         if len(positions) > 2:

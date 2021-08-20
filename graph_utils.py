@@ -784,7 +784,7 @@ def set_option_offsets():
 
 def set_methods():
     """ Set and return dictionary of solver methods shortcuts """
-    return {"open_singles": "g",
+    return {"full_house": "g",
             "visual_elimination": "v",
             "naked_singles": "n",
             "hidden_singles": "u",

@@ -42,7 +42,7 @@ boards = {}
 board = []
 
 methods = []
-lone_singles = []   # TODO
+lone_singles = []   # TODO - most likely it is obsolete
 
 
 def apply_standard_techniques():
@@ -176,37 +176,33 @@ def run_solver(progress_bar=None):
     """
     start_time = time.time()            # TODO
     init_board()
-    solver_status.initialize(board)     # TODO
+    solver_status.initialize(board)
     data["iter_counter"] = 0
     config["is_solved"] = False
     display.puzzle_filename(config, data)
     display.sudoku_board(config, data, board)
     if progress_bar:
-        if data["current_loop"] == 0:
-            print()
-            progress_bar.next()
-        if data["current_loop"] > 0:
+        if data["current_loop"] >= 0:
+            if data["current_loop"] == 0:
+                print()
             progress_bar.next()
         if data["current_loop"] == config["repeat"] - 1:
             progress_bar.finish()
 
-    # TODO - adding manual solution
-    if data["graph_display"]:
-        data["graph_display"].solver_loop = data["current_loop"]
-        if data["graph_display"].solved_board is None and "solved_board" in data:
-            data["graph_display"].solved_board = data["solved_board"]
+    window = data["graph_display"]
+    if window:
+        window.solver_loop = data["current_loop"]
+        if window.solved_board is None and "solved_board" in data:
+            window.solved_board = data["solved_board"]
 
-    ret_code = methods[0](board, data["graph_display"], True)
-
+    ret_code = manual_solver(board, window, True)
     if not ret_code:
-        # ret_code = apply_standard_techniques()
-        # if ret_code and not is_solved(board, solver_status):
         ret_code = apply_brute_force()
 
+    # TODO: the code below is executed only in non-graphical mode!
     data["resolution_time"] = time.time() - start_time
-
-    if data["graph_display"]:   # TODO
-        data["resolution_time"] -= data["graph_display"].time_in
+    if window:
+        data["resolution_time"] -= window.time_in
 
     if data["current_loop"] == 0:
         data["tot_solution_time"] += data["resolution_time"]
@@ -215,10 +211,11 @@ def run_solver(progress_bar=None):
         data["max_iterations"] = max(data["max_iterations"], data["iter_counter"])
     config["is_solved"] = ret_code
 
-    if config['graphical_mode'] and data["graph_display"]:  # TODO - redundatn?
+    if window:
         msg = f'The Sudoku solved in {1000.0 * data["tot_solution_time"]:.2f} ms' if ret_code else \
             "Oops... Failed to find the Sudoku solution"
-        graph_utils.display_info(data["graph_display"], msg)     # TODO
+        graph_utils.display_info(window, msg)     # TODO
+        print(msg)
     display.sudoku_board(config, data, board)
     return ret_code
 

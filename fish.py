@@ -16,8 +16,8 @@
 from itertools import combinations
 from collections import defaultdict
 
-from utils import CELL_ROW, CELL_COL, CELL_SQR, CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_SQR, SUDOKU_VALUES_LIST
-from utils import init_options, remove_options, get_pairs, get_stats, is_clue, get_n_values
+from utils import CELL_BOX, CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX, SUDOKU_VALUES_LIST
+from utils import init_options, remove_options, get_stats, get_n_values
 
 
 def _basic_fish(solver_status, board, window, n):
@@ -111,7 +111,7 @@ def _finned_fish(solver_status, board, window, n):
         return strategy_name[method_id]
 
     def _get_fin_box(fin, by_row):
-        return CELLS_IN_SQR[CELL_SQR[fin[0]*9 + fin[1] if by_row else fin[1]*9 + fin[0]]]
+        return CELLS_IN_BOX[CELL_BOX[fin[0]*9 + fin[1] if by_row else fin[1]*9 + fin[0]]]
 
     def _find_finned_fish(by_row):
         for value in SUDOKU_VALUES_LIST:

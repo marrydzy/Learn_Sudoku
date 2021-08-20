@@ -13,7 +13,7 @@ screen_messages = {
     None: "",
     "plain_board": " ",
     "conflict": "Conflicting value",
-    "open_singles": "'Open Single' technique:",
+    "full_house": "'Full House' technique:",
     "visual_elimination": "'Visual Elimination' technique:",
     "naked_singles": "'Naked Single' technique:",
     "hidden_singles": "'Hidden Single' technique:",

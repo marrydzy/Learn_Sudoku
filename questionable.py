@@ -5,7 +5,7 @@
 from itertools import combinations
 from collections import defaultdict
 
-from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR, SUDOKU_VALUES_LIST
+from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX, SUDOKU_VALUES_LIST
 from utils import is_clue, init_options, remove_options, get_bi_value_cells
 
 
@@ -24,15 +24,15 @@ def almost_locked_candidates(solver_status, board, window):
             for xy_pair in combinations(cells, 2):
                 if CELL_ROW[xy_pair[0]] != CELL_ROW[xy_pair[1]] and \
                         CELL_COL[xy_pair[0]] != CELL_COL[xy_pair[1]] and \
-                        CELL_SQR[xy_pair[0]] != CELL_SQR[xy_pair[1]]:
+                        CELL_BOX[xy_pair[0]] != CELL_BOX[xy_pair[1]]:
                     line = None
                     box = None
                     row_0 = CELLS_IN_ROW[CELL_ROW[xy_pair[0]]]
                     col_0 = CELLS_IN_COL[CELL_COL[xy_pair[0]]]
-                    box_0 = CELLS_IN_SQR[CELL_SQR[xy_pair[0]]]
+                    box_0 = CELLS_IN_BOX[CELL_BOX[xy_pair[0]]]
                     row_1 = CELLS_IN_ROW[CELL_ROW[xy_pair[1]]]
                     col_1 = CELLS_IN_COL[CELL_COL[xy_pair[1]]]
-                    box_1 = CELLS_IN_SQR[CELL_SQR[xy_pair[1]]]
+                    box_1 = CELLS_IN_BOX[CELL_BOX[xy_pair[1]]]
                     if set(row_0).intersection(box_1):
                         line = row_0
                         box = box_1
@@ -83,26 +83,26 @@ def franken_x_wing(solver_status, board, window):
             if len(cols_1) == 2:
                 corner_1 = cells[row][cols_1[0]]
                 corner_2 = cells[row][cols_1[1]]
-                if CELL_SQR[corner_1] == CELL_SQR[corner_2]:
-                    other_boxes = by_row_boxes[CELL_SQR[corner_1]] if by_row else by_col_boxes[CELL_SQR[corner_1]]
+                if CELL_BOX[corner_1] == CELL_BOX[corner_2]:
+                    other_boxes = by_row_boxes[CELL_BOX[corner_1]] if by_row else by_col_boxes[CELL_BOX[corner_1]]
                     for box in other_boxes:
                         if by_row:
-                            cols_2 = set(CELL_COL[cell] for cell in CELLS_IN_SQR[box]
+                            cols_2 = set(CELL_COL[cell] for cell in CELLS_IN_BOX[box]
                                          if option in board[cell] and not is_clue(cell, board, solver_status))
                         else:
-                            cols_2 = set(CELL_ROW[cell] for cell in CELLS_IN_SQR[box]
+                            cols_2 = set(CELL_ROW[cell] for cell in CELLS_IN_BOX[box]
                                          if option in board[cell] and not is_clue(cell, board, solver_status))
                         if set(cols_1) == cols_2:
                             if by_row:
                                 other_cells = set(CELLS_IN_COL[cols_1[0]]).union(set(CELLS_IN_COL[cols_1[1]]))
                             else:
                                 other_cells = set(CELLS_IN_ROW[cols_1[0]]).union(set(CELLS_IN_ROW[cols_1[1]]))
-                            other_cells = other_cells.intersection(set(CELLS_IN_SQR[CELL_SQR[corner_1]]))
+                            other_cells = other_cells.intersection(set(CELLS_IN_BOX[CELL_BOX[corner_1]]))
                             other_cells.discard(corner_1)
                             other_cells.discard(corner_2)
-                            house = set(cells[row]).union(set(CELLS_IN_SQR[box]))
+                            house = set(cells[row]).union(set(CELLS_IN_BOX[box]))
                             corners = [option, corner_1, corner_2]
-                            corners.extend(cell for cell in CELLS_IN_SQR[box] if option in board[cell])
+                            corners.extend(cell for cell in CELLS_IN_BOX[box] if option in board[cell])
                             to_remove = [(option, cell) for cell in other_cells if option in board[cell]]
                             if to_remove:
                                 solver_status.capture_baseline(board, window)

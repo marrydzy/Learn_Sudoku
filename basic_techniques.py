@@ -2,18 +2,20 @@
 
 """ SUDOKU SOLVING METHODS """
 
-import itertools
-from collections import defaultdict
-
-from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR
+from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
-from utils import is_clue, get_options, init_options, remove_options, DeadEndException, get_subsets, get_impacted_cells
+from utils import get_stats, is_clue, get_options, remove_options
 
 
-def open_singles(solver_status, board, window):
-    """ 'Open Singles' technique (see: https://www.learn-sudoku.com/open-singles.html)
-        The technique is applicable only in the initial phase of sudoku solving process when
-        options in empty cells haven't been calculated yet.
+@get_stats
+def full_house(solver_status, board, window):
+    """ A Full House is a row, column or box with a single unsolved cell.
+    There is only one missing digit and one empty cell.
+    The last candidate is both a Naked Single and a Hidden Single.
+    Full Houses are very easy to spot, but they occur mainly when the puzzle is near completion.
+    From the algorithmic point of view the technique is used when possible candidates in empty cells
+    haven't been calculated yet.
+    Rating: 4
     """
 
     def _set_missing_number(house):
@@ -23,25 +25,13 @@ def open_singles(solver_status, board, window):
             cell_id = open_cells.pop()
             missing_value = SUDOKU_VALUES_SET.copy() - set(
                 ''.join(board[cell] for cell in house if is_clue(cell, board, solver_status)))
-            if len(missing_value) != 1:
-                board[cell_id] = ''.join(missing_value)
-                value_cells = defaultdict(list)
-                for cell in house:
-                    value_cells[board[cell]].append(cell)
-                screwed = [cell_id]
-                for value, cell in value_cells.items():
-                    if len(cell) != 1:
-                        screwed.extend(cell)
-                # if window:        TODO
-                #     window.critical_error = tuple(screwed)
-                # else:
-                board[cell_id] = ''.join(value for value in missing_value)
-                raise DeadEndException
-            else:
-                board[cell_id] = missing_value.pop()
-                solver_status.clues_found.add(cell_id)
-            kwargs["solver_tool"] = "open_singles"
+            assert(len(missing_value) == 1)
+            board[cell_id] = missing_value.pop()
+            solver_status.clues_found.add(cell_id)
+            kwargs["solver_tool"] = "full_house"
             kwargs["new_clue"] = cell_id
+            full_house.rating += 4
+            full_house.clues += 1
             return True
         return False
 
@@ -49,7 +39,7 @@ def open_singles(solver_status, board, window):
     if not solver_status.options_set:
         for i in range(9):
             if (_set_missing_number(CELLS_IN_ROW[i]) or _set_missing_number(CELLS_IN_COL[i]) or
-                    _set_missing_number(CELLS_IN_SQR[i])):
+                    _set_missing_number(CELLS_IN_BOX[i])):
                 break
     return kwargs
 
@@ -67,11 +57,11 @@ def visual_elimination(solver_status, board, window):
         band = band % 3
         cols_rows = CELLS_IN_COL if vertical else CELLS_IN_ROW
         with_clue = [cell for offset in range(3) for cell in cols_rows[3*band + offset] if board[cell] == value]
-        if len(with_clue) == 2 and CELL_SQR[with_clue[0]] != CELL_SQR[with_clue[1]]:
+        if len(with_clue) == 2 and CELL_BOX[with_clue[0]] != CELL_BOX[with_clue[1]]:
             squares = [band + 3*offset if vertical else 3*band + offset for offset in range(3)]
-            squares.remove(CELL_SQR[with_clue[0]])
-            squares.remove(CELL_SQR[with_clue[1]])
-            cells = set(CELLS_IN_SQR[squares[0]])
+            squares.remove(CELL_BOX[with_clue[0]])
+            squares.remove(CELL_BOX[with_clue[1]])
+            cells = set(CELLS_IN_BOX[squares[0]])
             if vertical:
                 cells -= set(CELLS_IN_COL[CELL_COL[with_clue[0]]]).union(set(CELLS_IN_COL[CELL_COL[with_clue[1]]]))
             else:
@@ -201,7 +191,7 @@ def hidden_singles(solver_status, board, window):
         if _find_unique_positions(CELLS_IN_COL[col]):
             return kwargs
     for sqr in range(9):
-        if _find_unique_positions(CELLS_IN_SQR[sqr]):
+        if _find_unique_positions(CELLS_IN_BOX[sqr]):
             return kwargs
     return kwargs
 

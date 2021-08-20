@@ -23,7 +23,7 @@ from itertools import combinations
 from collections import defaultdict
 # from copy import deepcopy
 
-from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_SQR, CELL_ROW, CELL_COL, CELLS_IN_SQR, ALL_NBRS
+from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX, ALL_NBRS
 from utils import init_options, remove_options, get_stats
 
 
@@ -52,7 +52,7 @@ def _get_bi_values_dictionary(board, cells, by_row=True):
         if len(board[cell]) == 2:
             bi_values[board[cell]].add((CELL_ROW[cell] if by_row else CELL_COL[cell],
                                         CELL_COL[cell] if by_row else CELL_ROW[cell],
-                                        CELL_SQR[cell]))
+                                        CELL_BOX[cell]))
     return bi_values
 
 
@@ -135,7 +135,7 @@ def test_2(solver_status, board, window):
                     for x_id in x_ids:
                         ceiling_a = x_id * 9 + floor_a[1] if by_row else floor_a[1] * 9 + x_id
                         ceiling_b = x_id * 9 + floor_b[1] if by_row else floor_b[1] * 9 + x_id
-                        boxes = {floor_a[2], floor_b[2], CELL_SQR[ceiling_a], CELL_SQR[ceiling_b]}
+                        boxes = {floor_a[2], floor_b[2], CELL_BOX[ceiling_a], CELL_BOX[ceiling_b]}
                         if board[ceiling_a] == board[ceiling_b] and len(boxes) == 2:
                             z_candidate = board[ceiling_a].replace(bi_value[0], '').replace(bi_value[1], '')
                             to_remove = set()
@@ -184,8 +184,8 @@ def test_3(solver_status, board, window):
                                  and not set(board[cell]).intersection(bi_value)}
         houses = [possible_subset_nodes.intersection(CELLS_IN_ROW[CELL_ROW[ceiling_a]] if by_row
                                                      else CELLS_IN_COL[CELL_COL[ceiling_a]])]
-        if CELL_SQR[ceiling_a] == CELL_SQR[ceiling_b]:
-            houses.append(possible_subset_nodes.intersection(CELLS_IN_SQR[CELL_SQR[ceiling_a]]))
+        if CELL_BOX[ceiling_a] == CELL_BOX[ceiling_b]:
+            houses.append(possible_subset_nodes.intersection(CELLS_IN_BOX[CELL_BOX[ceiling_a]]))
         for house in houses:
             for subset_nodes in combinations(house, subset_size-1):
                 naked_subset = set("".join(board[cell] for cell in subset_nodes)).union(subset_candidates)
@@ -215,7 +215,7 @@ def test_3(solver_status, board, window):
                         for x_id in x_ids:
                             ceiling_a = x_id * 9 + floor_a[1] if by_row else floor_a[1] * 9 + x_id
                             ceiling_b = x_id * 9 + floor_b[1] if by_row else floor_b[1] * 9 + x_id
-                            boxes = {floor_a[2], floor_b[2], CELL_SQR[ceiling_a], CELL_SQR[ceiling_b]}
+                            boxes = {floor_a[2], floor_b[2], CELL_BOX[ceiling_a], CELL_BOX[ceiling_b]}
                             if len(boxes) == 2 and board[ceiling_a] != board[ceiling_b]:
                                 z_a = board[ceiling_a].replace(bi_value[0], '').replace(bi_value[1], '')
                                 z_b = board[ceiling_b].replace(bi_value[0], '').replace(bi_value[1], '')
@@ -266,7 +266,7 @@ def test_4(solver_status, board, window):
             for floor_id_y in range(9):
                 cell = cells_by_x[floor_id_x][floor_id_y]
                 if len(board[cell]) == 2:
-                    bi_values[board[cell]].add((floor_id_x, floor_id_y, CELL_SQR[cell]))
+                    bi_values[board[cell]].add((floor_id_x, floor_id_y, CELL_BOX[cell]))
             for bi_value, coordinates in bi_values.items():
                 if len(coordinates) == 2:
                     floor_a = coordinates.pop()
@@ -275,7 +275,7 @@ def test_4(solver_status, board, window):
                     for x_id in x_ids:
                         ceiling_a = x_id * 9 + floor_a[1] if by_row else floor_a[1] * 9 + x_id
                         ceiling_b = x_id * 9 + floor_b[1] if by_row else floor_b[1] * 9 + x_id
-                        boxes = {floor_a[2], floor_b[2], CELL_SQR[ceiling_a], CELL_SQR[ceiling_b]}
+                        boxes = {floor_a[2], floor_b[2], CELL_BOX[ceiling_a], CELL_BOX[ceiling_b]}
                         if len(boxes) == 2:
                             to_remove = None
                             cells = set(ALL_NBRS[ceiling_a]).intersection(ALL_NBRS[ceiling_b])
@@ -330,7 +330,7 @@ def test_5(solver_status, board, window):
                     node_a = pair[0][0] * 9 + pair[0][1]
                     node_c = pair[1][0] * 9 + pair[1][1]
                     nodes = [node_a, node_b, node_c, node_d]
-                    boxes = {CELL_SQR[node] for node in nodes}
+                    boxes = {CELL_BOX[node] for node in nodes}
                     if len(boxes) == 2:
                         other_candidates = set(board[node_b]).difference(bi_value)
                         c_chain = _get_c_chain(nodes, bi_value, other_candidates)
@@ -375,7 +375,7 @@ def test_6(solver_status, board, window):
                     node_a = pair[0][0] * 9 + pair[0][1]
                     node_c = pair[1][0] * 9 + pair[1][1]
                     nodes = [node_a, node_b, node_c, node_d]
-                    boxes = {CELL_SQR[node] for node in nodes}
+                    boxes = {CELL_BOX[node] for node in nodes}
                     if len(boxes) == 2:
                         other_cells = set(CELLS_IN_ROW[pair[0][0]]).union(CELLS_IN_ROW[pair[1][0]]).union(
                             CELLS_IN_COL[pair[0][1]]).union(CELLS_IN_COL[pair[1][1]])
