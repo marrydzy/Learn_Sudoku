@@ -31,7 +31,7 @@ screen_messages = {
     "swordfish": "'Swordfish' technique",
     "finned_swordfish": "'Finned Swordfish' technique",
     "jellyfish": "'Jellyfish' technique",
-    "x_wings": "'X-Wings' technique",
+    "x_wings": "'X-Wing' technique",
     "squirmbag": "'Squirmbag' technique",
     "finned_x_wings": "'Finned X-Wing' technique",
     "finned_jellyfish": "'Finned Jellyfish' technique",
@@ -515,7 +515,7 @@ def methods_statistics(config, data, solving_methods):
 
     table = []
     for solving_method in solving_methods:
-        table.append([solving_method[0].replace("_", " ").title(),
+        table.append([solving_method[0],
                       solving_method[1].calls,
                       solving_method[1].options_removed,
                       solving_method[1].clues,

@@ -111,6 +111,9 @@ def test_1(solver_status, board, window):
                                 kwargs = {"solver_tool": "uniqueness_test_1",
                                           "c_chain": c_chain,
                                           "remove": to_remove, }
+                                test_1.rating += 100
+                                test_1.clues += len(solver_status.naked_singles)
+                                test_1.options_removed += len(to_remove)
                                 return kwargs
     return None
 
@@ -155,6 +158,9 @@ def test_2(solver_status, board, window):
                                 kwargs["c_chain"] = c_chain
                                 kwargs["impacted_cells"] = {cell for _, cell in to_remove}
                                 kwargs["remove"] = to_remove
+                                test_2.rating += 100
+                                test_2.clues += len(solver_status.naked_singles)
+                                test_2.options_removed += len(to_remove)
                                 return True
         return False
 
@@ -235,6 +241,9 @@ def test_3(solver_status, board, window):
                                     kwargs["c_chain"] = c_chain
                                     kwargs["impacted_cells"] = {cell for _, cell in to_remove}
                                     kwargs["remove"] = to_remove
+                                    test_3.rating += 100
+                                    test_3.clues += len(solver_status.naked_singles)
+                                    test_3.options_removed += len(to_remove)
                                     return True
         return False
 
@@ -296,6 +305,9 @@ def test_4(solver_status, board, window):
                                 kwargs["solver_tool"] = "uniqueness_test_4"
                                 kwargs["c_chain"] = c_chain
                                 kwargs["remove"] = to_remove
+                                test_4.rating += 100
+                                test_4.clues += len(solver_status.naked_singles)
+                                test_4.options_removed += len(to_remove)
                                 return True
         return False
 
@@ -346,6 +358,9 @@ def test_5(solver_status, board, window):
                             kwargs["c_chain"] = c_chain
                             kwargs["impacted_cells"] = {cell for _, cell in to_remove}
                             kwargs["remove"] = to_remove
+                            test_5.rating += 100
+                            test_5.clues += len(solver_status.naked_singles)
+                            test_5.options_removed += len(to_remove)
                             return kwargs
     return None
 
@@ -396,5 +411,8 @@ def test_6(solver_status, board, window):
                             kwargs["solver_tool"] = "uniqueness_test_6"
                             kwargs["c_chain"] = c_chain
                             kwargs["remove"] = to_remove
+                            test_6.rating += 100
+                            test_6.clues += len(solver_status.naked_singles)
+                            test_6.options_removed += len(to_remove)
                             return kwargs
     return None

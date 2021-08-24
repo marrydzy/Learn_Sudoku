@@ -23,10 +23,10 @@ from utils import init_options, remove_options, get_stats, get_n_values
 def _basic_fish(solver_status, board, window, n):
     """ TODO """
 
-    strategy_name = {2: "x_wings",
-                     3: "swordfish",
-                     4: "jellyfish",
-                     5: "squirmbag"}
+    fish_strategies = {2: ("x_wings", x_wing, 100),
+                       3: ("swordfish", swordfish, 140),
+                       4: ("jellyfish", jellyfish, 470),
+                       5: ("squirmbag", squirmbag, 470), }
 
     def _get_corners(rows, columns):
         return [rows[0] * 9 + columns[0], rows[0] * 9 + columns[1],
@@ -59,11 +59,14 @@ def _basic_fish(solver_status, board, window, n):
                                 rows = sorted(list(x_ids if by_row else secondary_ids))
                                 columns = sorted(list(secondary_ids if by_row else x_ids))
                                 kwargs["x_wing"] = _get_corners(rows, columns)
-                            kwargs["solver_tool"] = strategy_name[n]
+                            kwargs["solver_tool"] = fish_strategies[n][0]
                             kwargs["c_chain"] = _get_c_chain(value, cells, x_ids)
                             kwargs["remove"] = to_remove
                             kwargs["impacted_cells"] = {cell for _, cell in to_remove}
                             kwargs["house"] = houses
+                            fish_strategies[n][1].rating += fish_strategies[n][2]
+                            fish_strategies[n][1].clues += len(solver_status.naked_singles)
+                            fish_strategies[n][1].options_removed += len(to_remove)
                             return True
         return False
 
@@ -78,6 +81,15 @@ def _basic_fish(solver_status, board, window, n):
 
 def _finned_fish(solver_status, board, window, n):
     """ TODO """
+
+    fish_strategies = {2: ("finned_x_wings", finned_x_wing, 130),
+                       3: ("finned_swordfish", finned_swordfish, 200),
+                       4: ("finned_jellyfish", finned_jellyfish, 240),
+                       5: ("finned_squirmbag", finned_squirmbag, 470),
+                       6: ("sashimi_x_wing", finned_x_wing, 150),
+                       7: ("sashimi_swordfish", finned_swordfish, 240),
+                       8: ("sashimi_jellyfish", finned_jellyfish, 280),
+                       9: ("sashimi_squirmbag", finned_squirmbag, 470), }
 
     def _get_c_chain(candidate, cells, primary_ids):
         nodes = {cell for idx in primary_ids for cell in cells[idx] if candidate in board[cell]}
@@ -97,18 +109,9 @@ def _finned_fish(solver_status, board, window, n):
         return fins
 
     def _get_strategy_name(n_values, x_ids, fin_x, fin_ys):
-        strategy_name = {2: "finned_x_wings",
-                         3: "finned_swordfish",
-                         4: "finned_jellyfish",
-                         5: "finned_squirmbag",
-                         6: "sashimi_x_wing",
-                         7: "sashimi_swordfish",
-                         8: "sashimi_jellyfish",
-                         9: "sashimi_squirmbag", }
-
         y_ids = {id_y for id_y in n_values[fin_x] if id_y not in fin_ys}
         method_id = n if len(y_ids) >= 2 else n + 4
-        return strategy_name[method_id]
+        return fish_strategies[method_id]
 
     def _get_fin_box(fin, by_row):
         return CELLS_IN_BOX[CELL_BOX[fin[0]*9 + fin[1] if by_row else fin[1]*9 + fin[0]]]
@@ -143,11 +146,15 @@ def _finned_fish(solver_status, board, window, n):
                                         window.options_visible = window.options_visible.union(houses).union(impacted_cells)
                                     remove_options(solver_status, board, to_remove, window)
                                     c_chain = _get_c_chain(value, cells, x_ids)
-                                    kwargs["solver_tool"] = _get_strategy_name(n_values, x_ids, fin_x, fin_ys)
+                                    strategy = _get_strategy_name(n_values, x_ids, fin_x, fin_ys)
+                                    kwargs["solver_tool"] = strategy[0]
                                     kwargs["c_chain"] = c_chain
                                     kwargs["remove"] = to_remove
                                     kwargs["impacted_cells"] = {cell for _, cell in to_remove}
                                     kwargs["house"] = houses
+                                    strategy[1].rating += strategy[2]
+                                    strategy[1].clues += len(solver_status.naked_singles)
+                                    strategy[1].options_removed += len(to_remove)
                                     return True
         return False
 
@@ -238,6 +245,7 @@ def finned_jellyfish(solver_status, board, window):
     return _finned_fish(solver_status, board, window, 4)
 
 
+@get_stats
 def finned_squirmbag(solver_status, board, window):
     """ The algorithm covers two of the 'Finned Fish' techniques:
      - Finned Squirmbag , and

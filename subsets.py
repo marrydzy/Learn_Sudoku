@@ -5,7 +5,7 @@
 import itertools
 from collections import defaultdict
 
-from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX
+from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX, DeadEndException
 from utils import get_stats, init_options, remove_options, get_subsets, get_impacted_cells
 
 
@@ -17,7 +17,7 @@ def _get_c_chain(subset_cells, subset_candidates):
     return chain
 
 
-def _hidden_subset(solver_status, board, window, subset_size, method_name):
+def _hidden_subset(solver_status, board, window, subset_size):
     """ Generic technique of finding hidden subsets
     A Hidden Subset is formed when N digits have only candidates in N cells in a house.
     A Hidden Subset is always complemented by a Naked Subset. Because Hidden Subsets are
@@ -29,14 +29,18 @@ def _hidden_subset(solver_status, board, window, subset_size, method_name):
     """
 
     init_options(board, solver_status)
+    subset_strategies = {2: ("hidden_pair", hidden_pair, 70),
+                         3: ("hidden_triplet", hidden_triplet, 100),
+                         4: ("hidden_quad", hidden_quad, 150), }
+
     for cells in (CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX):
         for house in cells:
             unsolved = {cell for cell in house if len(board[cell]) > 1}
             if len(unsolved) <= subset_size:
                 continue
             candidates = set("".join(board[cell] for cell in unsolved))
-
-            # assert len(unsolved) == len(candidates)   TODO
+            if len(unsolved) != len(candidates):
+                raise DeadEndException
 
             candidates_positions = {candidate: {cell for cell in unsolved if candidate in board[cell]}
                                     for candidate in candidates}
@@ -52,14 +56,17 @@ def _hidden_subset(solver_status, board, window, subset_size, method_name):
                         if window:
                             window.options_visible = window.options_visible.union(unsolved)
                         kwargs = {
-                            "solver_tool": method_name,
+                            "solver_tool": subset_strategies[subset_size][0],
                             "c_chain": c_chain,
                             "remove": to_remove, }
+                        subset_strategies[subset_size][1].rating += subset_strategies[subset_size][2]
+                        subset_strategies[subset_size][1].clues += len(solver_status.naked_singles)
+                        subset_strategies[subset_size][1].options_removed += len(to_remove)
                         return kwargs
     return None
 
 
-def _naked_subset(solver_status, board, window, subset_size, method_name):
+def _naked_subset(solver_status, board, window, subset_size):
     """ Generic technique of finding naked subsets
     A Naked Subset is formed by N cells in a house with candidates for exactly N digits.
     N is the size of the subset, which must lie between 2 and the number of unsolved cells
@@ -68,6 +75,9 @@ def _naked_subset(solver_status, board, window, subset_size, method_name):
     will be no larger than 4 in a standard sized Sudoku.
     """
     init_options(board, solver_status)
+    subset_strategies = {2: ("naked_pair", naked_pair, 60),
+                         3: ("naked_triplet", naked_triplet, 80),
+                         4: ("naked_quad", naked_quad, 120), }
     for subset_dict in get_subsets(board, subset_size):
         subset_cells = {cell for cells in subset_dict.values() for cell in cells}
         impacted_cells = get_impacted_cells(board, subset_cells)
@@ -75,14 +85,18 @@ def _naked_subset(solver_status, board, window, subset_size, method_name):
                      for cell in impacted_cells for candidate in set(board[cell]).intersection(subset_dict)}
         if to_remove:
             solver_status.capture_baseline(board, window)
+            assert len(solver_status.naked_singles) == 0
             remove_options(solver_status, board, to_remove, window)
             if window:
                 window.options_visible = window.options_visible.union(subset_cells).union(impacted_cells)
             kwargs = {
-                "solver_tool": method_name,
+                "solver_tool": subset_strategies[subset_size][0],
                 "c_chain": _get_c_chain(subset_cells, subset_dict),
                 "impacted_cells": {cell for _, cell in to_remove},
                 "remove": to_remove, }
+            subset_strategies[subset_size][1].rating += subset_strategies[subset_size][2]
+            subset_strategies[subset_size][1].clues += len(solver_status.naked_singles)
+            subset_strategies[subset_size][1].options_removed += len(to_remove)
             return kwargs
     return None
 
@@ -95,7 +109,7 @@ def hidden_pair(solver_status, board, window):
     Subsequently, all remaining candidates can be removed from these 2 cells.
     Rating: 70
     """
-    return _hidden_subset(solver_status, board, window, 2, "hidden_pair")
+    return _hidden_subset(solver_status, board, window, 2)
 
 
 @get_stats
@@ -106,7 +120,7 @@ def hidden_triplet(solver_status, board, window):
     Subsequently, all remaining candidates can be removed from these 3 cells.
     Rating: 100
     """
-    return _hidden_subset(solver_status, board, window, 3, "hidden_triplet")
+    return _hidden_subset(solver_status, board, window, 3)
 
 
 @get_stats
@@ -117,7 +131,7 @@ def hidden_quad(solver_status, board, window):
     Subsequently, all remaining candidates can be removed from these 4 cells.
     Rating: 150
     """
-    return _hidden_subset(solver_status, board, window, 4, "hidden_quad")
+    return _hidden_subset(solver_status, board, window, 4)
 
 
 @get_stats
@@ -127,7 +141,7 @@ def naked_pair(solver_status, board, window):
     and are collocated in the same house.
     Rating: 60
     """
-    return _naked_subset(solver_status, board, window, 2, "naked_pair")
+    return _naked_subset(solver_status, board, window, 2)
 
 
 @get_stats
@@ -137,7 +151,7 @@ def naked_triplet(solver_status, board, window):
     and are collocated in the same house.
     Rating: 80
     """
-    return _naked_subset(solver_status, board, window, 3, "naked_triplet")
+    return _naked_subset(solver_status, board, window, 3)
 
 
 @get_stats
@@ -147,5 +161,5 @@ def naked_quad(solver_status, board, window):
     and are collocated in the same house.
     Rating: 120
     """
-    return _naked_subset(solver_status, board, window, 4, "naked_quad")
+    return _naked_subset(solver_status, board, window, 4)
 

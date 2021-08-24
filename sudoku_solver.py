@@ -21,6 +21,12 @@ from progress.bar import Bar
 from solver_manual import manual_solver
 from solver_manual import solver_status, board_image_stack, iter_stack, solver_status_stack
 
+import singles
+import intersections
+import subsets
+import uniqueness_tests
+import fish
+import wings
 
 import solver_methods
 import display
@@ -321,26 +327,48 @@ def _run_in_silence():
 
 
 def _set_tools():
-    techniques = {
-        "m": (manual_solver, "manual_solution"),
-        "u": (solver_methods.unique_values, "unique_values"),
-        "h": (solver_methods.hidden_pairs, "hidden_pairs"),
-        "p": (solver_methods.naked_twins, "naked_twins"),
-        "o": (solver_methods.omissions, "omissions"),
-        "y": (solver_methods.y_wings, "y_wings"),
-        "i": (solver_methods.hidden_triplets, "hidden_triplets"),
-        "j": (solver_methods.hidden_quads, "hidden_quads"),
-        "t": (solver_methods.naked_triplets, "naked_triplets"),
-        "q": (solver_methods.naked_quads, "naked_quads"),
-        "r": (solver_methods.unique_rectangles, "unique_rectangles"),
-        "x": (solver_methods.x_wings, "x_wings"),
-        "s": (solver_methods.swordfish, "swordfish"),
+    solving_techniques = {
+        "full_house": (singles.full_house, "Full House", 4, 0),
+        "visual_elimination": (singles.visual_elimination, "Visual Elimination", 4, 1),
+        "naked_single": (singles.naked_singles, "Naked Single", 4, 2),
+        "hidden_single": (singles.hidden_singles, "Hidden Single", 14, 3),
+        "locked_candidates": (intersections.locked_candidates, "Locked Candidates", 50, 10),
+        "naked_pair": (subsets.naked_pair, "Naked Pair", 60, 20),
+        "hidden_pair": (subsets.hidden_pair, "Hidden Pair", 70, 21),
+
+        "swordfish": (fish.swordfish, "Swordfish", 140, 41),
+        "xy-wing": (wings.xy_wing, "XY-Wing", 160, 60),
+        "xyz-wing": (wings.xyz_wing, "XYZ-Wing", 180, 61),
+        "wxyz-wing": (wings.wxyz_wing, "WXYZ-Wing", 200, 62),
+        "naked_triplet": (subsets.naked_triplet, "Naked Triplet", 80, 22),
+
+        "uniqueness_test_1": (uniqueness_tests.test_1, "Uniqueness Test 1", 100, 30),
+        "uniqueness_test_2": (uniqueness_tests.test_2, "Uniqueness Test 2", 100, 31),
+        "uniqueness_test_3": (uniqueness_tests.test_3, "Uniqueness Test 3", 100, 32),
+        "uniqueness_test_4": (uniqueness_tests.test_4, "Uniqueness Test 4", 100, 33),
+        "uniqueness_test_5": (uniqueness_tests.test_5, "Uniqueness Test 5", 100, 34),
+        "uniqueness_test_6": (uniqueness_tests.test_6, "Uniqueness Test 6", 100, 35),
+
+        # TODO - skyscraper
+
+        "x_wing": (fish.x_wing, "X-Wing", 100, 40),
+        "jellyfish": (fish.jellyfish, "Jellyfish", 470, 42),
+        "finned_x_wing": (fish.finned_x_wing, "Finned X-Wing", 130, 44),
+        "finned_swordfish": (fish.finned_swordfish, "Finned Swordfish", 200, 45),
+        "finned_jellyfish": (fish.finned_jellyfish, "Finned Jellyfish", 240, 46),
+        "finned_squirmbag": (fish.finned_squirmbag, "Finned Squirmbag", 470, 47),
+
+        "hidden_triplet": (subsets.hidden_triplet, "Hidden Triplet", 100, 23),
+        "squirmbag": (fish.squirmbag, "Squirmbag", 470, 43),
+        "naked_quad": (subsets.naked_quad, "Naked Quad", 120, 24),
+        "hidden_quad": (subsets.hidden_quad, "Hidden Quad", 150, 25),
+
     }
 
     tool_names = []
-    for method in config["techniques"]:
-        methods.append(techniques[method][0])
-        tool_names.append(techniques[method][1])
+    for technique in solving_techniques.items():
+        methods.append(technique[1][0])
+        tool_names.append(technique[1][1])
 
     return tool_names, methods
 

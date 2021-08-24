@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import is_clue, init_options, remove_options
+from utils import get_stats, is_clue, init_options, remove_options
 from utils import get_bi_value_cells, get_house_pairs, get_strong_links, get_pair_house
 
 
@@ -197,11 +197,13 @@ def finned_mutant_x_wing(solver_status, board, window):
     return kwargs
 
 
+@get_stats
 def xy_wing(solver_status, board, window):
     """ Remove candidates (options) using XY Wing technique:
     For explanation of the technique see e.g.:
     - https://www.learn-sudoku.com/xy-wing.html
     - https://www.sudoku9981.com/sudoku-solving/xy-wing.php
+    Rating: 160
     """
 
     def _get_c_chain(root, wing_x, wing_y):
@@ -209,8 +211,8 @@ def xy_wing(solver_status, board, window):
         x_value = set(board[root]).intersection(set(board[wing_x])).pop()
         y_value = set(board[root]).intersection(set(board[wing_y])).pop()
         return {root: {(x_value, 'lime'), (y_value, 'yellow')},
-                wing_x: {(x_value, 'lime'), (z_value, 'cyan')},
-                wing_y: {(y_value, 'yellow'), (z_value, 'cyan')}}
+                wing_x: {(x_value, 'yellow'), (z_value, 'cyan')},
+                wing_y: {(y_value, 'lime'), (z_value, 'cyan')}}
 
     def _find_xy_wing(cell_id):
         xy = set(board[cell_id])
@@ -222,7 +224,7 @@ def xy_wing(solver_status, board, window):
                 z_value = xz.intersection(yz).pop()
                 impacted_cells = set(ALL_NBRS[pair[0]]).intersection(set(ALL_NBRS[pair[1]]))
                 to_remove = [(z_value, a_cell) for a_cell in impacted_cells if
-                             z_value in board[a_cell] and not is_clue(cell, board, solver_status)]
+                             z_value in board[a_cell] and not is_clue(a_cell, board, solver_status)]
                 if to_remove:
                     solver_status.capture_baseline(board, window)
                     if window:
@@ -233,7 +235,11 @@ def xy_wing(solver_status, board, window):
                     kwargs["c_chain"] = _get_c_chain(cell_id, pair[0], pair[1])
                     kwargs["edges"] = [(cell_id, pair[0]), (cell_id, pair[1])]
                     kwargs["remove"] = to_remove
-                    kwargs["impacted_cells"] = impacted_cells
+                    kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
+                    xy_wing.rating += 160
+                    xy_wing.options_removed += len(to_remove)
+                    xy_wing.clues += len(solver_status.naked_singles)
+                    # print('\tXY-Wing')
                     return True
         return False
 
@@ -245,10 +251,12 @@ def xy_wing(solver_status, board, window):
     return kwargs
 
 
+@get_stats
 def xyz_wing(solver_status, board, window):
     """ Remove candidates (options) using XYZ Wing technique:
     For explanation of the technique see e.g.:
     - https://www.sudoku9981.com/sudoku-solving/xyz-wing.php
+    Rating: 200-180
     """
 
     def _get_c_chain(root, wing_x, wing_y):
@@ -256,8 +264,8 @@ def xyz_wing(solver_status, board, window):
         x_value = set(board[wing_x]).difference({z_value}).pop()
         y_value = set(board[wing_y]).difference({z_value}).pop()
         return {root: {(x_value, 'lime'), (y_value, 'yellow'), (z_value, 'cyan')},
-                wing_x: {(x_value, 'lime'), (z_value, 'cyan')},
-                wing_y: {(y_value, 'yellow'), (z_value, 'cyan')}}
+                wing_x: {(x_value, 'yellow'), (z_value, 'cyan')},
+                wing_y: {(y_value, 'lime'), (z_value, 'cyan')}}
 
     def _find_xyz_wing(cell_id):
         xyz = set(board[cell_id])
@@ -281,7 +289,11 @@ def xyz_wing(solver_status, board, window):
                     kwargs["c_chain"] = _get_c_chain(cell_id, pair[0], pair[1])
                     kwargs["edges"] = [(cell_id, pair[0]), (cell_id, pair[1])]
                     kwargs["remove"] = to_remove
-                    kwargs["impacted_cells"] = impacted_cells
+                    kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
+                    xyz_wing.rating += 180
+                    xyz_wing.options_removed += len(to_remove)
+                    xyz_wing.clues += len(solver_status.naked_singles)
+                    # print('\tXYZ-Wing')
                     return True
         return False
 
@@ -293,6 +305,7 @@ def xyz_wing(solver_status, board, window):
     return kwargs
 
 
+@get_stats
 def wxyz_wing(solver_status, board, window):
     """Remove candidates (options) using WXYZ-Wing technique
     https://www.sudoku9981.com/sudoku-solving/wxyz-wing.php
@@ -300,13 +313,15 @@ def wxyz_wing(solver_status, board, window):
 
     def _get_c_chain(nodes, wxyz_values):
         c_chain = defaultdict(set)
+        col_1 = 'lime'
+        col_2 = 'yellow'
         for node in nodes:
             if wxyz_values[0] in board[node]:
                 c_chain[node].add((wxyz_values[0], 'moccasin'))
             if wxyz_values[1] in board[node]:
-                c_chain[node].add((wxyz_values[1], 'lime'))
+                c_chain[node].add((wxyz_values[1], col_1))
             if wxyz_values[2] in board[node]:
-                c_chain[node].add((wxyz_values[2], 'yellow'))
+                c_chain[node].add((wxyz_values[2], col_2))
             if wxyz_values[3] in board[node]:
                 c_chain[node].add((wxyz_values[3], 'cyan'))
         return c_chain
@@ -360,7 +375,12 @@ def wxyz_wing(solver_status, board, window):
                                             "wxyz_wing_type_2"
                                         kwargs["c_chain"] = _get_c_chain(nodes, (w_value, x_value, y_value, z_value))
                                         kwargs["remove"] = to_remove
-                                        kwargs["impacted_cells"] = impacted_cells
+                                        kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
+                                        wxyz_wing.rating += 200
+                                        wxyz_wing.options_removed += len(to_remove)
+                                        wxyz_wing.clues += len(solver_status.naked_singles)
+                                        if type == 'type_2':
+                                            print('\tWXYZ-Wing')
                                         return True
         return False
 

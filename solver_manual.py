@@ -9,7 +9,7 @@ from utils import ALL_NBRS
 from utils import is_clue, is_solved, set_cell_options, set_neighbours_options
 from utils import get_stats
 
-import basic_techniques
+import singles
 import intersections
 import subsets
 import uniqueness_tests
@@ -26,17 +26,20 @@ solver_status_stack = []
 
 
 solver_methods = [
-    basic_techniques.full_house,
-    basic_techniques.visual_elimination,
-    basic_techniques.naked_singles,
-    basic_techniques.hidden_singles,
+    singles.full_house,
+    singles.visual_elimination,
+    singles.naked_singles,
+    singles.hidden_singles,
     intersections.locked_candidates,
     subsets.naked_pair,
     subsets.hidden_pair,
+
+    fish.swordfish,
+    wings.xy_wing,
+    wings.xyz_wing,
+    wings.wxyz_wing,
     subsets.naked_triplet,
-    subsets.hidden_triplet,
-    subsets.naked_quad,
-    subsets.hidden_quad,
+
     uniqueness_tests.test_1,
     uniqueness_tests.test_2,
     uniqueness_tests.test_3,
@@ -44,10 +47,10 @@ solver_methods = [
     uniqueness_tests.test_5,
     uniqueness_tests.test_6,
     intermediate_techniques.skyscraper,
+
     fish.x_wing,
-    fish.swordfish,
     fish.jellyfish,
-    fish.squirmbag,
+    # fish.squirmbag,
     fish.finned_x_wing,
     fish.finned_swordfish,
     fish.finned_jellyfish,
@@ -59,10 +62,10 @@ solver_methods = [
     coloring.three_d_medusa,
     coloring.naked_xy_chain,
     coloring.hidden_xy_chain,
-    wings.xy_wing,
-    wings.xyz_wing,
+
+    # wings.xy_wing,
+    # wings.xyz_wing,
     wings.w_wing,
-    wings.wxyz_wing,
 
     intermediate_techniques.empty_rectangle,
     intermediate_techniques.sue_de_coq,
@@ -71,6 +74,11 @@ solver_methods = [
     almost_locked_set.als_xz,
     almost_locked_set.death_blossom,
     almost_locked_set.als_xy_wing,
+
+    subsets.hidden_triplet,
+    fish.squirmbag,
+    subsets.naked_quad,
+    subsets.hidden_quad,
 
     questionable.almost_locked_candidates,
     questionable.franken_x_wing,
@@ -87,9 +95,9 @@ class SolverStatus:
         self.naked_singles = set()
         self.board_baseline = list()
         self.naked_singles_baseline = set()
-        self.clues_found_baseline = []
+        self.clues_found_baseline = set()
         self.options_visible_baseline = set()
-        self.conflicted_cells = []
+        self.conflicted_cells = set()
 
     def initialize(self, board):
         self.clues_defined = set(cell_id for cell_id in range(81) if board[cell_id] != ".")
@@ -111,30 +119,14 @@ class SolverStatus:
 
     def restore(self, solver_status_baseline):
         self.options_set = solver_status_baseline.options_set
-        self.clues_defined.clear()
-        for cell in solver_status_baseline.clues_defined:
-            self.clues_defined.add(cell)
-        self.clues_found.clear()
-        for cell in solver_status_baseline.clues_found:
-            self.clues_found.add(cell)
-        self.naked_singles.clear()
-        for cell in solver_status_baseline.naked_singles:
-            self.naked_singles.add(cell)
-        self.board_baseline.clear()
-        for cell in solver_status_baseline.board_baseline:
-            self.board_baseline.append(cell)
-        self.naked_singles_baseline.clear()
-        for cell in solver_status_baseline.naked_singles_baseline:
-            self.naked_singles_baseline.add(cell)
-        self.clues_found_baseline.clear()
-        for cell in solver_status_baseline.naked_singles_baseline:
-            self.clues_found_baseline.add(cell)
-        self.options_visible_baseline.clear()
-        for cell in solver_status_baseline.options_visible_baseline:
-            self.options_visible_baseline.add(cell)
-        self.conflicted_cells.clear()
-        for cell in solver_status_baseline.conflicted_cells:
-            self.conflicted_cells.add(cell)
+        self.clues_defined = solver_status_baseline.clues_defined.copy()
+        self.clues_found = solver_status_baseline.clues_found.copy()
+        self.naked_singles = solver_status_baseline.naked_singles.copy()
+        self.board_baseline = solver_status_baseline.board_baseline.copy()
+        self.naked_singles_baseline = solver_status_baseline.naked_singles_baseline.copy()
+        self.clues_found_baseline = solver_status_baseline.clues_found_baseline.copy()
+        self.options_visible_baseline = solver_status_baseline.options_visible_baseline.copy()
+        self.conflicted_cells = solver_status_baseline.conflicted_cells.copy()
 
     def reset(self, board):
         self.options_set = False
@@ -323,7 +315,7 @@ def manual_solver(board, window, count_strategies_failures):
             if not is_solved(board, solver_status):        # TODO: for debugging only!
                 if count_strategies_failures:
                     strategies_failure_counter += 1
-                    print(f"\n{strategies_failure_counter = }")
+                    # print(f"\n{strategies_failure_counter = }")
                     pass
             return False
     return True
