@@ -4,6 +4,7 @@
 
 from itertools import combinations
 from collections import defaultdict
+from itertools import combinations
 
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
@@ -307,21 +308,281 @@ def xyz_wing(solver_status, board, window):
 
 @get_stats
 def wxyz_wing(solver_status, board, window):
+    """ TODO """
+
+    def _get_possible_wings():
+        possible_wings = set()
+        for cell in range(81):
+            if len(board[cell]) > 1:
+                neighbour_cells = {cell_id for cell_id in ALL_NBRS[cell] if len(board[cell_id]) > 1}
+                for triplet in combinations(neighbour_cells, 3):
+                    quad = (cell, triplet[0], triplet[1], triplet[2])
+                    options = set(''.join(board[cell_id] for cell_id in quad))
+                    if len(options) == 4:
+                        in_boxes = {CELL_BOX[cell_id] for cell_id in quad}
+                        if 4 > len(in_boxes) > 1:
+                            in_rows = {CELL_ROW[cell_id] for cell_id in quad}
+                            in_columns = {CELL_COL[cell_id] for cell_id in quad}
+                            if len(in_rows) > 1 and len(in_columns) > 1 and (len(in_rows) < 4 or len(in_columns) < 4):
+                                possible_wings.add(quad)
+        return possible_wings
+
+    def _get_cells_candidates(cells, common=True):
+        candidates = set(board[cells[0]])
+        for cell_id in cells[1:]:
+            candidates = candidates.intersection(board[cell_id]) if common else candidates.union(board[cell_id])
+        return candidates
+
+    def _get_impacted_cells(nodes, z):
+        impacted_cells = None
+        for node in nodes:
+            if z in board[node]:
+                impacted_cells = ALL_NBRS[node]
+        for node in nodes:
+            if z in board[node]:
+                impacted_cells = impacted_cells.intersection(ALL_NBRS[node])
+        impacted_cells = {cell_id for cell_id in impacted_cells if len(board[cell_id]) > 1}
+        return impacted_cells
+
+    def _type_1():
+        for wing in wings:
+            if len(board[wing[0]]) > 2:
+                for cell_id in wing[1:]:
+                    if len(set(ALL_NBRS[cell_id]).intersection(wing)) == 3 or len(board[cell_id]) != 2:
+                        break
+                else:
+                    if len(_get_cells_candidates(wing[1:], common=False)) == 4:
+                        z = _get_cells_candidates(wing[1:])
+                        if len(z) == 1:
+                            z = z.pop()
+                            if len(board[wing[0]]) == 4 or z not in board[wing[0]]:
+                                impacted_cells = _get_impacted_cells(wing, z)
+                                impacted_cells = {cell_id for cell_id in impacted_cells if len(board[cell_id]) > 1}
+                                if impacted_cells:
+                                    to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
+                                    if to_remove:
+                                        solver_status.capture_baseline(board, window)
+                                        if window:
+                                            window.options_visible = window.options_visible.union(wing).union(
+                                                impacted_cells)
+                                        remove_options(solver_status, board, to_remove, window)
+                                        kwargs["solver_tool"] = "wxyz_wing_type_1"   # TODO
+                                        kwargs["chain_d"] = {wing[0]: {(z, 'cyan')}}    # TODO
+                                        kwargs["chain_a"] = {wing[1]: {(z, 'cyan')}, wing[2]: {(z, 'cyan')}, wing[3]: {(z, 'cyan')}}
+                                        kwargs["remove"] = to_remove
+                                        kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
+                                        wxyz_wing.rating += 200
+                                        wxyz_wing.options_removed += len(to_remove)
+                                        wxyz_wing.clues += len(solver_status.naked_singles)
+                                        print(f'\t{kwargs["solver_tool"]}: {wing = }, {z = }')
+                                        return True
+        return False
+
+    def _type_2():
+
+        def _get_other_cells(houses):
+            cell_a, cell_b, cell_c = None, None, None
+            for _, cells in houses.items():
+                if len(cells) == 2:
+                    cell_a = cells.pop()
+                    cell_b = cells.pop()
+                    cell_c = set(wing[1:]).difference({cell_a, cell_b})
+                    cell_c = cell_c.pop()
+                    break
+            return cell_a, cell_b, cell_c
+
+        for wing in wings:
+            for cell_id in wing[1:]:
+                if len(set(ALL_NBRS[cell_id]).intersection(wing)) == 3 or len(board[cell_id]) != 2:
+                    break
+            else:
+                rows = defaultdict(set)
+                columns = defaultdict(set)
+                boxes = defaultdict(set)
+                for cell_id in wing[1:]:
+                    rows[CELL_ROW[cell_id]].add(cell_id)
+                    columns[CELL_COL[cell_id]].add(cell_id)
+                    boxes[CELL_BOX[cell_id]].add(cell_id)
+
+                if len(rows) == 2:
+                    cell_a, cell_b, cell_c = _get_other_cells(rows)
+                elif len(columns) == 2:
+                    cell_a, cell_b, cell_c = _get_other_cells(columns)
+                elif len(boxes) == 2:
+                    cell_a, cell_b, cell_c = _get_other_cells(boxes)
+                else:
+                    continue
+
+                w = set(board[cell_a]).intersection(board[cell_b])
+                if len(w) == 1 and not w.intersection(board[cell_c]):
+                    w = w.pop()
+                    a_left = set(board[cell_a]).union(board[cell_b])
+                    a_left.remove(w)
+                    z = a_left.intersection(board[cell_c])
+                    if len(z) == 1:
+                        z = z.pop()
+                        a_sum = set(board[cell_a]).union(board[cell_c])
+                        if len(a_sum.intersection(board[wing[0]])) == 2 and z not in board[wing[0]] or \
+                                len(a_sum.intersection(board[wing[0]])) > 2:
+                            impacted_cells = _get_impacted_cells(wing, z)
+                            if impacted_cells:
+                                to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
+                                if to_remove:
+                                    solver_status.capture_baseline(board, window)
+                                    if window:
+                                        window.options_visible = window.options_visible.union(wing).union(
+                                            impacted_cells)
+                                    remove_options(solver_status, board, to_remove, window)
+                                    kwargs["solver_tool"] = "wxyz_wing_type_2"   # TODO
+                                    kwargs["c_chain"] = {wing[0]: set(), wing[1]: set(), wing[2]: set(), wing[3]: set()} # TODO
+                                    kwargs["remove"] = to_remove
+                                    kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
+                                    wxyz_wing.rating += 200
+                                    wxyz_wing.options_removed += len(to_remove)
+                                    wxyz_wing.clues += len(solver_status.naked_singles)
+                                    # print(f'\t{kwargs["solver_tool"]}: {wing = }, {w = }, {z = }')
+                                    return True
+        return False
+
+    def _type_3():
+        for wing in wings:
+            for cell_id in wing[1:]:
+                if len(set(ALL_NBRS[cell_id]).intersection(wing)) == 3:
+                    break
+            else:
+                row_subset = set(CELLS_IN_ROW[CELL_ROW[wing[0]]]).intersection(wing[1:])
+                column_subset = set(CELLS_IN_COL[CELL_COL[wing[0]]]).intersection(wing[1:])
+                box_subset = set(CELLS_IN_BOX[CELL_BOX[wing[0]]]).intersection(wing[1:])
+                subset = None
+                if len(row_subset) == 2:
+                    subset = row_subset
+                elif len(column_subset) == 2:
+                    subset = column_subset
+                elif len(box_subset) == 2:
+                    subset = box_subset
+                if subset:
+                    subset_candidates = set(''.join(board[cell_id] for cell_id in subset))
+                    cell_a = subset.pop()
+                    cell_b = subset.pop()
+                    cell_c = set(wing[1:]).difference({cell_a, cell_b})
+                    cell_c = cell_c.pop()
+                    z = set(subset_candidates).intersection(board[cell_c])
+                    conditions = [bool(len(subset_candidates) == 3),
+                                  bool(set(board[cell_a]).issubset(board[cell_b]) or
+                                       set(board[cell_b]).issubset(board[cell_a])),
+                                  bool(len(board[cell_c]) == 2),
+                                  bool(len(z) == 1)]
+                    if all(conditions):
+                        z = z.pop()
+                        w = board[cell_c].replace(z, '')
+                        if w in board[wing[0]] and (len(board[wing[0]]) > 2 or z not in board[wing[0]]):
+                            impacted_cells = set(ALL_NBRS[cell_c])
+                            if z in board[wing[0]]:
+                                impacted_cells = impacted_cells.intersection(ALL_NBRS[wing[0]])
+                            if z in board[cell_a]:
+                                impacted_cells = impacted_cells.intersection(ALL_NBRS[cell_a])
+                            if z in board[cell_b]:
+                                impacted_cells = impacted_cells.intersection(ALL_NBRS[cell_b])
+                            impacted_cells = {cell_id for cell_id in impacted_cells if len(board[cell_id]) > 1}
+                            if impacted_cells:
+                                to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
+                                if to_remove:
+                                    solver_status.capture_baseline(board, window)
+                                    if window:
+                                        window.options_visible = window.options_visible.union(wing).union(
+                                            impacted_cells)
+                                    remove_options(solver_status, board, to_remove, window)
+                                    kwargs["solver_tool"] = "wxyz_wing_type_2"   # TODO
+                                    kwargs["c_chain"] = {wing[0]: set(), wing[1]: set(), wing[2]: set(), wing[3]: set()} # TODO
+                                    kwargs["remove"] = to_remove
+                                    kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
+                                    wxyz_wing.rating += 200
+                                    wxyz_wing.options_removed += len(to_remove)
+                                    wxyz_wing.clues += len(solver_status.naked_singles)
+                                    # print(f'\t{kwargs["solver_tool"]}')
+                                    return True
+        return False
+
+    def _type_4_5():
+        for wing in wings:
+            base_cells = [wing[0], ]
+            for cell_id in wing[1: ]:
+                if len(set(ALL_NBRS[cell_id]).intersection(wing)) == 3:
+                    base_cells.append(cell_id)
+            if len(base_cells) == 2:
+                tmp = set(wing).difference(base_cells)
+                cell_a = tmp.pop()
+                cell_b = tmp.pop()
+                z = set(board[cell_a]).intersection(board[cell_b])
+                conditions = [bool(len(z) == 1),
+                              bool(len(board[cell_a]) == 2 or len(board[cell_b]) == 2),
+                              bool(len(board[cell_a]) <= 3 and len(board[cell_b]) <= 3), ]
+                if all(conditions):
+                    z = z.pop()
+                    base_candidates = set(''.join(board[cell_id] for cell_id in base_cells))
+                    impacted_cells = set()
+                    wing_type = None
+                    if len(base_candidates) == 4:
+                        impacted_cells = set(ALL_NBRS[wing[0]]).intersection(ALL_NBRS[wing[1]]).intersection(
+                            ALL_NBRS[wing[2]].intersection(ALL_NBRS[wing[3]]))
+                        wing_type = 'type_2'    # TODO
+                    elif len(base_candidates) == 3 and z not in base_candidates:
+                        impacted_cells = set(ALL_NBRS[cell_a]).intersection(ALL_NBRS[cell_b])
+                        impacted_cells = impacted_cells.difference(wing)
+                        wing_type = 'type_2'    # TODO
+                    impacted_cells = {cell_id for cell_id in impacted_cells if len(board[cell_id]) > 1}
+                    if impacted_cells:
+                        to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
+                        if to_remove:
+                            solver_status.capture_baseline(board, window)
+                            if window:
+                                window.options_visible = window.options_visible.union(wing).union(
+                                    impacted_cells)
+                            remove_options(solver_status, board, to_remove, window)
+                            kwargs["solver_tool"] = "wxyz_wing_" + wing_type
+                            kwargs["c_chain"] = {wing[0]: set(), wing[1]: set(), wing[2]: set(), wing[3]: set()} # TODO
+                            kwargs["remove"] = to_remove
+                            kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
+                            wxyz_wing.rating += 200
+                            wxyz_wing.options_removed += len(to_remove)
+                            wxyz_wing.clues += len(solver_status.naked_singles)
+                            # print(f'\t{kwargs["solver_tool"]}')
+                            return True
+        return False
+
+    kwargs = {}
+    wings = _get_possible_wings()
+
+    if _type_1():
+        return kwargs
+    if _type_2():
+        return kwargs
+    if _type_3():
+        return kwargs
+    if _type_4_5():
+        return kwargs
+    return None
+
+
+@get_stats
+def wxyz_wing_(solver_status, board, window):
     """Remove candidates (options) using WXYZ-Wing technique
     https://www.sudoku9981.com/sudoku-solving/wxyz-wing.php
     """
 
     def _get_c_chain(nodes, wxyz_values):
         c_chain = defaultdict(set)
-        col_1 = 'lime'
-        col_2 = 'yellow'
         for node in nodes:
+            if wxyz_values[1] in board[node] and wxyz_values[2] in board[node]:
+                c_chain[node].add((wxyz_values[1], 'lime'))
+                c_chain[node].add((wxyz_values[2], 'yellow'))
+            elif wxyz_values[1] in board[node]:
+                c_chain[node].add((wxyz_values[1], 'yellow'))
+            elif wxyz_values[2] in board[node]:
+                c_chain[node].add((wxyz_values[2], 'lime'))
+
             if wxyz_values[0] in board[node]:
                 c_chain[node].add((wxyz_values[0], 'moccasin'))
-            if wxyz_values[1] in board[node]:
-                c_chain[node].add((wxyz_values[1], col_1))
-            if wxyz_values[2] in board[node]:
-                c_chain[node].add((wxyz_values[2], col_2))
             if wxyz_values[3] in board[node]:
                 c_chain[node].add((wxyz_values[3], 'cyan'))
         return c_chain
@@ -359,7 +620,7 @@ def wxyz_wing(solver_status, board, window):
                                     impacted_cells = _get_impacted_cells(triplet, cell, z_value)
                                     to_remove = [(z_value, node) for node in impacted_cells
                                                  if z_value in board[node]]
-                                    if to_remove:
+                                    if to_remove:   # and type == 'type_2':  TODO - temporary for testing only!
                                         candidates.remove(w_value)
                                         candidates.remove(z_value)
                                         x_value = candidates.pop()
@@ -379,8 +640,8 @@ def wxyz_wing(solver_status, board, window):
                                         wxyz_wing.rating += 200
                                         wxyz_wing.options_removed += len(to_remove)
                                         wxyz_wing.clues += len(solver_status.naked_singles)
-                                        if type == 'type_2':
-                                            print('\tWXYZ-Wing')
+                                        # if type == 'type_2':
+                                        #     print(f'\tWXYZ-Wing')
                                         return True
         return False
 

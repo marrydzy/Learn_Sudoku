@@ -175,6 +175,8 @@ def cell_color(window, cell, **kwargs):
         color = html_color_codes["peru"]
     if "chain_c" in kwargs and cell in kwargs["chain_c"]:
         color = html_color_codes["lightcoral"]
+    if "chain_d" in kwargs and cell in kwargs["chain_d"]:
+        color = html_color_codes["yellow"]
     if "wrong_values" in kwargs and cell in kwargs["wrong_values"]:
         color = html_color_codes["pink"]
     if "conflicted_cells" in kwargs and cell in kwargs["conflicted_cells"]:
@@ -400,6 +402,8 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     chain_a = kwargs["chain_a"] if "chain_a" in kwargs else None
     chain_b = kwargs["chain_b"] if "chain_b" in kwargs else None
     chain_c = kwargs["chain_c"] if "chain_c" in kwargs else None
+    chain_d = kwargs["chain_d"] if "chain_d" in kwargs else None
+
 
     if iterate is not None and cell_id == iterate:
         pygame.draw.rect(
@@ -468,7 +472,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                                      (pos[0] + window.option_offsets[value][0],
                                       pos[1] + window.option_offsets[value][1],
                                       CELL_SIZE // 3, CELL_SIZE // 3))
-        for chain in (chain_a, chain_b, chain_c):
+        for chain in (chain_a, chain_b, chain_c, chain_d):
             if chain and cell_id in chain:
                 for candidate, color in chain[cell_id]:
                     if value == candidate:

@@ -21,6 +21,7 @@ from progress.bar import Bar
 from solver_manual import manual_solver
 from solver_manual import solver_status, board_image_stack, iter_stack, solver_status_stack
 
+import almost_locked_set
 import singles
 import intersections
 import subsets
@@ -357,6 +358,8 @@ def _set_tools():
         "finned_swordfish": (fish.finned_swordfish, "Finned Swordfish", 200, 45),
         "finned_jellyfish": (fish.finned_jellyfish, "Finned Jellyfish", 240, 46),
         "finned_squirmbag": (fish.finned_squirmbag, "Finned Squirmbag", 470, 47),
+
+        "als_xz": (almost_locked_set.als_xz, "ALS-XZ", 300, 71),
 
         "hidden_triplet": (subsets.hidden_triplet, "Hidden Triplet", 100, 23),
         "squirmbag": (fish.squirmbag, "Squirmbag", 470, 43),

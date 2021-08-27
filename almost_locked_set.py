@@ -166,6 +166,9 @@ def als_xz(solver_status, board, window):
                             if window:
                                 window.options_visible = window.options_visible.union(cells_a).union(
                                     cells_b).union(common_neighbours)
+                            als_xz.rating += 300
+                            als_xz.options_removed += len(to_remove)
+                            als_xz.clues += len(solver_status.naked_singles)
                             return {"solver_tool": "als_xz",
                                     "chain_a": chain_a,
                                     "chain_b": chain_b,
