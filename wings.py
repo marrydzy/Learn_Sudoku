@@ -94,7 +94,10 @@ def finned_x_wing(solver_status, board, window):
                                     kwargs["remove"] = to_remove
                                     kwargs["house"] = house
                                     kwargs["impacted_cells"] = other_cells
-                                    print('\tfinned X-wing')
+                                    finned_x_wing.rating += 130
+                                    finned_x_wing.options_removed += len(to_remove)
+                                    finned_x_wing.clues += len(solver_status.naked_singles)
+                                    # print('\tfinned X-wing')
                                     return True
         return False
 
@@ -142,6 +145,9 @@ def finned_mutant_x_wing(solver_status, board, window):
                                 kwargs["house"] = house
                                 kwargs["impacted_cells"] = impacted_cell
                                 kwargs["finned_x_wing"] = corners
+                                finned_mutant_x_wing.rating += 470
+                                finned_mutant_x_wing.options_removed += len(to_remove)
+                                finned_mutant_x_wing.clues += len(solver_status.naked_singles)
                                 return True
         return False
 
@@ -192,6 +198,9 @@ def finned_mutant_x_wing(solver_status, board, window):
                                 kwargs["house"] = house
                                 kwargs["impacted_cells"] = {impacted_cell}
                                 kwargs["finned_x_wing"] = corners
+                                finned_mutant_x_wing.rating += 470
+                                finned_mutant_x_wing.options_removed += len(to_remove)
+                                finned_mutant_x_wing.clues += len(solver_status.naked_singles)
                                 # if len(fins) > 1:
                                 #     print('\nBingo!')
                                 return True
@@ -589,6 +598,7 @@ def wxyz_wing(solver_status, board, window):
 def w_wing(solver_status, board, window):
     """Remove candidates (options) using W-Wing technique
     http://hodoku.sourceforge.net/en/tech_wings.php#w
+    Rating: 150
     """
 
     bi_value_cells = get_bi_value_cells(board)
@@ -639,6 +649,9 @@ def w_wing(solver_status, board, window):
                 kwargs["chain_d"] = _get_chain(board, w_base, other_value, w_constraint)
                 kwargs["remove"] = to_remove
                 kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
+                w_wing.rating += 150
+                w_wing.options_removed += len(to_remove)
+                w_wing.clues += len(solver_status.naked_singles)
                 # print('\tw_wing')
                 return kwargs
     return {}

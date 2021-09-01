@@ -543,7 +543,7 @@ def methods_statistics(config, data, solving_methods):
     headers = ["method", "method\ncalls", "options\nremoved", "  clues\nfound", "   time spent\n(sec)",
                "effectiveness\n(clues/call)", "   efficiency\n(clues/ms)"]
     print()
-    print(tabulate(table, headers, tablefmt="simple", floatfmt=".3f"))
+    print(tabulate(table, headers, tablefmt="simple", floatfmt=".5f"))
 
 
 def solver_statistics(config, data):

@@ -58,7 +58,10 @@ def almost_locked_candidates(solver_status, board, window):
                                 remove_options(solver_status, board, to_remove, window)
                                 if window:
                                     window.options_visible = window.options_visible.union(box).union(line)
-                                print('\tAlmost Locked Candidates')
+                                almost_locked_candidates.rating += 320
+                                almost_locked_candidates.clues += len(solver_status.naked_singles)
+                                almost_locked_candidates.options_removed += len(to_remove)
+                                # print('\tAlmost Locked Candidates')
                                 return {
                                     "solver_tool": "almost_locked_candidates",
                                     "house": box,
@@ -118,6 +121,9 @@ def franken_x_wing(solver_status, board, window):
                                 kwargs["remove"] = to_remove
                                 kwargs["house"] = house
                                 kwargs["impacted_cells"] = other_cells
+                                franken_x_wing.rating += 300
+                                franken_x_wing.clues += len(solver_status.naked_singles)
+                                franken_x_wing.options_removed += len(to_remove)
                                 return True
         return False
 

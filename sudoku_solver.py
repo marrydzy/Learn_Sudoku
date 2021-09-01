@@ -20,7 +20,7 @@ from progress.bar import Bar
 
 from solver_manual import manual_solver
 from solver_manual import solver_status, board_image_stack, iter_stack, solver_status_stack
-from solver_manual import solver_strategies, solver_methods
+from solver_manual import solver_strategies
 
 import almost_locked_set
 import singles
@@ -329,12 +329,13 @@ def _run_in_silence():
 
 
 def _set_tools():
+    """ TODO - refactor it !"""
     methods_names = []
     methods_functions = []
-    for strategy in solver_strategies:
-        if strategy.callable:
-            methods_names.append(display.strategy_name(strategy.name))
-            methods_functions.append(solver_methods[strategy.name])
+    for _, strategy in solver_strategies.items():
+        if strategy.active:
+            methods_names.append(strategy.name)
+            methods_functions.append(strategy.solver)
     return methods_names, methods_functions
 
 

@@ -129,6 +129,7 @@ def unique_rectangles_(solver_status, board, window):
 
 @get_stats
 def skyscraper(solver_status, board, window):
+    Rating: 130
     """ TODO """
 
     def _find_skyscraper(by_row, option):
@@ -179,6 +180,9 @@ def skyscraper(solver_status, board, window):
                             kwargs["remove"] = to_remove
                             kwargs["house"] = house
                             kwargs["impacted_cells"] = impacted_cells
+                            skyscraper.rating += 100
+                            skyscraper.clues += len(solver_status.naked_singles)
+                            skyscraper.options_removed += len(to_remove)
                             return True
         return False
 
@@ -375,6 +379,9 @@ def empty_rectangle(solver_status, board, window):
                                             kwargs["impacted_cells"] = (impacted_cell,)
                                             kwargs["remove"] = [(val, impacted_cell)]
                                             kwargs["nodes"] = corners
+                                            empty_rectangle.rating += 130
+                                            empty_rectangle.clues += len(solver_status.naked_singles)
+                                            empty_rectangle.options_removed += len(to_remove)
                                             return True
         return False
 

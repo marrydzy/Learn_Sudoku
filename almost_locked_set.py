@@ -136,7 +136,7 @@ def _select_4_petals(all_petals, stem_candidates):
 
 @get_stats
 def als_xz(solver_status, board, window):
-    """  The ALS-XZ rule says that if A and B are Almost Locked Sets (or ALSes),
+    """  The ALS-XZ rule says that if A and B are Almost Locked Sets (or ALS'es),
     and X is restricted common to A and B, then no other common candidate
     (let's call it Z) can appear outside of A and B in a cell that can see
     all the Z candidates in both A and B.
@@ -227,6 +227,9 @@ def als_xy_wing(solver_status, board, window):
                                         if window:
                                             window.options_visible = window.options_visible.union(cells_a).union(
                                                 cells_b).union(cells_c).union(common_neighbours)
+                                        als_xy_wing.rating += 330
+                                        als_xy_wing.options_removed += len(to_remove)
+                                        als_xy_wing.clues += len(solver_status.naked_singles)
                                         return {"solver_tool": "als_xy_wing",
                                                 "chain_a": chain_a,
                                                 "chain_b": chain_b,
@@ -283,7 +286,7 @@ def death_blossom(solver_status, board, window):
 @get_stats
 def als_xy(solver_status, board, window):
     """  TODO
-    Rating:
+    Rating: 300
     """
     als_es = _get_alses(board)
     for als_a, als_b in combinations(als_es, 2):
@@ -325,6 +328,9 @@ def als_xy(solver_status, board, window):
                         window.options_visible = window.options_visible.union(cells_a).union(
                             cells_b).union(impacted_cells)
                     # print(f'\n{cells_a = }, \n{cells_b = }, \n{restricted_commons = }')
+                    als_xy.rating += 320
+                    als_xy.options_removed += len(to_remove)
+                    als_xy.clues += len(solver_status.naked_singles)
                     return {"solver_tool": "als_xy",
                             "chain_a": c_chain,
                             "chain_b": d_chain,
