@@ -2,7 +2,7 @@
 
 """ SUDOKU SOLVING METHODS """
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX
 from utils import ALL_NBRS
@@ -24,65 +24,107 @@ board_image_stack = []
 iter_stack = []
 solver_status_stack = []
 
+Strategy = namedtuple("strategy", ["name", "callable"])
 
-solver_methods = [
-    singles.full_house,
-    singles.visual_elimination,
-    singles.naked_singles,
-    singles.hidden_singles,
-    intersections.locked_candidates,
-    subsets.naked_pair,
-    subsets.hidden_pair,
-
-    fish.swordfish,
-    wings.xy_wing,
-    wings.xyz_wing,
-    wings.wxyz_wing,
-    subsets.naked_triplet,
-
-    uniqueness_tests.test_1,
-    uniqueness_tests.test_2,
-    uniqueness_tests.test_3,
-    uniqueness_tests.test_4,
-    uniqueness_tests.test_5,
-    uniqueness_tests.test_6,
-    intermediate_techniques.skyscraper,
-
-    fish.x_wing,
-    fish.jellyfish,
-    # fish.squirmbag,
-    fish.finned_x_wing,
-    fish.finned_swordfish,
-    fish.finned_jellyfish,
-    fish.finned_squirmbag,
-    wings.finned_mutant_x_wing,
-    coloring.simple_colors,
-    coloring.multi_colors,
-    coloring.x_colors,
-    coloring.three_d_medusa,
-    coloring.naked_xy_chain,
-    coloring.hidden_xy_chain,
-
-    # wings.xy_wing,
-    # wings.xyz_wing,
-    wings.w_wing,
-
-    intermediate_techniques.empty_rectangle,
-    intermediate_techniques.sue_de_coq,
-
-    almost_locked_set.als_xy,
-    almost_locked_set.als_xz,
-    almost_locked_set.death_blossom,
-    almost_locked_set.als_xy_wing,
-
-    subsets.hidden_triplet,
-    fish.squirmbag,
-    subsets.naked_quad,
-    subsets.hidden_quad,
-
-    questionable.almost_locked_candidates,
-    questionable.franken_x_wing,
+solver_strategies = [
+    Strategy("full_house", True),
+    Strategy("visual_elimination", True),
+    Strategy("naked_singles", True),
+    Strategy("hidden_singles", True),
+    Strategy("locked_candidates", True),
+    Strategy("locked_candidates_type_1", False),
+    Strategy("locked_candidates_type_2", False),
+    Strategy("naked_pair", True),
+    Strategy("hidden_pair", True),
+    Strategy("swordfish", True),
+    Strategy("xy_wing", True),
+    Strategy("xyz_wing", True),
+    Strategy("wxyz_wing", True),
+    Strategy("w_wing", True),
+    Strategy("naked_triplet", True),
+    Strategy("test_1", True),
+    Strategy("test_2", True),
+    Strategy("test_3", True),
+    Strategy("test_4", True),
+    Strategy("test_5", True),
+    Strategy("test_6", True),
+    Strategy("skyscraper", True),
+    Strategy("x_wing", True),
+    Strategy("jellyfish", True),
+    Strategy("finned_x_wing", True),
+    Strategy("finned_swordfish", True),
+    Strategy("finned_jellyfish", True),
+    Strategy("finned_squirmbag", True),
+    Strategy("finned_mutant_x_wing", True),
+    Strategy("simple_colors", True),
+    Strategy("multi_colors", True),
+    Strategy("x_colors", True),
+    Strategy("three_d_medusa", True),
+    Strategy("naked_xy_chain", True),
+    Strategy("hidden_xy_chain", True),
+    Strategy("empty_rectangle", True),
+    Strategy("sue_de_coq", True),
+    Strategy("als_xy", True),
+    Strategy("als_xz", True),
+    Strategy("death_blossom", True),
+    Strategy("als_xy_wing", True),
+    Strategy("hidden_triplet", True),
+    Strategy("squirmbag", True),
+    Strategy("naked_quad", True),
+    Strategy("hidden_quad", True),
+    Strategy("almost_locked_candidates", True),
+    Strategy("franken_x_wing", True),
 ]
+
+
+solver_methods = {
+    "full_house": singles.full_house,
+    "visual_elimination": singles.visual_elimination,
+    "naked_singles": singles.naked_singles,
+    "hidden_singles": singles.hidden_singles,
+    "locked_candidates": intersections.locked_candidates,
+    "naked_pair": subsets.naked_pair,
+    "hidden_pair": subsets.hidden_pair,
+    "swordfish": fish.swordfish,
+    "xy_wing": wings.xy_wing,
+    "xyz_wing": wings.xyz_wing,
+    "wxyz_wing": wings.wxyz_wing,
+    "w_wing": wings.w_wing,
+    "naked_triplet": subsets.naked_triplet,
+    "test_1": uniqueness_tests.test_1,
+    "test_2": uniqueness_tests.test_2,
+    "test_3": uniqueness_tests.test_3,
+    "test_4": uniqueness_tests.test_4,
+    "test_5": uniqueness_tests.test_5,
+    "test_6": uniqueness_tests.test_6,
+    "skyscraper": intermediate_techniques.skyscraper,
+    "x_wing": fish.x_wing,
+    "jellyfish": fish.jellyfish,
+    "finned_x_wing": fish.finned_x_wing,
+    "finned_swordfish": fish.finned_swordfish,
+    "finned_jellyfish": fish.finned_jellyfish,
+    "finned_squirmbag": fish.finned_squirmbag,
+    "finned_mutant_x_wing": wings.finned_mutant_x_wing,
+    "simple_colors": coloring.simple_colors,
+    "multi_colors": coloring.multi_colors,
+    "x_colors": coloring.x_colors,
+    "three_d_medusa": coloring.three_d_medusa,
+    "naked_xy_chain": coloring.naked_xy_chain,
+    "hidden_xy_chain": coloring.hidden_xy_chain,
+    "empty_rectangle": intermediate_techniques.empty_rectangle,
+    "sue_de_coq": intermediate_techniques.sue_de_coq,
+    "als_xy": almost_locked_set.als_xy,
+    "als_xz": almost_locked_set.als_xz,
+    "death_blossom": almost_locked_set.death_blossom,
+    "als_xy_wing": almost_locked_set.als_xy_wing,
+    "hidden_triplet": subsets.hidden_triplet,
+    "squirmbag": fish.squirmbag,
+    "naked_quad": subsets.naked_quad,
+    "hidden_quad":subsets.hidden_quad,
+    "almost_locked_candidates": questionable.almost_locked_candidates,
+    "franken_x_wing": questionable.franken_x_wing,
+
+}
 
 
 class SolverStatus:
@@ -307,10 +349,13 @@ def manual_solver(board, window, count_strategies_failures):
 
         if is_solved(board, solver_status):
             return True
-        for strategy in solver_methods:
-            kwargs = strategy(solver_status, board, window)
-            if kwargs:
-                break
+        for strategy in solver_strategies:
+            if strategy.callable:
+                kwargs = solver_methods[strategy.name](solver_status, board, window)
+                if kwargs:
+                    if window and window.suggest_technique:
+                        solver_status.restore_baseline(board, window)
+                    break
         else:
             if not is_solved(board, solver_status):        # TODO: for debugging only!
                 if count_strategies_failures:

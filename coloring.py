@@ -228,6 +228,7 @@ def _color_naked_xy_chain(graph, path, end_value):
     return c_chain
 
 
+@get_stats
 def hidden_xy_chain(solver_status, board, window):
     """ TODO """
 
@@ -287,6 +288,7 @@ def hidden_xy_chain(solver_status, board, window):
     return kwargs
 
 
+@get_stats
 def naked_xy_chain(solver_status, board, window):
     """ Remove candidates (options) using XY Wing technique:
     For explanation of the technique see e.g.:

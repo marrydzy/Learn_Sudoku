@@ -7,9 +7,10 @@ from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import is_clue, init_options, remove_options
+from utils import get_stats, is_clue, init_options, remove_options
 
 
+@get_stats
 def remote_pairs(solver_status, board, window):
     """ TODO """
 
@@ -65,6 +66,7 @@ def remote_pairs(solver_status, board, window):
     return {}
 
 
+@get_stats
 def unique_rectangles_(solver_status, board, window):
     """Remove candidates (options) using Unique Rectangle technique
     (see https://www.learn-sudoku.com/unique-rectangle.html)"""
@@ -125,6 +127,7 @@ def unique_rectangles_(solver_status, board, window):
     return {}
 
 
+@get_stats
 def skyscraper(solver_status, board, window):
     """ TODO """
 
@@ -189,6 +192,7 @@ def skyscraper(solver_status, board, window):
     return kwargs
 
 
+@get_stats
 def sue_de_coq(solver_status, board, window):
     """ TODO """
 
@@ -314,6 +318,7 @@ def sue_de_coq(solver_status, board, window):
     return kwargs
 
 
+@get_stats
 def empty_rectangle(solver_status, board, window):
     """ The relatively good description of Empty Rectangle strategy is
      available at Sudoku Coach page (http://www.taupierbw.be/SudokuCoach/SC_EmptyRectangle.shtml)

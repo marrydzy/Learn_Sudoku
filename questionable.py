@@ -6,9 +6,10 @@ from itertools import combinations
 from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX, SUDOKU_VALUES_LIST
-from utils import is_clue, init_options, remove_options, get_bi_value_cells
+from utils import get_stats, is_clue, init_options, remove_options, get_bi_value_cells
 
 
+@get_stats
 def almost_locked_candidates(solver_status, board, window):
     """ TODO """
 
@@ -66,6 +67,7 @@ def almost_locked_candidates(solver_status, board, window):
     return None
 
 
+@get_stats
 def franken_x_wing(solver_status, board, window):
     """ TODO """
     by_row_boxes = {0: (3, 6), 1: (4, 7), 2: (5, 8),

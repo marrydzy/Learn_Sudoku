@@ -11,8 +11,21 @@ from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELL
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST
 from utils import get_stats, is_clue, init_options, remove_options
 from utils import get_bi_value_cells, get_house_pairs, get_strong_links, get_pair_house
+from display import strategy_name
 
 
+def _get_chain(board, nodes, z, w=None):
+    chain = defaultdict(set)
+    for node in nodes:
+        chain[node] = {(candidate, 'lime') for candidate in board[node] if candidate not in (z, w)}
+        if z in board[node]:
+            chain[node].add((z, 'cyan'))
+        if w and w in board[node]:
+            chain[node].add((w, 'moccasin'))
+    return chain
+
+
+@get_stats
 def finned_x_wing(solver_status, board, window):
     """ TODO """
 
@@ -95,6 +108,7 @@ def finned_x_wing(solver_status, board, window):
     return kwargs
 
 
+@get_stats
 def finned_mutant_x_wing(solver_status, board, window):
     """ TODO """
 
@@ -327,6 +341,25 @@ def wxyz_wing(solver_status, board, window):
                                 possible_wings.add(quad)
         return possible_wings
 
+    def _get_other_cells(wing):
+        node_a, node_b, node_c = None, None, None
+        row_subset = set(CELLS_IN_ROW[CELL_ROW[wing[0]]]).intersection(wing[1:])
+        column_subset = set(CELLS_IN_COL[CELL_COL[wing[0]]]).intersection(wing[1:])
+        box_subset = set(CELLS_IN_BOX[CELL_BOX[wing[0]]]).intersection(wing[1:])
+        subset = None
+        if len(row_subset) == 2:
+            subset = row_subset
+        elif len(column_subset) == 2:
+            subset = column_subset
+        elif len(box_subset) == 2:
+            subset = box_subset
+        if subset:
+            node_a = subset.pop()
+            node_b = subset.pop()
+            node_c = set(wing[1:]).difference({node_a, node_b})
+            node_c = node_c.pop()
+        return node_a, node_b, node_c
+
     def _get_cells_candidates(cells, common=True):
         candidates = set(board[cells[0]])
         for cell_id in cells[1:]:
@@ -338,19 +371,24 @@ def wxyz_wing(solver_status, board, window):
         for node in nodes:
             if z in board[node]:
                 impacted_cells = ALL_NBRS[node]
+                break
         for node in nodes:
             if z in board[node]:
                 impacted_cells = impacted_cells.intersection(ALL_NBRS[node])
         impacted_cells = {cell_id for cell_id in impacted_cells if len(board[cell_id]) > 1}
         return impacted_cells
 
-    def _get_chain(nodes, z):
-        chain_a = defaultdict(set)
+    """
+    def _get_chain(nodes, z, w=None):
+        chain = defaultdict(set)
         for node in nodes:
-            chain_a[node] = {(candidate, 'lime') for candidate in board[node] if candidate != z}
+            chain[node] = {(candidate, 'lime') for candidate in board[node] if candidate not in (z, w)}
             if z in board[node]:
-                chain_a[node].add((z, 'cyan'))
-        return chain_a
+                chain[node].add((z, 'cyan'))
+            if w and w in board[node]:
+                chain[node].add((w, 'moccasin'))
+        return chain
+    """
 
     def _type_1():
         """ Base position may contain 3 candidates (without Z value) or all 4 candidates (including Z).
@@ -364,6 +402,7 @@ def wxyz_wing(solver_status, board, window):
                     if len(set(ALL_NBRS[cell_id]).intersection(wing)) == 3 or len(board[cell_id]) != 2:
                         break
                 else:
+                    cell_a, cell_b, cell_c = _get_other_cells(wing)
                     if len(_get_cells_candidates(wing[1:], common=False)) == 4:
                         z = _get_cells_candidates(wing[1:])
                         if len(z) == 1:
@@ -373,14 +412,15 @@ def wxyz_wing(solver_status, board, window):
                                 if impacted_cells:
                                     to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
                                     if to_remove:
+                                        w = board[cell_c].replace(z, '')
                                         solver_status.capture_baseline(board, window)
                                         if window:
                                             window.options_visible = window.options_visible.union(wing).union(
                                                 impacted_cells)
                                         remove_options(solver_status, board, to_remove, window)
                                         kwargs["solver_tool"] = "wxyz_wing_type_1"
-                                        kwargs["chain_d"] = _get_chain((wing[0],), z)
-                                        kwargs["chain_a"] = _get_chain(wing[1:], z)
+                                        kwargs["chain_d"] = _get_chain(board, (wing[0],), z, w)
+                                        kwargs["chain_a"] = _get_chain(board, wing[1:], z, w)
                                         kwargs["remove"] = to_remove
                                         kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
                                         wxyz_wing.rating += 200
@@ -402,92 +442,63 @@ def wxyz_wing(solver_status, board, window):
         Rating: 240 (?
         """
 
-        def _get_other_cells(houses):
-            node_a, node_b, node_c = None, None, None
-            for _, cells in houses.items():
-                if len(cells) == 2:
-                    node_a = cells.pop()
-                    node_b = cells.pop()
-                    node_c = set(wing[1:]).difference({node_a, node_b}).pop()
-                    break
-            return node_a, node_b, node_c
-
         for wing in wings:
             for cell_id in wing[1:]:
                 if len(set(ALL_NBRS[cell_id]).intersection(wing)) == 3 or len(board[cell_id]) != 2:
                     break
             else:
-                rows = defaultdict(set)
-                columns = defaultdict(set)
-                boxes = defaultdict(set)
-                for cell_id in wing[1:]:
-                    rows[CELL_ROW[cell_id]].add(cell_id)
-                    columns[CELL_COL[cell_id]].add(cell_id)
-                    boxes[CELL_BOX[cell_id]].add(cell_id)
-
-                if len(rows) == 2:
-                    cell_a, cell_b, cell_c = _get_other_cells(rows)
-                elif len(columns) == 2:
-                    cell_a, cell_b, cell_c = _get_other_cells(columns)
-                elif len(boxes) == 2:
-                    cell_a, cell_b, cell_c = _get_other_cells(boxes)
-                else:
-                    continue
-
-                w = set(board[cell_a]).intersection(board[cell_b])
-                if len(w) == 1 and not w.intersection(board[cell_c]):
-                    w = w.pop()
-                    a_left = set(board[cell_a]).union(board[cell_b])
-                    a_left.remove(w)
-                    z = a_left.intersection(board[cell_c])
-                    if len(z) == 1:
-                        z = z.pop()
-                        a_sum = set(board[cell_a]).union(board[cell_c])
-                        if len(a_sum.intersection(board[wing[0]])) == 2 and z not in board[wing[0]] or \
-                                len(a_sum.intersection(board[wing[0]])) == 3:
-                            impacted_cells = _get_impacted_cells(wing, z)
-                            if impacted_cells:
-                                to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
-                                if to_remove:
-                                    solver_status.capture_baseline(board, window)
-                                    if window:
-                                        window.options_visible = window.options_visible.union(wing).union(
-                                            impacted_cells)
-                                    remove_options(solver_status, board, to_remove, window)
-                                    kwargs["solver_tool"] = "wxyz_wing_type_2"
-                                    kwargs["chain_d"] = _get_chain((wing[0],), z)
-                                    kwargs["chain_a"] = _get_chain(wing[1:], z)
-                                    kwargs["remove"] = to_remove
-                                    kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                                    wxyz_wing.rating += 240
-                                    wxyz_wing.options_removed += len(to_remove)
-                                    wxyz_wing.clues += len(solver_status.naked_singles)
-                                    print(f'\t{kwargs["solver_tool"]}: {wing = }, {w = }, {z = }')
-                                    return True
+                cell_a, cell_b, cell_c = _get_other_cells(wing)
+                if cell_a:
+                    w = set(board[cell_a]).intersection(board[cell_b])
+                    if len(w) == 1 and not w.intersection(board[cell_c]):
+                        w = w.pop()
+                        a_left = set(board[cell_a]).union(board[cell_b])
+                        a_left.remove(w)
+                        z = a_left.intersection(board[cell_c])
+                        if len(z) == 1:
+                            z = z.pop()
+                            a_sum = set(board[cell_a]).union(board[cell_c])
+                            if len(a_sum.intersection(board[wing[0]])) == 2 and z not in board[wing[0]] or \
+                                    len(a_sum.intersection(board[wing[0]])) == 3:
+                                impacted_cells = _get_impacted_cells(wing, z)
+                                if impacted_cells:
+                                    to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
+                                    if to_remove:
+                                        solver_status.capture_baseline(board, window)
+                                        if window:
+                                            window.options_visible = window.options_visible.union(wing).union(
+                                                impacted_cells)
+                                        remove_options(solver_status, board, to_remove, window)
+                                        kwargs["solver_tool"] = "wxyz_wing_type_2"
+                                        kwargs["chain_d"] = _get_chain(board, (wing[0],), z, w)
+                                        kwargs["chain_a"] = _get_chain(board, wing[1:], z, w)
+                                        kwargs["remove"] = to_remove
+                                        kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
+                                        wxyz_wing.rating += 240
+                                        wxyz_wing.options_removed += len(to_remove)
+                                        wxyz_wing.clues += len(solver_status.naked_singles)
+                                        # print(f'\t{kwargs["solver_tool"]}')
+                                        return True
         return False
 
     def _type_3():
+        """ Two wing cells (excluding wing base) belong to the same house (row, column, or box).
+        Sum of the two cells candidates consists of three values and candidates of one cell make
+        subset of the other call candidates. The third wing cell (excluding wing base) has two candidates
+        and one of its candidates (called W) is different from the candidates of the other two cells.
+        The second candidate (called Z) is also common to the first or second cell, or both.
+        Base cell has two or more candidates and one of them is W. If the cell has only candidates,
+        the second one cannot be Z.
+        Rating: 240 (?)
+        """
         for wing in wings:
             for cell_id in wing[1:]:
                 if len(set(ALL_NBRS[cell_id]).intersection(wing)) == 3:
                     break
             else:
-                row_subset = set(CELLS_IN_ROW[CELL_ROW[wing[0]]]).intersection(wing[1:])
-                column_subset = set(CELLS_IN_COL[CELL_COL[wing[0]]]).intersection(wing[1:])
-                box_subset = set(CELLS_IN_BOX[CELL_BOX[wing[0]]]).intersection(wing[1:])
-                subset = None
-                if len(row_subset) == 2:
-                    subset = row_subset
-                elif len(column_subset) == 2:
-                    subset = column_subset
-                elif len(box_subset) == 2:
-                    subset = box_subset
-                if subset:
-                    subset_candidates = set(''.join(board[cell_id] for cell_id in subset))
-                    cell_a = subset.pop()
-                    cell_b = subset.pop()
-                    cell_c = set(wing[1:]).difference({cell_a, cell_b})
-                    cell_c = cell_c.pop()
+                cell_a, cell_b, cell_c = _get_other_cells(wing)
+                if cell_a:
+                    subset_candidates = set(''.join(board[cell_id] for cell_id in {cell_a, cell_b}))
                     z = set(subset_candidates).intersection(board[cell_c])
                     conditions = [bool(len(subset_candidates) == 3),
                                   bool(set(board[cell_a]).issubset(board[cell_b]) or
@@ -498,14 +509,7 @@ def wxyz_wing(solver_status, board, window):
                         z = z.pop()
                         w = board[cell_c].replace(z, '')
                         if w in board[wing[0]] and (len(board[wing[0]]) > 2 or z not in board[wing[0]]):
-                            impacted_cells = set(ALL_NBRS[cell_c])
-                            if z in board[wing[0]]:
-                                impacted_cells = impacted_cells.intersection(ALL_NBRS[wing[0]])
-                            if z in board[cell_a]:
-                                impacted_cells = impacted_cells.intersection(ALL_NBRS[cell_a])
-                            if z in board[cell_b]:
-                                impacted_cells = impacted_cells.intersection(ALL_NBRS[cell_b])
-                            impacted_cells = {cell_id for cell_id in impacted_cells if len(board[cell_id]) > 1}
+                            impacted_cells = _get_impacted_cells(wing, z)
                             if impacted_cells:
                                 to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
                                 if to_remove:
@@ -514,11 +518,12 @@ def wxyz_wing(solver_status, board, window):
                                         window.options_visible = window.options_visible.union(wing).union(
                                             impacted_cells)
                                     remove_options(solver_status, board, to_remove, window)
-                                    kwargs["solver_tool"] = "wxyz_wing_type_2"   # TODO
-                                    kwargs["c_chain"] = {wing[0]: set(), wing[1]: set(), wing[2]: set(), wing[3]: set()} # TODO
+                                    kwargs["solver_tool"] = "wxyz_wing_type_3"
+                                    kwargs["chain_d"] = _get_chain(board, (wing[0],), z, w)
+                                    kwargs["chain_a"] = _get_chain(board, wing[1:], z, w)
                                     kwargs["remove"] = to_remove
                                     kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                                    wxyz_wing.rating += 200
+                                    wxyz_wing.rating += 240
                                     wxyz_wing.options_removed += len(to_remove)
                                     wxyz_wing.clues += len(solver_status.naked_singles)
                                     # print(f'\t{kwargs["solver_tool"]}')
@@ -526,6 +531,15 @@ def wxyz_wing(solver_status, board, window):
         return False
 
     def _type_4_5():
+        """ Two wing cells do not belong to the same house (row, column, or box).
+        One of the cells has two candidates and the other one has two or three candidates.
+        There is one common candidate Z in both cells.
+        The other two wing cells form base: together they have three different candidates excluding
+        Z (Type 4) or four candidates (Type 5).
+        Selecting any base candidate either forces one of the first two cells to take Z value or
+        creates XY-Wing (Type 4) or XYZ-Wing (Type 5)
+        Rating: 240 (?)
+        """
         for wing in wings:
             base_cells = [wing[0], ]
             for cell_id in wing[1: ]:
@@ -541,31 +555,23 @@ def wxyz_wing(solver_status, board, window):
                               bool(len(board[cell_a]) <= 3 and len(board[cell_b]) <= 3), ]
                 if all(conditions):
                     z = z.pop()
-                    base_candidates = set(''.join(board[cell_id] for cell_id in base_cells))
-                    impacted_cells = set()
-                    wing_type = None
-                    if len(base_candidates) == 4:
-                        impacted_cells = set(ALL_NBRS[wing[0]]).intersection(ALL_NBRS[wing[1]]).intersection(
-                            ALL_NBRS[wing[2]].intersection(ALL_NBRS[wing[3]]))
-                        wing_type = 'type_2'    # TODO
-                    elif len(base_candidates) == 3 and z not in base_candidates:
-                        impacted_cells = set(ALL_NBRS[cell_a]).intersection(ALL_NBRS[cell_b])
-                        impacted_cells = impacted_cells.difference(wing)
-                        wing_type = 'type_2'    # TODO
-                    impacted_cells = {cell_id for cell_id in impacted_cells if len(board[cell_id]) > 1}
+                    impacted_cells = _get_impacted_cells(wing, z)
                     if impacted_cells:
                         to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
                         if to_remove:
+                            base_candidates = set(''.join(board[cell_id] for cell_id in base_cells))
                             solver_status.capture_baseline(board, window)
                             if window:
                                 window.options_visible = window.options_visible.union(wing).union(
                                     impacted_cells)
                             remove_options(solver_status, board, to_remove, window)
-                            kwargs["solver_tool"] = "wxyz_wing_" + wing_type
-                            kwargs["c_chain"] = {wing[0]: set(), wing[1]: set(), wing[2]: set(), wing[3]: set()} # TODO
+                            kwargs["solver_tool"] = "wxyz_wing_type_4" if len (base_candidates) == 3 else\
+                                                    "wxyz_wing_type_5"
+                            kwargs["chain_d"] = _get_chain(board, base_cells, z)
+                            kwargs["chain_a"] = _get_chain(board, (cell_a, cell_b), z)
                             kwargs["remove"] = to_remove
                             kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                            wxyz_wing.rating += 200
+                            wxyz_wing.rating += 240
                             wxyz_wing.options_removed += len(to_remove)
                             wxyz_wing.clues += len(solver_status.naked_singles)
                             # print(f'\t{kwargs["solver_tool"]}')
@@ -574,113 +580,12 @@ def wxyz_wing(solver_status, board, window):
 
     kwargs = {}
     wings = _get_possible_wings()
-
-    if _type_1():
-        return kwargs
-    if _type_2():
-        return kwargs
-    if _type_3():
-        return kwargs
-    if _type_4_5():
+    if _type_1() or _type_2() or _type_3() or _type_4_5():
         return kwargs
     return None
 
 
 @get_stats
-def wxyz_wing_(solver_status, board, window):
-    """Remove candidates (options) using WXYZ-Wing technique
-    https://www.sudoku9981.com/sudoku-solving/wxyz-wing.php
-    """
-
-    def _get_c_chain(nodes, wxyz_values):
-        c_chain = defaultdict(set)
-        for node in nodes:
-            if wxyz_values[1] in board[node] and wxyz_values[2] in board[node]:
-                c_chain[node].add((wxyz_values[1], 'lime'))
-                c_chain[node].add((wxyz_values[2], 'yellow'))
-            elif wxyz_values[1] in board[node]:
-                c_chain[node].add((wxyz_values[1], 'yellow'))
-            elif wxyz_values[2] in board[node]:
-                c_chain[node].add((wxyz_values[2], 'lime'))
-
-            if wxyz_values[0] in board[node]:
-                c_chain[node].add((wxyz_values[0], 'moccasin'))
-            if wxyz_values[3] in board[node]:
-                c_chain[node].add((wxyz_values[3], 'cyan'))
-        return c_chain
-
-    def _get_impacted_cells(triplet, fin, z_value):
-        impacted_cells = set(ALL_NBRS[fin])
-        for node in triplet:
-            if z_value in board[node]:
-                impacted_cells = impacted_cells.intersection(set(ALL_NBRS[node]))
-        return {node for node in impacted_cells if len(board[node]) > 1}
-
-    def _find_wxyz_wing(idx, type, by_row):
-        cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
-        unsolved = {cell for cell in cells[idx] if len(board[cell]) > 1} if type == 'type_1' \
-            else {cell for cell in CELLS_IN_BOX[idx] if len(board[cell]) > 1}
-        if len(unsolved) > 3:
-            for triplet in combinations(unsolved, 3):
-                candidates = set(''.join(board[node] for node in triplet))
-                if len(candidates) == 4:
-                    house_ids = defaultdict(set)
-                    for node in triplet:
-                        house_id = CELL_BOX[node] if type == 'type_1' else CELL_ROW[node] if by_row else CELL_COL[node]
-                        for value in board[node]:
-                            house_ids[value].add(house_id)
-                    for value in house_ids:
-                        if len(house_ids[value]) == 1:
-                            fin_house_id = house_ids[value].pop()
-                            other_cells = set(CELLS_IN_BOX[fin_house_id]).difference(cells[idx]) if type == 'type_1' \
-                                else set(cells[fin_house_id]).difference(CELLS_IN_BOX[idx])
-                            for cell in other_cells:
-                                if len(board[cell]) == 2 and value in board[cell] \
-                                        and len(set(board[cell]).intersection(candidates)) == 2:
-                                    w_value = value
-                                    z_value = board[cell].replace(w_value, '')
-                                    impacted_cells = _get_impacted_cells(triplet, cell, z_value)
-                                    to_remove = [(z_value, node) for node in impacted_cells
-                                                 if z_value in board[node]]
-                                    if to_remove:   # and type == 'type_2':  TODO - temporary for testing only!
-                                        candidates.remove(w_value)
-                                        candidates.remove(z_value)
-                                        x_value = candidates.pop()
-                                        y_value = candidates.pop()
-                                        nodes = set(triplet)
-                                        nodes.add(cell)
-                                        solver_status.capture_baseline(board, window)
-                                        if window:
-                                            window.options_visible = window.options_visible.union(nodes).union(
-                                                impacted_cells)
-                                        remove_options(solver_status, board, to_remove, window)
-                                        kwargs["solver_tool"] = "wxyz_wing_type_1" if type == 'type_1' else \
-                                            "wxyz_wing_type_2"
-                                        kwargs["c_chain"] = _get_c_chain(nodes, (w_value, x_value, y_value, z_value))
-                                        kwargs["remove"] = to_remove
-                                        kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                                        wxyz_wing.rating += 200
-                                        wxyz_wing.options_removed += len(to_remove)
-                                        wxyz_wing.clues += len(solver_status.naked_singles)
-                                        # if type == 'type_2':
-                                        #     print(f'\tWXYZ-Wing')
-                                        return True
-        return False
-
-    init_options(board, solver_status)
-    kwargs = {}
-    for idx in range(9):
-        if _find_wxyz_wing(idx, 'type_1', True):
-            break
-        if _find_wxyz_wing(idx, 'type_1', False):
-            break
-        if _find_wxyz_wing(idx, 'type_2', True):
-            break
-        if _find_wxyz_wing(idx, 'type_2', False):
-            break
-    return kwargs
-
-
 def w_wing(solver_status, board, window):
     """Remove candidates (options) using W-Wing technique
     http://hodoku.sourceforge.net/en/tech_wings.php#w
@@ -692,54 +597,54 @@ def w_wing(solver_status, board, window):
     for pair in bi_value_cells:
         if len(bi_value_cells[pair]) > 1:
             va, vb = pair
-            constraint = None
-            s_link = None
+            w_constraint = None
+            w_base = None
             for positions in combinations(bi_value_cells[pair], 2):
                 for strong_link in strong_links[va]:
                     if not set(positions).intersection(strong_link):
                         sl_a = set(strong_link).intersection(ALL_NBRS[positions[0]])
                         sl_b = set(strong_link).intersection(ALL_NBRS[positions[1]])
                         if sl_a and sl_b and sl_a != sl_b:
-                            s_link = strong_link
-                            constraint = va
+                            w_base = strong_link
+                            w_constraint = va
                             break
-                if constraint:
+                if w_constraint:
                     break
                 for strong_link in strong_links[vb]:
                     if not set(positions).intersection(strong_link):
                         sl_a = set(strong_link).intersection(ALL_NBRS[positions[0]])
                         sl_b = set(strong_link).intersection(ALL_NBRS[positions[1]])
                         if sl_a and sl_b and sl_a != sl_b:
-                            s_link = strong_link
-                            constraint = vb
+                            w_base = strong_link
+                            w_constraint = vb
                             break
-                if constraint:
+                if w_constraint:
                     break
             else:
                 continue
-            assert constraint
-            other_value = vb if constraint == va else va
+            assert w_constraint
+            other_value = vb if w_constraint == va else va
             impacted_cells = set(ALL_NBRS[positions[0]]).intersection(ALL_NBRS[positions[1]])
             impacted_cells = {cell for cell in impacted_cells if len(board[cell]) > 1}
             to_remove = [(other_value, cell) for cell in impacted_cells if other_value in board[cell]]
-            c_chain = {positions[0]: {(pair[0], 'lime'), (pair[1], 'yellow')},
-                       positions[1]: {(pair[0], 'lime'), (pair[1], 'yellow')},
-                       s_link[0]: {(constraint, "cyan")}, s_link[1]: {(constraint, 'cyan')}}
             if to_remove:
                 kwargs = {}
                 solver_status.capture_baseline(board, window)
                 if window:
                     window.options_visible = window.options_visible.union(impacted_cells).union(
-                        {positions[0], positions[1]}).union(get_pair_house(s_link))
+                        {positions[0], positions[1]}).union(get_pair_house(w_base))
                 remove_options(solver_status, board, to_remove, window)
                 kwargs["solver_tool"] = "w_wing"
-                kwargs["c_chain"] = c_chain
+                kwargs["chain_a"] = _get_chain(board, positions[:2], other_value)
+                kwargs["chain_d"] = _get_chain(board, w_base, other_value, w_constraint)
                 kwargs["remove"] = to_remove
-                kwargs["impacted_cells"] = impacted_cells
+                kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
+                # print('\tw_wing')
                 return kwargs
     return {}
 
 
+@get_stats
 def franken_x_wing(solver_status, board, window):
     """ TODO """
     by_row_boxes = {0: (3, 6), 1: (4, 7), 2: (5, 8),

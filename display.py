@@ -13,14 +13,14 @@ screen_messages = {
     None: "",
     "plain_board": " ",
     "conflict": "Conflicting value",
-    "full_house": "'Full House' technique:",
-    "visual_elimination": "'Visual Elimination' technique:",
-    "naked_singles": "'Naked Single' technique:",
-    "hidden_singles": "'Hidden Single' technique:",
-    "hidden_pairs": "'Hidden Pair' technique:",     # TODO - obsolete!
-    "hidden_pair": "'Hidden Pair' technique:",
-    "hidden_triplet": "'Hidden Triplet' technique:",
-    "hidden_quad": "'Hidden Quad' technique:",
+    "full_house": "'Full House' technique",
+    "visual_elimination": "'Visual Elimination' technique",
+    "naked_singles": "'Naked Single' technique",
+    "hidden_singles": "'Hidden Single' technique",
+    "hidden_pairs": "'Hidden Pair' technique",     # TODO - obsolete!
+    "hidden_pair": "'Hidden Pair' technique",
+    "hidden_triplet": "'Hidden Triplet' technique",
+    "hidden_quad": "'Hidden Quad' technique",
     "naked_twins": "'Naked Pair' technique",        # TODO - obsolete!
     "naked_pair": "'Naked Pair' technique",
     "naked_triplet": "'Naked Triplet' technique",
@@ -49,6 +49,9 @@ screen_messages = {
     "xyz_wing": "'XYZ-Wing' technique",
     "wxyz_wing_type_1": "'WXYZ-Wing (Type 1)' technique",
     "wxyz_wing_type_2": "'WXYZ-Wing (Type 2)' technique",
+    "wxyz_wing_type_3": "'WXYZ-Wing (Type 3)' technique",
+    "wxyz_wing_type_4": "'WXYZ-Wing (Type 4)' technique",
+    "wxyz_wing_type_5": "'WXYZ-Wing (Type 5)' technique",
     "w_wing": "'W-Wing' technique",
     "remote_pairs": "'Remote Pairs' technique",
     "skyscraper": "'skyscraper' technique",
@@ -85,6 +88,7 @@ screen_messages = {
     "als_xy_wing": "'ALS-XY-Wing' technique",
     "als_xy": "'ALS-XY' technique",
     "death_blossom": "'Death Blossom' technique",
+    "hint_on_technique": "Suggested method to apply: ",
 }
 
 DEBUG = False
@@ -115,6 +119,16 @@ def input_next_cell(board):
     next_cell = 9 * row + col
     clue = _get_digit("Value = ", board[next_cell])
     return next_cell, clue
+
+
+def strategy_name(tool_name):
+    """ Translate internal method name into strategy name """
+    # TODO - this implementation is only proof of concept: use regular expressions
+    #  in final implementation of the function
+    strategy = tool_name
+    if strategy.find("_wing"):
+        strategy = strategy.replace("_wing", "-Wing")
+    return strategy.title()
 
 
 def puzzle_filename(config, data):

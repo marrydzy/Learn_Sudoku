@@ -80,6 +80,7 @@ class AppWindow:
         self.critical_error = None
         self.wait = False
         self.calculate_next_clue = False
+        self.suggest_technique = False
 
         self.time_in = 0
         self.solver_loop = None
@@ -93,7 +94,7 @@ class AppWindow:
 
     def critical_error_event(self, board, **kwargs):
         """ Handle 'Critical Error' event """
-        if self.buttons[pygame.K_h].is_pressed() or self.buttons[pygame.K_m].is_pressed() or self.buttons[
+        if self.buttons[pygame.K_s].is_pressed() or self.buttons[pygame.K_m].is_pressed() or self.buttons[
                 pygame.K_s].is_pressed():
             self.show_solution_steps = True
             self.inspect = ''.join(self.method.values())
@@ -116,7 +117,7 @@ class AppWindow:
 
     def wrong_entry_event(self):
         """ Handle 'Wrong Manual Entry' event """
-        graph_utils.set_btn_status(self, False, (pygame.K_h, pygame.K_m, pygame.K_s))
+        graph_utils.set_btn_status(self, False, (pygame.K_s, pygame.K_m, pygame.K_s))
         graph_utils.set_btn_status(self, True, (pygame.K_b,))
 
     def sudoku_solved_event(self, board):
@@ -130,7 +131,7 @@ class AppWindow:
     def plain_board_event(self):
         """ Clean current board, not solved yet event  """
         graph_utils.set_btn_status(self, False, (pygame.K_a, pygame.K_b))
-        graph_utils.set_btn_status(self, True, (pygame.K_h, pygame.K_m, pygame.K_s))
+        graph_utils.set_btn_status(self, True, (pygame.K_s, pygame.K_m, pygame.K_s))
 
     # def set_current_board(self, board):         # TODO - move it from here!
         # """ Save copy of the current board (before applying a tool)  """
@@ -172,7 +173,7 @@ class AppWindow:
 
     def wrong_values_removed(self):
         """ TODO """
-        self.buttons[pygame.K_h].set_status(True)
+        self.buttons[pygame.K_s].set_status(True)
 
     def render_board(self, board, **kwargs):
         """ render board (TODO) """
@@ -226,7 +227,7 @@ class AppWindow:
         start = time.time()  # TODO - get rid of it!!!
         solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else "plain_board"   # TODO - simplify it !!!
 
-        if self.animate and solver_tool == "wxyz_wing_type_2":        # TODO - for development & debugging only!
+        if self.animate and solver_tool == "w_wing":        # TODO - for development & debugging only!
             self.animate = False
             self.wait = True
             self.buttons[pygame.K_m].set_pressed(False)
@@ -236,6 +237,13 @@ class AppWindow:
 
         if self.handle_input_events(board, **kwargs):
             return True
+
+        solver_tool_message_prefix = ''
+        if self.suggest_technique:
+            solver_tool_message_prefix = screen_messages["hint_on_technique"]
+            kwargs = {}     # TODO: decide on options to be preserved
+            self.suggest_technique = False
+
         self.render_board(board, **kwargs)
 
         if self.critical_error:
@@ -247,7 +255,7 @@ class AppWindow:
         elif self.show_wrong_values and self.wrong_values:
             graph_utils.display_info(self, screen_messages["wrong_values"])
         elif solver_tool != "plain_board":
-            graph_utils.display_info(self, screen_messages[solver_tool])
+            graph_utils.display_info(self, solver_tool_message_prefix + screen_messages[solver_tool])
         else:
             graph_utils.display_info(self, screen_messages["plain_board"])
 
