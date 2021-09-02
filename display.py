@@ -528,20 +528,23 @@ def methods_statistics(config, data, solving_methods):
     output_lines.append(f'Total solving time (h:m:s):   {hrs:0>2d}:{min_time:0>2d}:{sec:0>2d}\n')
 
     table = []
+    print()     # TODO - temporary only!
     for solving_method in solving_methods:
         table.append([solving_method[0],
                       solving_method[1].calls,
+                      solving_method[1].options_removed + solving_method[1].clues,
                       solving_method[1].options_removed,
                       solving_method[1].clues,
                       solving_method[1].time_in,
-                      solving_method[1].clues / solving_method[1].calls
+                      (solving_method[1].options_removed + solving_method[1].clues) / solving_method[1].calls
                       if solving_method[1].calls > 0 else 0.0,
-                      0.001 * solving_method[1].clues / solving_method[1].time_in
+                      (solving_method[1].options_removed + solving_method[1].clues) / solving_method[1].time_in
                       if solving_method[1].time_in > 0 else 0.0])
+        # print(f'{table[-1][0]}, :, {table[-1][2]}, {table[-1][5]}, {table[-1][6]}, {table[-1][7]}')
     _output_results(config, output_lines)
 
-    headers = ["method", "method\ncalls", "options\nremoved", "  clues\nfound", "   time spent\n(sec)",
-               "effectiveness\n(clues/call)", "   efficiency\n(clues/ms)"]
+    headers = ["method", "method\ncalls", "  total\nhits", "options\nremoved", "  clues\nfound", "   time spent\n(sec)",
+               "effectiveness\n(hits/call)", "   efficiency\n(hits/s)"]
     print()
     print(tabulate(table, headers, tablefmt="simple", floatfmt=".5f"))
 

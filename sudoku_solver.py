@@ -18,9 +18,9 @@ import math
 
 from progress.bar import Bar
 
-from solver_manual import manual_solver
+from solver_manual import manual_solver, get_prioritized_strategies
 from solver_manual import solver_status, board_image_stack, iter_stack, solver_status_stack
-from solver_manual import solver_strategies
+from solver_manual import solver_strategies, strategy_priorities
 
 import almost_locked_set
 import singles
@@ -332,7 +332,8 @@ def _set_tools():
     """ TODO - refactor it !"""
     methods_names = []
     methods_functions = []
-    for _, strategy in solver_strategies.items():
+    strategies = get_prioritized_strategies()
+    for _, strategy in strategies.items():
         if strategy.active:
             methods_names.append(strategy.name)
             methods_functions.append(strategy.solver)

@@ -2,7 +2,7 @@
 
 """ SUDOKU SOLVING METHODS """
 
-from collections import defaultdict, namedtuple
+from collections import defaultdict, namedtuple, OrderedDict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX
 from utils import ALL_NBRS
@@ -24,7 +24,8 @@ board_image_stack = []
 iter_stack = []
 solver_status_stack = []
 
-Strategy = namedtuple("Strategy", ["solver", "technique", "name", "priority", "rating", "active"])
+Strategy = namedtuple("Strategy", ["solver", "technique", "name", "priority", "ranking", "active"])
+Priority = namedtuple("Priority", ["by_ranking", "by_hits"])
 
 solver_strategies = {
     "full_house": Strategy(singles.full_house, "singles", "Full House", 1, 4, True),
@@ -78,20 +79,83 @@ solver_strategies = {
     "hidden_xy_chain": Strategy(coloring.hidden_xy_chain, "coloring", "Hidden XY Chain", 33, 310, True),
     "empty_rectangle": Strategy(intermediate_techniques.empty_rectangle, "intermediate_techniques",
                                 "Epmpty Rectangle", 34, 130, True),
-    "sue_de_coq": Strategy(intermediate_techniques.sue_de_coq, "intermediate_techniques", "Sue de Coq' technique",
+    "sue_de_coq": Strategy(intermediate_techniques.sue_de_coq, "intermediate_techniques", "Sue de Coq technique",
                            35, 130, True),
-    "als_xy": Strategy(almost_locked_set.als_xy, "almost_locked_set", "ALS-XY", 35, 320, True),
-    "als_xz": Strategy(almost_locked_set.als_xz, "almost_locked_set", "ALS-XZ", 36, 300, True),
-    "death_blossom": Strategy(almost_locked_set.death_blossom, "almost_locked_set", "Death Blossom", 37, 360, True),
-    "als_xy_wing": Strategy(almost_locked_set.als_xy_wing, "almost_locked_set", "ALS-XY-Wing", 38, 330, True),
-    "hidden_triplet": Strategy(subsets.hidden_triplet, "subsets", "Hidden Triplet", 39, 100, True),
-    "squirmbag": Strategy(fish.squirmbag, "fish", "Squirmbag", 40, 470, True),
-    "naked_quad": Strategy(subsets.naked_quad, "subsets", "Naked Quad", 41, 120, True),
-    "hidden_quad": Strategy(subsets.hidden_quad, "subsets", "Hidden Quad", 42, 150, True),
+    "als_xy": Strategy(almost_locked_set.als_xy, "almost_locked_set", "ALS-XY", 36, 320, True),
+    "als_xz": Strategy(almost_locked_set.als_xz, "almost_locked_set", "ALS-XZ", 37, 300, True),
+    "death_blossom": Strategy(almost_locked_set.death_blossom, "almost_locked_set", "Death Blossom", 38, 360, True),
+    "als_xy_wing": Strategy(almost_locked_set.als_xy_wing, "almost_locked_set", "ALS-XY-Wing", 39, 330, True),
+    "hidden_triplet": Strategy(subsets.hidden_triplet, "subsets", "Hidden Triplet", 40, 100, True),
+    "squirmbag": Strategy(fish.squirmbag, "fish", "Squirmbag", 41, 470, True),
+    "naked_quad": Strategy(subsets.naked_quad, "subsets", "Naked Quad", 42, 120, True),
+    "hidden_quad": Strategy(subsets.hidden_quad, "subsets", "Hidden Quad", 43, 150, True),
     "almost_locked_candidates": Strategy(questionable.almost_locked_candidates, "questionable",
-                                         "Almost Locked Candidates", 43, 320, True),
-    "franken_x_wing": Strategy(questionable.franken_x_wing, "questionable", "Franken X-Wing", 44, 300, True),
+                                         "Almost Locked Candidates", 44, 320, True),
+    "franken_x_wing": Strategy(questionable.franken_x_wing, "questionable", "Franken X-Wing", 45, 300, True),
 }
+
+strategy_priorities = {
+    "Full House": Priority(4, 28),
+    "Visual Elimination": Priority(4, 27),
+    "Naked Single": Priority(4, 1),
+    "Hidden Single": Priority(14, 2),
+    "Locked Candidates": Priority(50, 3),
+    "Naked Pair": Priority(60, 5),
+    "Hidden Pair": Priority(70, 6),
+    "Swordfish": Priority(140, 24),
+    "XY-Wing": Priority(160, 13),
+    "XYZ-Wing": Priority(180, 29),
+    "WXYZ-Wing": Priority(240, 16),
+    "W-Wing": Priority(150, 10),
+    "Naked Triplet": Priority(80, 31),
+    "Uniqueness Test 1": Priority(100, 11),
+    "Uniqueness Test 2": Priority(100, 32),
+    "Uniqueness Test 3": Priority(100, 20),
+    "Uniqueness Test 4": Priority(100, 12),
+    "Uniqueness Test 5": Priority(100, 36),
+    "Uniqueness Test 6": Priority(100, 17),
+    "Skyscraper": Priority(130, 26),
+    "X-Wing": Priority(100, 33),
+    "Jellyfish": Priority(470, 35),
+    "Finned X-Wing": Priority(130, 14),
+    "Finned Swordfish": Priority(200, 23),
+    "Finned Jellyfish": Priority(240, 18),
+    "Finned Squirmbag": Priority(470, 25),
+    "Finned Mutant X-Wing": Priority(470, 22),
+    "Simple Colors": Priority(150, 30),
+    "Multi-Colors": Priority(200, 34),
+    "X-Colors": Priority(200, 8),
+    "3D Medusa": Priority(320, 4),
+    "Naked XY Chain": Priority(310, 21),
+    "Hidden XY Chain": Priority(310, 37),
+    "Epmpty Rectangle": Priority(130, 38),
+    "Sue de Coq technique": Priority(130, 39),
+    "ALS-XY": Priority(320, 15),
+    "ALS-XZ": Priority(300, 7),
+    "Death Blossom": Priority(360, 40),
+    "ALS-XY-Wing": Priority(330, 9),
+    "Hidden Triplet": Priority(100, 19),
+    "Squirmbag": Priority(470, 41),
+    "Naked Quad": Priority(120, 42),
+    "Hidden Quad": Priority(150, 43),
+    "Almost Locked Candidates": Priority(320, 44),
+    "Franken X-Wing": Priority(300, 45),
+}
+
+
+def get_prioritized_strategies():
+    """ TBD """
+    # priorities = "by_ranking"
+    priorities = "by_number_of_hits"
+
+    if priorities == "by_ranking":
+        return OrderedDict(sorted(solver_strategies.items(),
+                                  key=lambda key_value_pair: strategy_priorities[key_value_pair[1][2]].by_ranking
+                                  if key_value_pair[1][2] in strategy_priorities else 99999))
+    else:
+        return OrderedDict(sorted(solver_strategies.items(),
+                                  key=lambda key_value_pair: strategy_priorities[key_value_pair[1][2]].by_hits
+                                  if key_value_pair[1][2] in strategy_priorities else 99999))
 
 
 class SolverStatus:
@@ -316,7 +380,9 @@ def manual_solver(board, window, count_strategies_failures):
 
         if is_solved(board, solver_status):
             return True
-        for _, strategy in solver_strategies.items():
+
+        strategies = get_prioritized_strategies()
+        for _, strategy in strategies.items():
             if strategy.active:
                 kwargs = strategy.solver(solver_status, board, window)
                 if kwargs:
