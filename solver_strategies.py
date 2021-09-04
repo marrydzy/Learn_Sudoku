@@ -129,6 +129,102 @@ by_hits = {
     'Franken X-Wing': 45,
 }
 
+by_effectiveness = {
+    '3D Medusa':	3,
+    'Hidden Pair':	2,
+    'Naked Single':	1,
+    'Locked Candidates':	4,
+    'ALS-XY-Wing':	5,
+    'ALS-XZ':	6,
+    'Hidden Single':	7,
+    'Naked Pair':	8,
+    'Multi-Colors':	9,
+    'XY-Wing':	10,
+    'X-Colors':	11,
+    'Hidden Triplet':	12,
+    'W-Wing':	13,
+    'Swordfish':	14,
+    'Uniqueness Test 1':	15,
+    'Uniqueness Test 4':	16,
+    'Finned Swordfish':	17,
+    'Finned Mutant X-Wing':	18,
+    'XYZ-Wing':	19,
+    'Naked XY Chain':	20,
+    'WXYZ-Wing':	21,
+    'ALS-XY':	22,
+    'Uniqueness Test 3':	23,
+    'Finned X-Wing':	24,
+    'Finned Jellyfish':	25,
+    'Uniqueness Test 2':	26,
+    'Uniqueness Test 6':	27,
+    'Finned Squirmbag':	28,
+    'Epmpty Rectangle':	29,
+    'X-Wing':	30,
+    'Uniqueness Test 5':	31,
+    'Hidden Quad':	32,
+    'Naked Quad':	33,
+    'Franken X-Wing':	34,
+    'Hidden XY Chain':	35,
+    'Sue de Coq technique':	36,
+    'Visual Elimination':	37,
+    'Simple Colors':	38,
+    'Naked Triplet':	39,
+    'Skyscraper':	40,
+    'Almost Locked Candidates':	41,
+    'Death Blossom':	42,
+    'Jellyfish':	43,
+    'Squirmbag':	44,
+    'Full House':	45,
+}
+
+
+by_efficiency = {
+    'Naked Single':	1,
+    'Hidden Pair':	2,
+    'Locked Candidates':	3,
+    'Hidden Single':	4,
+    'Uniqueness Test 1':	5,
+    '3D Medusa':	6,
+    'Naked Pair':	7,
+    'Uniqueness Test 4':	8,
+    'XY-Wing':	9,
+    'W-Wing':	10,
+    'XYZ-Wing':	11,
+    'Finned Mutant X-Wing':	12,
+    'Swordfish':	13,
+    'Hidden Triplet':	14,
+    'Uniqueness Test 6':	15,
+    'Multi-Colors':	16,
+    'Naked XY Chain':	17,
+    'Uniqueness Test 2':	18,
+    'Uniqueness Test 3':	19,
+    'Finned Swordfish':	20,
+    'X-Colors':	21,
+    'ALS-XZ':	22,
+    'Finned X-Wing':	23,
+    'Finned Jellyfish':	24,
+    'ALS-XY-Wing':	25,
+    'WXYZ-Wing':	26,
+    'Finned Squirmbag':	27,
+    'ALS-XY':	28,
+    'Epmpty Rectangle':	29,
+    'X-Wing':	30,
+    'Uniqueness Test 5':	31,
+    'Hidden Quad':	32,
+    'Naked Quad':	33,
+    'Franken X-Wing':	34,
+    'Hidden XY Chain':	35,
+    'Sue de Coq technique':	36,
+    'Visual Elimination':	37,
+    'Simple Colors':	38,
+    'Naked Triplet':	39,
+    'Skyscraper':	40,
+    'Almost Locked Candidates':	41,
+    'Death Blossom':	42,
+    'Jellyfish':	43,
+    'Squirmbag':	44,
+    'Full House':	45,
+}
 
 def main():
 
@@ -140,11 +236,18 @@ def main():
     # by number of hits
     for strategy in by_hits:
         strategy_priorities[strategy].append(by_hits[strategy])
+    # by effectiveness
+    for strategy in by_hits:
+        strategy_priorities[strategy].append(by_effectiveness[strategy])
+    # by efficiency
+    for strategy in by_hits:
+        strategy_priorities[strategy].append(by_efficiency[strategy])
 
     print('\n')
     for strategy in strategy_priorities:
-        print('%s%i, %i%s' % ('"' + strategy + '": Priority(', strategy_priorities[strategy][0],
-                              strategy_priorities[strategy][1], '),'))
+        print('%s%i, %i, %i, %i%s' % ('"' + strategy + '": Priority(', strategy_priorities[strategy][0],
+                                      strategy_priorities[strategy][1], strategy_priorities[strategy][2],
+                                      strategy_priorities[strategy][3],'),'))
 
     """
     sorted_by = "by_ranking"

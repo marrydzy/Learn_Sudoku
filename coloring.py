@@ -14,7 +14,7 @@ from itertools import combinations
 import networkx as nx
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX, ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, remove_options, get_pair_house
+from utils import get_stats, is_clue, remove_options, get_pair_house, init_options
 from utils import get_strong_links, DeadEndException
 
 
@@ -312,6 +312,7 @@ def naked_xy_chain(solver_status, board, window):
                  for other_cell in neighbours if len(set(board[cell]).intersection(set(board[other_cell]))) == 1])
         return graph
 
+    init_options(board, solver_status)
     graph = _build_bi_value_cells_graph()
     components = list(nx.connected_components(graph))
     unresolved = [cell for cell in range(81) if len(board[cell]) > 2]

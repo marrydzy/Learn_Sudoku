@@ -25,7 +25,7 @@ iter_stack = []
 solver_status_stack = []
 
 Strategy = namedtuple("Strategy", ["solver", "technique", "name", "priority", "ranking", "active"])
-Priority = namedtuple("Priority", ["by_ranking", "by_hits"])
+Priority = namedtuple("Priority", ["by_ranking", "by_hits", "by_effectiveness", "by_efficiency"])
 
 solver_strategies = {
     "full_house": Strategy(singles.full_house, "singles", "Full House", 1, 4, True),
@@ -95,68 +95,80 @@ solver_strategies = {
 }
 
 strategy_priorities = {
-    "Full House": Priority(4, 28),
-    "Visual Elimination": Priority(4, 27),
-    "Naked Single": Priority(4, 1),
-    "Hidden Single": Priority(14, 2),
-    "Locked Candidates": Priority(50, 3),
-    "Naked Pair": Priority(60, 5),
-    "Hidden Pair": Priority(70, 6),
-    "Swordfish": Priority(140, 24),
-    "XY-Wing": Priority(160, 13),
-    "XYZ-Wing": Priority(180, 29),
-    "WXYZ-Wing": Priority(240, 16),
-    "W-Wing": Priority(150, 10),
-    "Naked Triplet": Priority(80, 31),
-    "Uniqueness Test 1": Priority(100, 11),
-    "Uniqueness Test 2": Priority(100, 32),
-    "Uniqueness Test 3": Priority(100, 20),
-    "Uniqueness Test 4": Priority(100, 12),
-    "Uniqueness Test 5": Priority(100, 36),
-    "Uniqueness Test 6": Priority(100, 17),
-    "Skyscraper": Priority(130, 26),
-    "X-Wing": Priority(100, 33),
-    "Jellyfish": Priority(470, 35),
-    "Finned X-Wing": Priority(130, 14),
-    "Finned Swordfish": Priority(200, 23),
-    "Finned Jellyfish": Priority(240, 18),
-    "Finned Squirmbag": Priority(470, 25),
-    "Finned Mutant X-Wing": Priority(470, 22),
-    "Simple Colors": Priority(150, 30),
-    "Multi-Colors": Priority(200, 34),
-    "X-Colors": Priority(200, 8),
-    "3D Medusa": Priority(320, 4),
-    "Naked XY Chain": Priority(310, 21),
-    "Hidden XY Chain": Priority(310, 37),
-    "Epmpty Rectangle": Priority(130, 38),
-    "Sue de Coq technique": Priority(130, 39),
-    "ALS-XY": Priority(320, 15),
-    "ALS-XZ": Priority(300, 7),
-    "Death Blossom": Priority(360, 40),
-    "ALS-XY-Wing": Priority(330, 9),
-    "Hidden Triplet": Priority(100, 19),
-    "Squirmbag": Priority(470, 41),
-    "Naked Quad": Priority(120, 42),
-    "Hidden Quad": Priority(150, 43),
-    "Almost Locked Candidates": Priority(320, 44),
-    "Franken X-Wing": Priority(300, 45),
+    "Full House": Priority(4, 28, 45, 45),
+    "Visual Elimination": Priority(4, 27, 37, 37),
+    "Naked Single": Priority(4, 1, 1, 1),
+    "Hidden Single": Priority(14, 2, 7, 4),
+    "Locked Candidates": Priority(50, 3, 4, 3),
+    "Naked Pair": Priority(60, 5, 8, 7),
+    "Hidden Pair": Priority(70, 6, 2, 2),
+    "Swordfish": Priority(140, 24, 14, 13),
+    "XY-Wing": Priority(160, 13, 10, 9),
+    "XYZ-Wing": Priority(180, 29, 19, 11),
+    "WXYZ-Wing": Priority(240, 16, 21, 26),
+    "W-Wing": Priority(150, 10, 13, 10),
+    "Naked Triplet": Priority(80, 31, 39, 39),
+    "Uniqueness Test 1": Priority(100, 11, 15, 5),
+    "Uniqueness Test 2": Priority(100, 32, 26, 18),
+    "Uniqueness Test 3": Priority(100, 20, 23, 19),
+    "Uniqueness Test 4": Priority(100, 12, 16, 8),
+    "Uniqueness Test 5": Priority(100, 36, 31, 31),
+    "Uniqueness Test 6": Priority(100, 17, 27, 15),
+    "Skyscraper": Priority(130, 26, 40, 40),
+    "X-Wing": Priority(100, 33, 30, 30),
+    "Jellyfish": Priority(470, 35, 43, 43),
+    "Finned X-Wing": Priority(130, 14, 24, 23),
+    "Finned Swordfish": Priority(200, 23, 17, 20),
+    "Finned Jellyfish": Priority(240, 18, 25, 24),
+    "Finned Squirmbag": Priority(470, 25, 28, 27),
+    "Finned Mutant X-Wing": Priority(470, 22, 18, 12),
+    "Simple Colors": Priority(150, 30, 38, 38),
+    "Multi-Colors": Priority(200, 34, 9, 16),
+    "X-Colors": Priority(200, 8, 11, 21),
+    "3D Medusa": Priority(320, 4, 3, 6),
+    "Naked XY Chain": Priority(310, 21, 20, 17),
+    "Hidden XY Chain": Priority(310, 37, 35, 35),
+    "Epmpty Rectangle": Priority(130, 38, 29, 29),
+    "Sue de Coq technique": Priority(130, 39, 36, 36),
+    "ALS-XY": Priority(320, 15, 22, 28),
+    "ALS-XZ": Priority(300, 7, 6, 22),
+    "Death Blossom": Priority(360, 40, 42, 42),
+    "ALS-XY-Wing": Priority(330, 9, 5, 25),
+    "Hidden Triplet": Priority(100, 19, 12, 14),
+    "Squirmbag": Priority(470, 41, 44, 44),
+    "Naked Quad": Priority(120, 42, 33, 33),
+    "Hidden Quad": Priority(150, 43, 32, 32),
+    "Almost Locked Candidates": Priority(320, 44, 41, 41),
+    "Franken X-Wing": Priority(300, 45, 34, 34),
 }
 
 
 def get_prioritized_strategies():
     """ TBD """
     # priorities = "by_ranking"
-    priorities = "by_number_of_hits"
+    priorities = "by_hits"
+    # priorities = "by_effectiveness"
+    # priorities = "by_efficiency"
+    # priorities = "default"
 
     if priorities == "by_ranking":
         return OrderedDict(sorted(solver_strategies.items(),
                                   key=lambda key_value_pair: strategy_priorities[key_value_pair[1][2]].by_ranking
                                   if key_value_pair[1][2] in strategy_priorities else 99999))
-    else:
+    elif priorities == "by_hits":
         return OrderedDict(sorted(solver_strategies.items(),
                                   key=lambda key_value_pair: strategy_priorities[key_value_pair[1][2]].by_hits
                                   if key_value_pair[1][2] in strategy_priorities else 99999))
-
+    elif priorities == "by_effectiveness":
+        return OrderedDict(sorted(solver_strategies.items(),
+                                  key=lambda key_value_pair: strategy_priorities[key_value_pair[1][2]].by_effectiveness
+                                  if key_value_pair[1][2] in strategy_priorities else 99999))
+    elif priorities == "by_efficiency":
+        return OrderedDict(sorted(solver_strategies.items(),
+                                  key=lambda key_value_pair: strategy_priorities[key_value_pair[1][2]].by_efficiency
+                                  if key_value_pair[1][2] in strategy_priorities else 99999))
+    else:
+        return solver_strategies
 
 class SolverStatus:
     """ class to store data needed for recovering of puzzle
