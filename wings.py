@@ -94,7 +94,6 @@ def finned_x_wing(solver_status, board, window):
                                     kwargs["remove"] = to_remove
                                     kwargs["house"] = house
                                     kwargs["impacted_cells"] = other_cells
-                                    finned_x_wing.rating += 130
                                     finned_x_wing.options_removed += len(to_remove)
                                     finned_x_wing.clues += len(solver_status.naked_singles)
                                     # print('\tfinned X-wing')
@@ -145,7 +144,6 @@ def finned_mutant_x_wing(solver_status, board, window):
                                 kwargs["house"] = house
                                 kwargs["impacted_cells"] = impacted_cell
                                 kwargs["finned_x_wing"] = corners
-                                finned_mutant_x_wing.rating += 470
                                 finned_mutant_x_wing.options_removed += len(to_remove)
                                 finned_mutant_x_wing.clues += len(solver_status.naked_singles)
                                 return True
@@ -198,7 +196,6 @@ def finned_mutant_x_wing(solver_status, board, window):
                                 kwargs["house"] = house
                                 kwargs["impacted_cells"] = {impacted_cell}
                                 kwargs["finned_x_wing"] = corners
-                                finned_mutant_x_wing.rating += 470
                                 finned_mutant_x_wing.options_removed += len(to_remove)
                                 finned_mutant_x_wing.clues += len(solver_status.naked_singles)
                                 # if len(fins) > 1:
@@ -260,7 +257,6 @@ def xy_wing(solver_status, board, window):
                     kwargs["edges"] = [(cell_id, pair[0]), (cell_id, pair[1])]
                     kwargs["remove"] = to_remove
                     kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                    xy_wing.rating += 160
                     xy_wing.options_removed += len(to_remove)
                     xy_wing.clues += len(solver_status.naked_singles)
                     # print('\tXY-Wing')
@@ -314,7 +310,6 @@ def xyz_wing(solver_status, board, window):
                     kwargs["edges"] = [(cell_id, pair[0]), (cell_id, pair[1])]
                     kwargs["remove"] = to_remove
                     kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                    xyz_wing.rating += 180
                     xyz_wing.options_removed += len(to_remove)
                     xyz_wing.clues += len(solver_status.naked_singles)
                     # print('\tXYZ-Wing')
@@ -432,7 +427,6 @@ def wxyz_wing(solver_status, board, window):
                                         kwargs["chain_a"] = _get_chain(board, wing[1:], z, w)
                                         kwargs["remove"] = to_remove
                                         kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                                        wxyz_wing.rating += 200
                                         wxyz_wing.options_removed += len(to_remove)
                                         wxyz_wing.clues += len(solver_status.naked_singles)
                                         # print(f'\t{kwargs["solver_tool"]}')
@@ -483,7 +477,6 @@ def wxyz_wing(solver_status, board, window):
                                         kwargs["chain_a"] = _get_chain(board, wing[1:], z, w)
                                         kwargs["remove"] = to_remove
                                         kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                                        wxyz_wing.rating += 240
                                         wxyz_wing.options_removed += len(to_remove)
                                         wxyz_wing.clues += len(solver_status.naked_singles)
                                         # print(f'\t{kwargs["solver_tool"]}')
@@ -532,7 +525,6 @@ def wxyz_wing(solver_status, board, window):
                                     kwargs["chain_a"] = _get_chain(board, wing[1:], z, w)
                                     kwargs["remove"] = to_remove
                                     kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                                    wxyz_wing.rating += 240
                                     wxyz_wing.options_removed += len(to_remove)
                                     wxyz_wing.clues += len(solver_status.naked_singles)
                                     # print(f'\t{kwargs["solver_tool"]}')
@@ -580,7 +572,6 @@ def wxyz_wing(solver_status, board, window):
                             kwargs["chain_a"] = _get_chain(board, (cell_a, cell_b), z)
                             kwargs["remove"] = to_remove
                             kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                            wxyz_wing.rating += 240
                             wxyz_wing.options_removed += len(to_remove)
                             wxyz_wing.clues += len(solver_status.naked_singles)
                             # print(f'\t{kwargs["solver_tool"]}')
@@ -649,7 +640,6 @@ def w_wing(solver_status, board, window):
                 kwargs["chain_d"] = _get_chain(board, w_base, other_value, w_constraint)
                 kwargs["remove"] = to_remove
                 kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                w_wing.rating += 150
                 w_wing.options_removed += len(to_remove)
                 w_wing.clues += len(solver_status.naked_singles)
                 # print('\tw_wing')

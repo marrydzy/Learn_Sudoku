@@ -67,7 +67,7 @@ def get_stats(func):
     function_wrapper.clues = 0
     function_wrapper.options_removed = 0
     function_wrapper.time_in = 0
-    function_wrapper.rating = 0
+    # function_wrapper.rating = 0
     return function_wrapper
 
 

@@ -340,7 +340,6 @@ def naked_xy_chain(solver_status, board, window):
                         kwargs["remove"] = to_remove
                         kwargs["c_chain"] = _color_naked_xy_chain(graph, path, candidate)
                         kwargs["edges"] = edges
-                        naked_xy_chain.rating += 310
                         naked_xy_chain.options_removed += len(to_remove)
                         naked_xy_chain.clues += len(solver_status.naked_singles)
                         return kwargs
@@ -381,7 +380,6 @@ def simple_colors(solver_status, board, window):
             kwargs["edges"] = edges
             kwargs["remove"] = to_remove
             kwargs["impacted_cells"] = [pair[1] for pair in to_remove]
-            simple_colors.rating += 150
             simple_colors.options_removed += len(to_remove)
             simple_colors.clues += len(solver_status.naked_singles)
             return True
@@ -438,7 +436,6 @@ def simple_colors(solver_status, board, window):
             kwargs["c_chain"] = c_chain
             kwargs["edges"] = edges
             kwargs["remove"] = to_remove
-            simple_colors.rating += 150
             simple_colors.options_removed += len(to_remove)
             simple_colors.clues += len(solver_status.naked_singles)
             return True
@@ -498,7 +495,6 @@ def multi_colors(solver_status, board, window):
                     kwargs["c_chain"] = c_chain
                     kwargs["edges"] = edges
                     kwargs["remove"] = to_remove
-                    multi_colors.rating += 200
                     multi_colors.options_removed += len(to_remove)
                     multi_colors.clues += len(solver_status.naked_singles)
                     return True
@@ -538,7 +534,6 @@ def multi_colors(solver_status, board, window):
                             kwargs["edges"] = edges
                             kwargs["remove"] = to_remove
                             kwargs["impacted_cells"] = impacted_cells
-                            multi_colors.rating += 200
                             multi_colors.options_removed += len(to_remove)
                             multi_colors.clues += len(solver_status.naked_singles)
                             return True
@@ -662,7 +657,6 @@ def x_colors(solver_status, board, window):
                 if window:
                     window.options_visible = window.options_visible.union(show_options)
                 remove_options(solver_status, board, to_remove, window)
-                x_colors.rating += 200
                 x_colors.options_removed += len(to_remove)
                 x_colors.clues += len(solver_status.naked_singles)
                 return kwargs
@@ -834,7 +828,6 @@ def three_d_medusa(solver_status, board, window):
                 kwargs["edges"] = edges
                 kwargs["impacted_cells"] = impacted_cells
                 kwargs["remove"] = to_remove
-                three_d_medusa.rating += 320
                 three_d_medusa.options_removed += len(to_remove)
                 three_d_medusa.clues += len(solver_status.naked_singles)
                 return kwargs

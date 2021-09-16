@@ -59,7 +59,6 @@ def _hidden_subset(solver_status, board, window, subset_size):
                             "solver_tool": subset_strategies[subset_size][0],
                             "c_chain": c_chain,
                             "remove": to_remove, }
-                        subset_strategies[subset_size][1].rating += subset_strategies[subset_size][2]
                         subset_strategies[subset_size][1].clues += len(solver_status.naked_singles)
                         subset_strategies[subset_size][1].options_removed += len(to_remove)
                         return kwargs
@@ -94,7 +93,6 @@ def _naked_subset(solver_status, board, window, subset_size):
                 "c_chain": _get_c_chain(subset_cells, subset_dict),
                 "impacted_cells": {cell for _, cell in to_remove},
                 "remove": to_remove, }
-            subset_strategies[subset_size][1].rating += subset_strategies[subset_size][2]
             subset_strategies[subset_size][1].clues += len(solver_status.naked_singles)
             subset_strategies[subset_size][1].options_removed += len(to_remove)
             return kwargs

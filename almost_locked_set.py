@@ -166,7 +166,6 @@ def als_xz(solver_status, board, window):
                             if window:
                                 window.options_visible = window.options_visible.union(cells_a).union(
                                     cells_b).union(common_neighbours)
-                            als_xz.rating += 300
                             als_xz.options_removed += len(to_remove)
                             als_xz.clues += len(solver_status.naked_singles)
                             return {"solver_tool": "als_xz",
@@ -227,7 +226,6 @@ def als_xy_wing(solver_status, board, window):
                                         if window:
                                             window.options_visible = window.options_visible.union(cells_a).union(
                                                 cells_b).union(cells_c).union(common_neighbours)
-                                        als_xy_wing.rating += 330
                                         als_xy_wing.options_removed += len(to_remove)
                                         als_xy_wing.clues += len(solver_status.naked_singles)
                                         return {"solver_tool": "als_xy_wing",
@@ -328,7 +326,6 @@ def als_xy(solver_status, board, window):
                         window.options_visible = window.options_visible.union(cells_a).union(
                             cells_b).union(impacted_cells)
                     # print(f'\n{cells_a = }, \n{cells_b = }, \n{restricted_commons = }')
-                    als_xy.rating += 320
                     als_xy.options_removed += len(to_remove)
                     als_xy.clues += len(solver_status.naked_singles)
                     return {"solver_tool": "als_xy",

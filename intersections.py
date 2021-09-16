@@ -55,7 +55,6 @@ def locked_candidates(solver_status, board, window):
                         kwargs["remove"] = to_remove
                         kwargs["c_chain"] = _get_c_chain({cell for cell in house if a_digit in board[cell]}, a_digit)
                         kwargs["impacted_cells"] = {cell for _, cell in to_remove}
-                        locked_candidates.rating += 50
                         locked_candidates.clues += len(solver_status.naked_singles)
                         locked_candidates.options_removed += len(to_remove)
                         return True
@@ -87,7 +86,6 @@ def locked_candidates(solver_status, board, window):
                             kwargs["c_chain"] = _get_c_chain({cell for cell in house if a_digit in board[cell]},
                                                              a_digit)
                             kwargs["impacted_cells"] = {cell for _, cell in to_remove}
-                            locked_candidates.rating += 50
                             locked_candidates.clues += len(solver_status.naked_singles)
                             locked_candidates.options_removed += len(to_remove)
                             return True

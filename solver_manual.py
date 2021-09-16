@@ -24,7 +24,7 @@ board_image_stack = []
 iter_stack = []
 solver_status_stack = []
 
-Strategy = namedtuple("Strategy", ["solver", "technique", "name", "priority", "ranking", "active"])
+Strategy = namedtuple("Strategy", ["solver", "technique", "name", "priority", "difficulty_rate", "active"])
 Priority = namedtuple("Priority", ["by_ranking", "by_hits", "by_effectiveness", "by_efficiency"])
 
 solver_strategies = {
@@ -145,11 +145,11 @@ strategy_priorities = {
 
 def get_prioritized_strategies():
     """ TBD """
-    # priorities = "by_ranking"
-    priorities = "by_hits"
-    # priorities = "by_effectiveness"
-    # priorities = "by_efficiency"
-    # priorities = "default"
+    # priorities = "by_ranking"             # 13-09-2021: 289 00:17:07
+    # priorities = "by_hits"                # 13-09-2021: 293 00:19:55
+    # priorities = "by_effectiveness"       # 13-09-2021: 271 02:40:14
+    # priorities = "by_efficiency"          # 13-09-2021: 289 00:21:16
+    priorities = "default"                  # 13-09-2021: 288 00:15:48
 
     if priorities == "by_ranking":
         return OrderedDict(sorted(solver_strategies.items(),
@@ -169,6 +169,7 @@ def get_prioritized_strategies():
                                   if key_value_pair[1][2] in strategy_priorities else 99999))
     else:
         return solver_strategies
+
 
 class SolverStatus:
     """ class to store data needed for recovering of puzzle
@@ -391,6 +392,7 @@ def manual_solver(board, window, count_strategies_failures):
                 window.calculate_next_clue = False
 
         if is_solved(board, solver_status):
+            # print('\nDupa_1')
             return True
 
         strategies = get_prioritized_strategies()
@@ -400,6 +402,9 @@ def manual_solver(board, window, count_strategies_failures):
                 if kwargs:
                     if window and window.suggest_technique:
                         solver_status.restore_baseline(board, window)
+                    if is_solved(board, solver_status):
+                        # print('\nDupa_2')
+                        pass
                     break
         else:
             if not is_solved(board, solver_status):        # TODO: for debugging only!

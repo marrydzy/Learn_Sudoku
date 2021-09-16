@@ -20,17 +20,7 @@ from progress.bar import Bar
 
 from solver_manual import manual_solver, get_prioritized_strategies
 from solver_manual import solver_status, board_image_stack, iter_stack, solver_status_stack
-from solver_manual import solver_strategies, strategy_priorities
 
-import almost_locked_set
-import singles
-import intersections
-import subsets
-import uniqueness_tests
-import fish
-import wings
-
-# import solver_methods     # TODO: obsolete!!!
 import display
 import graphics
 import graph_utils
@@ -362,11 +352,11 @@ def _video_ocr():
 def _picture_ocr():
     ocr_engine = sudoku_ocr.SudokuOCR(img_fname=config["image"])
     boards[0] = ocr_engine.sudoku_ocr()
-    ocr_engine.show_contour(1000)
+    ocr_engine.show_contour(10)
     init_board()
     if config['graphical_mode']:
         data["graph_display"] = graphics.AppWindow(board, solver_status, config["peep"])
-        data["graph_display"].display_info(os.path.abspath(config['image']))
+        # data["graph_display"].display_info(os.path.abspath(config['image']))
     _solve_sudoku_puzzle()
 
 

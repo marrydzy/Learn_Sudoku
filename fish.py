@@ -64,7 +64,6 @@ def _basic_fish(solver_status, board, window, n):
                             kwargs["remove"] = to_remove
                             kwargs["impacted_cells"] = {cell for _, cell in to_remove}
                             kwargs["house"] = houses
-                            fish_strategies[n][1].rating += fish_strategies[n][2]
                             fish_strategies[n][1].clues += len(solver_status.naked_singles)
                             fish_strategies[n][1].options_removed += len(to_remove)
                             return True
@@ -152,7 +151,6 @@ def _finned_fish(solver_status, board, window, n):
                                     kwargs["remove"] = to_remove
                                     kwargs["impacted_cells"] = {cell for _, cell in to_remove}
                                     kwargs["house"] = houses
-                                    strategy[1].rating += strategy[2]
                                     strategy[1].clues += len(solver_status.naked_singles)
                                     strategy[1].options_removed += len(to_remove)
                                     return True
