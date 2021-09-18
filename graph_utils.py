@@ -6,7 +6,8 @@ import math
 # from icecream import ic
 
 from collections import defaultdict
-from solver_manual import solver_status
+from solver_manual import solver_status, ClueEntered
+
 from utils import init_options
 from utils import CELL_ROW, CELL_COL
 from html_colors import html_color_codes
@@ -178,16 +179,15 @@ def cell_color(window, cell, **kwargs):
         color = html_color_codes["lightcoral"]
     if "chain_d" in kwargs and cell in kwargs["chain_d"]:
         color = html_color_codes["yellow"]
-    if "wrong_values" in kwargs and cell in kwargs["wrong_values"]:
-        color = html_color_codes["pink"]
-    if "conflicted_cells" in kwargs and cell in kwargs["conflicted_cells"]:
-        color = html_color_codes["orange"]
     if "impacted_cells" in kwargs and cell in kwargs["impacted_cells"]:
-        # color = C_OTHER_CELLS
         color = html_color_codes["palegreen"]
     if cell == window.selected_cell or \
             "new_clue" in kwargs and cell == kwargs["new_clue"]:
         color = html_color_codes["palegreen"]
+    if "conflicted_cells" in kwargs and cell in kwargs["conflicted_cells"]:
+        color = html_color_codes["pink"]
+    if "incorrect_values" in kwargs and cell in kwargs["incorrect_values"]:
+        color = html_color_codes["pink"]
     if window.critical_error and cell in window.critical_error:
         color = html_color_codes["lightcoral"]
     return color
@@ -550,7 +550,7 @@ def hint_btn_clicked(window, _, board, **kwargs):
         window.wait = False
 
 
-def back_btn_clicked(window, btn_id, board, **kwargs):
+def back_btn_clicked(window, _, board, **kwargs):
     """ action on clicking 'Back' button """
     if window.buttons[pygame.K_b].is_active():
         solver_status.restore_baseline(board, window)
@@ -604,7 +604,7 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     window.inspect = window.peep
     window.solver_status.clues_found.clear()
     window.options_visible.clear()
-    window.wrong_values.clear()
+    # window.wrong_values.clear()
     window.show_wrong_values = True
     window.critical_error = None
     window.show_all_pencil_marks = False
@@ -639,8 +639,8 @@ def quit_btn_clicked(window, *args, **kwargs):
 def keyboard_btn_clicked(window, btn_id, *args, **kwargs):
     """ action on pressing a keyboard button """
     if window.selected_cell is not None:
-        window.clue_entered = (window.selected_cell, str(btn_id),
-                               True if window.buttons[pygame.K_c].is_pressed() else False)
+        window.clue_entered = ClueEntered(window.selected_cell, str(btn_id),
+                                          True if window.buttons[pygame.K_c].is_pressed() else False)
         window.wait = False
     else:
         if str(btn_id) == window.selected_key:
@@ -658,18 +658,19 @@ def keyboard_btn_clicked(window, btn_id, *args, **kwargs):
 
 def cell_clicked(window, cell_id, *args, **kwargs):
     """ action on clicking a board cell """
-    cell_id -= CELL_ID_OFFSET
-    if cell_id not in solver_status.clues_defined:
-        if window.selected_key:
-            window.clue_entered = (cell_id, window.selected_key,
-                                   True if window.buttons[pygame.K_c].is_pressed() else False)
-            window.board_updated = True
-        else:
-            if cell_id == window.selected_cell:
-                window.selected_cell = None
+    if get_keyboard_status(window):
+        cell_id -= CELL_ID_OFFSET
+        if cell_id not in solver_status.clues_defined:
+            if window.selected_key:
+                window.clue_entered = ClueEntered(cell_id, window.selected_key,
+                                                  True if window.buttons[pygame.K_c].is_pressed() else False)
+                window.board_updated = True
             else:
-                window.selected_cell = cell_id
-        window.wait = False
+                if cell_id == window.selected_cell:
+                    window.selected_cell = None
+                else:
+                    window.selected_cell = cell_id
+            window.wait = False
 
 
 def set_buttons(window):
@@ -694,7 +695,7 @@ def set_buttons(window):
     window.actions[pygame.K_h] = hint_btn_clicked
     
     btn_rect = pygame.Rect((btn_x + btn_w + BUTTONS_OFFSET, btn_y, btn_w, BUTTON_H))
-    window.buttons[pygame.K_n] = Button(pygame.K_n, btn_rect, "Step", window.font_buttons)
+    window.buttons[pygame.K_n] = Button(pygame.K_n, btn_rect, "Move", window.font_buttons)
     window.actions[pygame.K_n] = next_btn_clicked
 
     btn_y += BUTTON_H + BUTTONS_OFFSET
@@ -898,4 +899,8 @@ def set_keyboard_status(window, status):
     for id in range(1, 10):
         window.buttons[id].set_status(status)
 
+
+def get_keyboard_status(window):
+    """ Get keyboard status (True if active, False if disabled) """
+    return window.buttons[1].is_active()
 

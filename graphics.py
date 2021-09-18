@@ -2,25 +2,15 @@
 
 import pygame
 import time
+from collections import namedtuple
 
 
 import graph_utils
 from display import screen_messages
 
-# RGB colors:
 from html_colors import html_color_codes
-# from graph_utils import BLACK
-# from graph_utils import BLUE
-from graph_utils import GREY
-# from graph_utils import GAINSBORO
-
-from graph_utils import ANIMATION_STEP_TIME
-
-from graph_utils import CELL_SIZE
-from graph_utils import LEFT_MARGIN
-from graph_utils import TOP_MARGIN
-
-from utils import CELL_COL, CELL_ROW
+from graph_utils import GREY, ANIMATION_STEP_TIME, CELL_SIZE, LEFT_MARGIN, TOP_MARGIN, CELL_COL, CELL_ROW
+from solver_manual import ClueEntered
 
 
 from icecream import ic
@@ -30,6 +20,7 @@ ic.configureOutput(includeContext=True)
 C_OTHER_CELLS = (255, 250, 190)
 
 KEYBOARD_DIGITS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
+# ClueEntered = namedtuple("ClueEntered", ["cell", "value", "as_clue"])
 
 
 class AppWindow:
@@ -67,7 +58,7 @@ class AppWindow:
         self.inspect = self.peep
 
         self.solver_status = solver_status
-        self.wrong_values = set()
+        # self.wrong_values = set()
         self.options_visible = set()
         self.selected_key = None
         self.selected_cell = None
@@ -75,7 +66,7 @@ class AppWindow:
         self.show_wrong_values = True
         self.animate = False
         self.board_updated = False
-        self.clue_entered = (None, None, None)
+        self.clue_entered = ClueEntered(cell=None, value=None, as_clue=None)
         self.show_all_pencil_marks = False
         self.critical_error = None
         self.wait = False
@@ -91,6 +82,7 @@ class AppWindow:
         self.screen = pygame.display.set_mode(graph_utils.window_size())
         self.screen.fill(html_color_codes["gainsboro"])
         graph_utils.set_buttons(self)
+        # print(f'\nAppWindow.init: {type(self.clue_entered) = }')
 
     def critical_error_event(self, board, **kwargs):
         """ Handle 'Critical Error' event """
@@ -116,9 +108,10 @@ class AppWindow:
             # self.set_current_board(board)         TODO !!!
 
     def wrong_entry_event(self):
-        """ Handle 'Wrong Manual Entry' event """
-        graph_utils.set_btn_status(self, False, (pygame.K_s, pygame.K_m, pygame.K_s))
-        graph_utils.set_btn_status(self, True, (pygame.K_b,))
+        """ Handle 'Wrong Entry' event """
+        graph_utils.set_keyboard_status(self, False)
+        graph_utils.set_btn_status(self, False)
+        graph_utils.set_btn_status(self, True, (pygame.K_b, pygame.K_q, pygame.K_r))
 
     def sudoku_solved_event(self, board):
         """ Handle 'Sudoku Solved' event """
@@ -145,7 +138,7 @@ class AppWindow:
 
         solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else None        # TODO - fix it !!!
         wrong_entry = bool("conflicted_cells" in kwargs and kwargs["conflicted_cells"] or
-                           "wrong_values" in kwargs and kwargs["wrong_values"])
+                           "incorrect_values" in kwargs and kwargs["incorrect_values"])
         if not solver_tool:
             pass
         elif self.critical_error:
@@ -179,9 +172,10 @@ class AppWindow:
         """ render board (TODO) """
         active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
         solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else "plain_board"   # None TODO !!!
-        # if solver_tool == None:
-        #     raise Exception
+        incorrect_values = kwargs["incorrect_values"] if "incorrect_values" in kwargs else set()
+        conflicted_cells = kwargs["conflicted_cells"] if "conflicted_cells" in kwargs else set()
         removed = kwargs["remove"] if "remove" in kwargs else None
+
         for row_id in range(9):
             for col_id in range(9):
                 cell_id = row_id * 9 + col_id
@@ -191,10 +185,13 @@ class AppWindow:
 
                 if board[cell_id] != '.':
                     if (solver_tool is None or cell_id in self.solver_status.clues_defined or
-                            cell_id == active_clue and not self.critical_error or
-                            cell_id in self.wrong_values and cell_id in self.solver_status.clues_found and
-                            not self.critical_error):
+                            cell_id == active_clue and not self.critical_error):
                         graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["black"])
+                    elif (cell_id in incorrect_values and cell_id in self.solver_status.clues_found and
+                            not self.critical_error):
+                        graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["red"])
+                    elif cell_id in conflicted_cells and not self.critical_error:
+                        graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["red"])
                     elif cell_id in self.solver_status.clues_found and len(board[cell_id]) == 1:
                         graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["teal"])
                     elif graph_utils.show_pencil_marks(self, cell_id, **kwargs):
@@ -246,14 +243,15 @@ class AppWindow:
 
         self.render_board(board, **kwargs)
 
+        incorrect_values = kwargs["incorrect_values"] if "incorrect_values" in kwargs else set()
         if self.critical_error:
             graph_utils.display_info(self, screen_messages["critical_error"])
         elif "conflicted_cells" in kwargs and kwargs["conflicted_cells"]:
             graph_utils.display_info(self, screen_messages["conflicting_values"])
         elif solver_tool == "end_of_game":
             graph_utils.display_info(self, screen_messages[solver_tool])
-        elif self.show_wrong_values and self.wrong_values:
-            graph_utils.display_info(self, screen_messages["wrong_values"])
+        elif self.show_wrong_values and incorrect_values:
+            graph_utils.display_info(self, screen_messages["incorrect_value"])
         elif solver_tool != "plain_board":
             graph_utils.display_info(self, solver_tool_message_prefix + screen_messages[solver_tool])
         else:

@@ -80,7 +80,7 @@ screen_messages = {
     "observe": "Dupa Jaś",
     "end_of_game": "Sudoku solved!",
     "conflicting_values": "The entered value conflicts with other cells",
-    "wrong_values": "Incorrect value entered!",
+    "incorrect_value": "The entered value is incorrect!",
     "critical_error": "DUPA JAŚ !!!",
     "iterate": "Iterating ...",
     "almost_locked_candidates": "'Almost Locked Candidates' technique",
