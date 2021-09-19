@@ -2,6 +2,7 @@
 
 """ SUDOKU SOLVING METHODS """
 
+from pygame import K_b
 from collections import defaultdict, namedtuple, OrderedDict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX
@@ -197,6 +198,7 @@ class SolverStatus:
             self.naked_singles_baseline = self.naked_singles.copy()
             self.clues_found_baseline = self.clues_found.copy()
             self.options_visible_baseline = window.options_visible.copy()
+            window.buttons[K_b].set_status(True)
 
     def restore_baseline(self, board, window):
         for cell_id in range(81):
@@ -280,22 +282,21 @@ def _as_clue_and_undefined(board, window, options_set):
 def _as_opt_and_undefined(board, window):
     """ Entering an option in undefined cell """
     cell_id, value, as_clue = window.clue_entered
-    if cell_id in window.options_visible:
+    if cell_id in window.options_visible or window.show_all_pencil_marks:
         if cell_id in solver_status.naked_singles:
             solver_status.naked_singles.remove(cell_id)
         if value in board[cell_id]:
             board[cell_id] = board[cell_id].replace(value, "")
             if len(board[cell_id]) == 0:
                 set_cell_options(cell_id, board, solver_status)
-                window.options_visible.remove(cell_id)
             elif len(board[cell_id]) == 1:
                 solver_status.naked_singles.add(cell_id)
         else:
             board[cell_id] += value
     else:
         board[cell_id] = value
-        window.options_visible.add(cell_id)
         solver_status.naked_singles.add(cell_id)
+    window.options_visible.add(cell_id)
 
 
 def _check_board_integrity(board, window):
@@ -320,7 +321,7 @@ def _check_board_integrity(board, window):
         conflicted_cells = conflicted_cells.union(_check_house(CELLS_IN_ROW[i])).union(_check_house(CELLS_IN_COL[i])).\
                               union(_check_house(CELLS_IN_BOX[i]))
     incorrect_values = {cell for cell in range(81) if cell in solver_status.clues_found and
-                        board[cell] != window.solved_board[cell]} if window.solved_board else set()
+                        board[cell] != window.solved_board[cell]} if window and window.solved_board else set()
     return conflicted_cells, incorrect_values
 
 
@@ -341,10 +342,10 @@ def _set_manually(board, window):
             else:
                 _as_opt_and_undefined(board, window)
         conflicted_cells, incorrect_values = _check_board_integrity(board, window)
-        conflicted = (window.clue_entered.cell, ) if window.clue_entered.cell in conflicted_cells else set()
+        conflicted = {window.clue_entered.cell, } if window.clue_entered.cell in conflicted_cells else set()
         c_chain = {cell: () for cell in conflicted_cells if cell != window.clue_entered.cell}
         window.clue_entered = ClueEntered(None, None, None)
-        kwargs = {"solver_tool": "plain_board",
+        kwargs = {"solver_tool": "manual_entry",
                   "incorrect_values": incorrect_values,
                   "conflicted_cells": conflicted,
                   "c_chain": c_chain,
@@ -390,7 +391,6 @@ def manual_solver(board, window, count_strategies_failures):
                 window.calculate_next_clue = False
 
         if is_solved(board, solver_status):
-            # print('\nDupa_1')
             return True
 
         strategies = get_prioritized_strategies()
@@ -398,17 +398,16 @@ def manual_solver(board, window, count_strategies_failures):
             if strategy.active:
                 kwargs = strategy.solver(solver_status, board, window)
                 if kwargs:
-                    if window and window.suggest_technique:
-                        solver_status.restore_baseline(board, window)
-                    if is_solved(board, solver_status):
-                        # print('\nDupa_2')
-                        pass
+                    if window:
+                        if window.suggest_technique:
+                            solver_status.restore_baseline(board, window)
+                        conflicted_cells, incorrect_values = _check_board_integrity(board, window)  # TODO: !!!
+                        window.critical_error = conflicted_cells
                     break
         else:
             if not is_solved(board, solver_status):        # TODO: for debugging only!
                 if count_strategies_failures:
                     strategies_failure_counter += 1
                     # print(f"\n{strategies_failure_counter = }")
-                    pass
             return False
     return True

@@ -12,6 +12,7 @@ from tabulate import tabulate
 screen_messages = {
     None: "",
     "plain_board": " ",
+    "manual_entry": " ",
     "conflict": "Conflicting value",
     "full_house": "'Full House' technique",
     "visual_elimination": "'Visual Elimination' technique",
@@ -81,7 +82,7 @@ screen_messages = {
     "end_of_game": "Sudoku solved!",
     "conflicting_values": "The entered value conflicts with other cells",
     "incorrect_value": "The entered value is incorrect!",
-    "critical_error": "DUPA JAŚ !!!",
+    "critical_error": "Critical error occurred due to inconsistent board data",
     "iterate": "Iterating ...",
     "almost_locked_candidates": "'Almost Locked Candidates' technique",
     "als_xz": "'ALS-XZ' technique",
@@ -90,8 +91,6 @@ screen_messages = {
     "death_blossom": "'Death Blossom' technique",
     "hint_on_technique": "Suggested method to apply: ",
 }
-
-DEBUG = False
 
 ERROR_MESSAGES = {
     'pathname_is_empty': 'ERROR: Pathname to {} is empty\n',

@@ -2,25 +2,20 @@
 
 import pygame
 import time
-from collections import namedtuple
-
 
 import graph_utils
 from display import screen_messages
 
 from html_colors import html_color_codes
-from graph_utils import GREY, ANIMATION_STEP_TIME, CELL_SIZE, LEFT_MARGIN, TOP_MARGIN, CELL_COL, CELL_ROW
+from graph_utils import ANIMATION_STEP_TIME, CELL_SIZE, LEFT_MARGIN, TOP_MARGIN, CELL_COL, CELL_ROW
+from graph_utils import GREY    # TODO - use html color definition!
 from solver_manual import ClueEntered
 
 
-from icecream import ic
-ic.configureOutput(includeContext=True)
-
-
-C_OTHER_CELLS = (255, 250, 190)
+# from icecream import ic
+# ic.configureOutput(includeContext=True)
 
 KEYBOARD_DIGITS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
-# ClueEntered = namedtuple("ClueEntered", ["cell", "value", "as_clue"])
 
 
 class AppWindow:
@@ -80,9 +75,8 @@ class AppWindow:
         pygame.display.set_caption('SUDOKU PUZZLE')
         pygame.display.set_icon(pygame.image.load('demon.png'))  # TODO - get a better icon
         self.screen = pygame.display.set_mode(graph_utils.window_size())
-        self.screen.fill(html_color_codes["gainsboro"])
+        self.screen.fill(html_color_codes["gainsboro"])     # TODO - use html color definition
         graph_utils.set_buttons(self)
-        # print(f'\nAppWindow.init: {type(self.clue_entered) = }')
 
     def critical_error_event(self, board, **kwargs):
         """ Handle 'Critical Error' event """
@@ -105,7 +99,6 @@ class AppWindow:
             for cell in self.critical_error:
                 if cell not in self.solver_status.clues_defined:
                     self.options_visible.add(cell)
-            # self.set_current_board(board)         TODO !!!
 
     def wrong_entry_event(self):
         """ Handle 'Wrong Entry' event """
@@ -115,20 +108,15 @@ class AppWindow:
 
     def sudoku_solved_event(self, board):
         """ Handle 'Sudoku Solved' event """
-        self.solver_status.board_baseline = board.copy()        # TODO - is it needed?
         self.animate = False
-        graph_utils.set_btn_status(self, False, (pygame.K_m, pygame.K_s))
-        graph_utils.set_btn_status(self, True, (pygame.K_r,))
-        graph_utils.set_btn_state(self, False, (pygame.K_m, pygame.K_s))
+        graph_utils.set_keyboard_status(self, False)
+        graph_utils.set_btn_status(self, False)
+        graph_utils.set_btn_status(self, True, (pygame.K_q, pygame.K_r))
 
     def plain_board_event(self):
         """ Clean current board, not solved yet event  """
         graph_utils.set_btn_status(self, False, (pygame.K_a, pygame.K_b))
         graph_utils.set_btn_status(self, True, (pygame.K_s, pygame.K_m, pygame.K_s))
-
-    # def set_current_board(self, board):         # TODO - move it from here!
-        # """ Save copy of the current board (before applying a tool)  """
-        # self.solver_status.board_baseline = board.copy()
 
     def handle_input_events(self, board, **kwargs):
         """ handle input events before entering the display loop  """
@@ -153,28 +141,23 @@ class AppWindow:
             self.plain_board_event()
         return False
 
-    def impossible_entry_postproc(self):
-        """ Clean up after showing conflicted cells """
-        pass
-        """
-        cell_id = self.impacting_cell[0]
-        original_value = self.impacting_cell[1]
-        self.input_board[cell_id] = original_value
-        self.clues_found.remove(cell_id)
-        self.impacting_cell = None
-        """
-
-    def wrong_values_removed(self):
-        """ TODO """
-        self.buttons[pygame.K_s].set_status(True)
-
     def render_board(self, board, **kwargs):
         """ render board (TODO) """
         active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
-        solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else "plain_board"   # None TODO !!!
+        solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else "plain_board"
         incorrect_values = kwargs["incorrect_values"] if "incorrect_values" in kwargs else set()
         conflicted_cells = kwargs["conflicted_cells"] if "conflicted_cells" in kwargs else set()
         removed = kwargs["remove"] if "remove" in kwargs else None
+
+        assert solver_tool is not None
+
+        black_digits = self.solver_status.clues_defined.copy()
+        if not self.critical_error:
+            black_digits.add(active_clue)
+        red_digits = conflicted_cells.union(incorrect_values.intersection(self.solver_status.clues_found))
+        if self.critical_error:
+            red_digits = red_digits.union(self.critical_error)
+        teal_digits = {cell for cell in self.solver_status.clues_found if len(board[cell]) == 1}
 
         for row_id in range(9):
             for col_id in range(9):
@@ -182,22 +165,18 @@ class AppWindow:
                 cell_pos = (col_id * CELL_SIZE + LEFT_MARGIN, row_id * CELL_SIZE + TOP_MARGIN)
                 cell_rect = (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1)
                 pygame.draw.rect(self.screen, graph_utils.cell_color(self, cell_id, **kwargs), cell_rect)
-
                 if board[cell_id] != '.':
-                    if (solver_tool is None or cell_id in self.solver_status.clues_defined or
-                            cell_id == active_clue and not self.critical_error):
+                    if cell_id in black_digits:
                         graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["black"])
-                    elif (cell_id in incorrect_values and cell_id in self.solver_status.clues_found and
-                            not self.critical_error):
+                    elif cell_id in red_digits:
                         graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["red"])
-                    elif cell_id in conflicted_cells and not self.critical_error:
-                        graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["red"])
-                    elif cell_id in self.solver_status.clues_found and len(board[cell_id]) == 1:
+                    elif cell_id in teal_digits:
                         graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["teal"])
                     elif graph_utils.show_pencil_marks(self, cell_id, **kwargs):
                         if solver_tool != "plain_board":
                             graph_utils.highlight_options(self, cell_id, board[cell_id], cell_pos, **kwargs)
                         graph_utils.render_options(self, board[cell_id], cell_pos)
+
         if removed:
             for value, cell_id in removed:
                 if self.show_all_pencil_marks or cell_id in self.options_visible:

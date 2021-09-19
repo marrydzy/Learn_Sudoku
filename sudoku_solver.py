@@ -55,6 +55,14 @@ def apply_standard_techniques():
         return False
 
 
+def standard_techniques():
+    """ TODO """
+    try:
+        return manual_solver(board, data["graph_display"], True)
+    except DeadEndException:
+        print(f'\nDupa Jaś!')
+        return True
+
 def next_cell_to_resolve():
     """Return index of the next_cell cell to be resolved and an iterator of possible clues.
     The next_cell cell is always selected from the set of cells with the lowest number of options,
@@ -193,7 +201,7 @@ def run_solver(progress_bar=None):
         if window.solved_board is None and "solved_board" in data:
             window.solved_board = data["solved_board"]
 
-    ret_code = manual_solver(board, window, True)
+    ret_code = standard_techniques()
     if not ret_code:
         ret_code = apply_brute_force()
 
@@ -208,12 +216,6 @@ def run_solver(progress_bar=None):
         data["iterated"] += 1 if data["iter_counter"] > 0 else 0
         data["max_iterations"] = max(data["max_iterations"], data["iter_counter"])
     config["is_solved"] = ret_code
-
-    if window:
-        msg = f'The Sudoku solved in {1000.0 * data["tot_solution_time"]:.2f} ms' if ret_code else \
-            "Oops... Failed to find the Sudoku solution"
-        graph_utils.display_info(window, msg)     # TODO
-        print(msg)
     display.sudoku_board(config, data, board)
     return ret_code
 

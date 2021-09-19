@@ -189,7 +189,7 @@ def cell_color(window, cell, **kwargs):
     if "incorrect_values" in kwargs and cell in kwargs["incorrect_values"]:
         color = html_color_codes["pink"]
     if window.critical_error and cell in window.critical_error:
-        color = html_color_codes["lightcoral"]
+        color = html_color_codes["pink"]
     return color
 
 
@@ -405,7 +405,6 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     chain_b = kwargs["chain_b"] if "chain_b" in kwargs else None
     chain_c = kwargs["chain_c"] if "chain_c" in kwargs else None
     chain_d = kwargs["chain_d"] if "chain_d" in kwargs else None
-
 
     if iterate is not None and cell_id == iterate:
         pygame.draw.rect(
@@ -847,6 +846,7 @@ def set_methods():
             "scrub_pencil_marks": "c",
             "iterate": "z",
             "plain_board": "b",
+            "manual_entry": "0",
             "xyz_wing": "1",
             "remote_pairs": "2",
             "wxy_wing": "3",
