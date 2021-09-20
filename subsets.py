@@ -40,6 +40,7 @@ def _hidden_subset(solver_status, board, window, subset_size):
                 continue
             candidates = set("".join(board[cell] for cell in unsolved))
             if len(unsolved) != len(candidates):
+                print('\n_hidden_subset')       # TODO
                 raise DeadEndException
 
             candidates_positions = {candidate: {cell for cell in unsolved if candidate in board[cell]}

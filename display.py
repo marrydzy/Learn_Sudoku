@@ -82,7 +82,7 @@ screen_messages = {
     "end_of_game": "Sudoku solved!",
     "conflicting_values": "The entered value conflicts with other cells",
     "incorrect_value": "The entered value is incorrect!",
-    "critical_error": "Critical error occurred due to inconsistent board data",
+    "critical_error": "Critical error occurred: inconsistent board data",
     "iterate": "Iterating ...",
     "almost_locked_candidates": "'Almost Locked Candidates' technique",
     "als_xz": "'ALS-XZ' technique",

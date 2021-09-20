@@ -243,10 +243,10 @@ def remove_options(solver_status, board, to_remove, window):
     for option, cell in to_remove:
         board[cell] = board[cell].replace(option, "")
         if not board[cell]:
-            # if window:    TODO
-            #     window.critical_error = (cell, )
-            # else:
-            raise DeadEndException
+            if window and solver_status.iteration == 0:
+                window.critical_error = (cell, )
+            else:
+                raise DeadEndException
         elif len(board[cell]) == 1:
             solver_status.naked_singles.add(cell)
 

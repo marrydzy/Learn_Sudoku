@@ -9,11 +9,8 @@ from display import screen_messages
 from html_colors import html_color_codes
 from graph_utils import ANIMATION_STEP_TIME, CELL_SIZE, LEFT_MARGIN, TOP_MARGIN, CELL_COL, CELL_ROW
 from graph_utils import GREY    # TODO - use html color definition!
-from solver_manual import ClueEntered
+from solver_manual import ValueEntered
 
-
-# from icecream import ic
-# ic.configureOutput(includeContext=True)
 
 KEYBOARD_DIGITS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
 
@@ -61,7 +58,7 @@ class AppWindow:
         self.show_wrong_values = True
         self.animate = False
         self.board_updated = False
-        self.clue_entered = ClueEntered(cell=None, value=None, as_clue=None)
+        self.value_entered = ValueEntered(cell=None, value=None, as_clue=None)
         self.show_all_pencil_marks = False
         self.critical_error = None
         self.wait = False
@@ -80,8 +77,7 @@ class AppWindow:
 
     def critical_error_event(self, board, **kwargs):
         """ Handle 'Critical Error' event """
-        if self.buttons[pygame.K_s].is_pressed() or self.buttons[pygame.K_m].is_pressed() or self.buttons[
-                pygame.K_s].is_pressed():
+        if self.buttons[pygame.K_s].is_pressed() or self.animate:
             self.show_solution_steps = True
             self.inspect = ''.join(self.method.values())
             self.animate = False

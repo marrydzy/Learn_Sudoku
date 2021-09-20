@@ -1,19 +1,16 @@
 import time
 import sys
 import pygame
-import math
-
-# from icecream import ic
 
 from collections import defaultdict
-from solver_manual import solver_status, ClueEntered
+from solver_manual import solver_status, ValueEntered
 
 from utils import init_options
 from utils import CELL_ROW, CELL_COL
 from html_colors import html_color_codes
 
 
-ANIMATION_STEP_TIME = 0.05
+ANIMATION_STEP_TIME = 0.1
 BUTTON_PRESS_TIME = 0.15
 
 CELL_ID_OFFSET = 1000
@@ -32,8 +29,6 @@ LIGHTPINK = (255, 182, 193)
 LIGHTGREY = (200, 200, 200)
 
 
-# C_BTN_BORDER = (153, 189, 173)
-# C_BTN_FACE = (198, 200, 200)
 C_PRESSED_BTN_BORDER = (31, 62, 50)
 C_PRESSED_BTN_FACE = (77, 110, 96)      # (68, 110, 100)
 C_OTHER_CELLS = (255, 250, 190)
@@ -586,15 +581,13 @@ def solve_btn_clicked(window, *args, **kwargs):
 def animate_btn_clicked(window, *args, **kwargs):
     """ action on pressing 'Animate' button """
     window.selected_cell = None
-    window.buttons[pygame.K_m].set_pressed(True)
-    set_btn_status(window, False, (pygame.K_c, pygame.K_p, pygame.K_a, pygame.K_h, pygame.K_n,
-                                   pygame.K_b, pygame.K_m, pygame.K_s, pygame.K_r))
+    set_btn_status(window, False)
     set_keyboard_status(window, False)
+    set_btn_status(window, True, (pygame.K_m, ))
+    window.buttons[pygame.K_m].press_and_deactivate(window.screen)
     window.animate = True
     window.wait = False
     window.board_updated = True
-    time.sleep(ANIMATION_STEP_TIME)
-
 
 def reset_btn_clicked(window, _, board, *args, **kwargs):
     """ action on clicking 'Reset' button """
@@ -636,10 +629,15 @@ def quit_btn_clicked(window, *args, **kwargs):
 
 
 def keyboard_btn_clicked(window, btn_id, *args, **kwargs):
-    """ action on pressing a keyboard button """
+    """ Actions on pressing a keyboard button
+     - If the value is set as clue, the selected cell is deactivated deactivated:
+       this helps to avoid accidentally entering another value in the same cell
+    """
     if window.selected_cell is not None:
-        window.clue_entered = ClueEntered(window.selected_cell, str(btn_id),
-                                          True if window.buttons[pygame.K_c].is_pressed() else False)
+        window.value_entered = ValueEntered(window.selected_cell, str(btn_id),
+                                            True if window.buttons[pygame.K_c].is_pressed() else False)
+        if window.buttons[pygame.K_c].is_pressed():
+            window.selected_cell = None
         window.wait = False
     else:
         if str(btn_id) == window.selected_key:
@@ -656,13 +654,20 @@ def keyboard_btn_clicked(window, btn_id, *args, **kwargs):
 
 
 def cell_clicked(window, cell_id, *args, **kwargs):
-    """ action on clicking a board cell """
+    """ Actions on clicking a board cell
+     - If the value is set as clue, the selected keyboard key is deactivated:
+       this helps to avoid accidentally entering the same value in another cell
+    """
     if get_keyboard_status(window):
         cell_id -= CELL_ID_OFFSET
         if cell_id not in solver_status.clues_defined:
             if window.selected_key:
-                window.clue_entered = ClueEntered(cell_id, window.selected_key,
+                window.value_entered = ValueEntered(cell_id, window.selected_key,
                                                   True if window.buttons[pygame.K_c].is_pressed() else False)
+                if window.buttons[pygame.K_c].is_pressed():
+                    window.buttons[int(window.selected_key)].set_pressed(False)
+                    window.buttons[int(window.selected_key)].draw(window.screen)
+                    window.selected_key = None
                 window.board_updated = True
             else:
                 if cell_id == window.selected_cell:

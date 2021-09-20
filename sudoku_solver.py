@@ -26,19 +26,13 @@ import graphics
 import graph_utils
 import sudoku_ocr
 import opts
-import research
-from utils import is_solved, remove_options, DeadEndException
+from utils import remove_options, DeadEndException
 
-
-RESEARCH = False
-DEBUG = True
 
 config = {}
 data = {}
-
 boards = {}
 board = []
-
 methods = []
 lone_singles = []   # TODO - most likely it is obsolete
 
@@ -63,6 +57,7 @@ def standard_techniques():
         print(f'\nDupa Jaś!')
         return True
 
+
 def next_cell_to_resolve():
     """Return index of the next_cell cell to be resolved and an iterator of possible clues.
     The next_cell cell is always selected from the set of cells with the lowest number of options,
@@ -86,16 +81,6 @@ def next_cell_to_resolve():
         clue_options = board[next_cell]
         if config["guess"] and data["current_loop"] > -1:
             clue_options = data["solved_board"][next_cell]
-
-    if RESEARCH:
-        research.collect_stats(
-            data,
-            "init_run",
-            board=board,
-            next_cell=next_cell,
-            clue_options=clue_options,
-            neighbours=solver_methods.ALL_NBRS,     # TODO - remove it??
-        )
     return next_cell, clue_options
 
 
@@ -119,6 +104,7 @@ def apply_brute_force():
     window = data["graph_display"]
     for value in iter_stack[-1]:
         data["iter_counter"] += 1
+        solver_status.iteration = data["iter_counter"]
         _restore_board()
         solver_status.restore(solver_status_stack[-1])
 
@@ -140,8 +126,6 @@ def apply_brute_force():
             iter_stack.pop()
             board_image_stack.pop()
             solver_status_stack.pop()
-            if RESEARCH:
-                research.collect_stats(data, "run_end")
             return True
 
     iter_stack.pop()
@@ -281,7 +265,8 @@ def _solve_sudoku_puzzle():
 
 
 def _read_boards():
-
+    """ TODO
+    """
     if config["fname"]:
         board_id = 0
         with open(config["fname"]) as lines:
@@ -394,9 +379,6 @@ def main():
     display.total_execution_time(config, int(math.ceil(time.time() - start_time)))
     if config["output_opts"]["plot_paths_stats"]:
         display.plot_paths_stats(config, data)
-        if RESEARCH:
-            display.plot_sel_stats_1(data)
-            display.plot_sel_stats_2(data)
 
     if config["method_stats"]:
         display.methods_statistics(config, data, zip(solver_tools, functions))

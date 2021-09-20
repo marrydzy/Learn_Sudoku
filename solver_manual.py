@@ -27,7 +27,7 @@ solver_status_stack = []
 
 Strategy = namedtuple("Strategy", ["solver", "technique", "name", "priority", "difficulty_rate", "active"])
 Priority = namedtuple("Priority", ["by_ranking", "by_hits", "by_effectiveness", "by_efficiency"])
-ClueEntered = namedtuple("ClueEntered", ["cell", "value", "as_clue"])
+ValueEntered = namedtuple("ValueEntered", ["cell", "value", "as_clue"])
 
 
 solver_strategies = {
@@ -179,6 +179,7 @@ class SolverStatus:
     status prior to applying a method """
     def __init__(self):
         self.options_set = False
+        self.iteration = 0
         self.clues_defined = set()
         self.clues_found = set()
         self.naked_singles = set()
@@ -198,7 +199,8 @@ class SolverStatus:
             self.naked_singles_baseline = self.naked_singles.copy()
             self.clues_found_baseline = self.clues_found.copy()
             self.options_visible_baseline = window.options_visible.copy()
-            window.buttons[K_b].set_status(True)
+            if not window.animate:
+                window.buttons[K_b].set_status(True)
 
     def restore_baseline(self, board, window):
         for cell_id in range(81):
@@ -236,7 +238,7 @@ solver_status = SolverStatus()
 
 def _the_same_as_clue_found(board, window, options_set):
     """ Entered key is the same as clicked cell value """
-    cell_id, value, as_clue = window.clue_entered
+    cell_id, value, as_clue = window.value_entered
     solver_status.clues_found.remove(cell_id)
     if as_clue:
         if options_set:
@@ -252,7 +254,7 @@ def _the_same_as_clue_found(board, window, options_set):
 
 def _other_than_clue_found(board, window, options_set):
     """ Entered key other than clicked cell value """
-    cell_id, value, as_clue = window.clue_entered
+    cell_id, value, as_clue = window.value_entered
     if cell_id in solver_status.naked_singles:
         solver_status.naked_singles.remove(cell_id)
     board[cell_id] = value
@@ -268,7 +270,7 @@ def _other_than_clue_found(board, window, options_set):
 
 def _as_clue_and_undefined(board, window, options_set):
     """ Entering clue in undefined cell """
-    cell_id, value, as_clue = window.clue_entered
+    cell_id, value, as_clue = window.value_entered
     if cell_id in window.options_visible:
         window.options_visible.remove(cell_id)
     if cell_id in solver_status.naked_singles:
@@ -281,7 +283,7 @@ def _as_clue_and_undefined(board, window, options_set):
 
 def _as_opt_and_undefined(board, window):
     """ Entering an option in undefined cell """
-    cell_id, value, as_clue = window.clue_entered
+    cell_id, value, as_clue = window.value_entered
     if cell_id in window.options_visible or window.show_all_pencil_marks:
         if cell_id in solver_status.naked_singles:
             solver_status.naked_singles.remove(cell_id)
@@ -326,11 +328,14 @@ def _check_board_integrity(board, window):
 
 
 def _set_manually(board, window):
-    """ Interactively take entered values """
+    """ Set entered value as cell candidate or clue
+     - Integrity of the board is checked with the new entered value
+     - Also, the board is checked if the puzzle has been solved with the last move
+     """
     kwargs = {}
-    if window and window.clue_entered.cell is not None:
+    if window and window.value_entered.cell is not None:
         solver_status.capture_baseline(board, window)
-        cell_id, value, as_clue = window.clue_entered
+        cell_id, value, as_clue = window.value_entered
         if cell_id in solver_status.clues_found:
             if board[cell_id] == value:
                 _the_same_as_clue_found(board, window, solver_status.options_set)
@@ -341,10 +346,11 @@ def _set_manually(board, window):
                 _as_clue_and_undefined(board, window, solver_status.options_set)
             else:
                 _as_opt_and_undefined(board, window)
+
         conflicted_cells, incorrect_values = _check_board_integrity(board, window)
-        conflicted = {window.clue_entered.cell, } if window.clue_entered.cell in conflicted_cells else set()
-        c_chain = {cell: () for cell in conflicted_cells if cell != window.clue_entered.cell}
-        window.clue_entered = ClueEntered(None, None, None)
+        conflicted = {window.value_entered.cell, } if window.value_entered.cell in conflicted_cells else set()
+        c_chain = {cell: () for cell in conflicted_cells if cell != window.value_entered.cell}
+        window.value_entered = ValueEntered(None, None, None)
         kwargs = {"solver_tool": "manual_entry",
                   "incorrect_values": incorrect_values,
                   "conflicted_cells": conflicted,
@@ -401,8 +407,9 @@ def manual_solver(board, window, count_strategies_failures):
                     if window:
                         if window.suggest_technique:
                             solver_status.restore_baseline(board, window)
-                        conflicted_cells, incorrect_values = _check_board_integrity(board, window)  # TODO: !!!
-                        window.critical_error = conflicted_cells
+                        if not window.critical_error:
+                            conflicted_cells, incorrect_values = _check_board_integrity(board, window)  # TODO: !!!
+                            window.critical_error = conflicted_cells
                     break
         else:
             if not is_solved(board, solver_status):        # TODO: for debugging only!
