@@ -2,6 +2,11 @@
 
 """ SOLVER CONFIGURATOR """
 
+# TODO:
+#  - 'repeat' option should be available only in textual mode
+#  - 'puzzles_list' option should be available only in textual mode
+#  - 'video ocr' should be available only in graphical mode
+
 import sys
 import os
 from pathlib import Path
