@@ -147,12 +147,12 @@ class AppWindow:
 
         assert solver_tool is not None
 
-        black_digits = self.solver_status.clues_defined.copy()
-        if not self.critical_error:
-            black_digits.add(active_clue)
+        black_digits = self.solver_status.clues_defined
+        if not self.critical_error and active_clue:
+            black_digits = black_digits.union({active_clue, })
         red_digits = conflicted_cells.union(incorrect_values.intersection(self.solver_status.clues_found))
         if self.critical_error:
-            red_digits = red_digits.union(self.critical_error)
+            red_digits = red_digits.union({cell for cell in self.critical_error if cell not in black_digits})
         teal_digits = {cell for cell in self.solver_status.clues_found if len(board[cell]) == 1}
 
         for row_id in range(9):

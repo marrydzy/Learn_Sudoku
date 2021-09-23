@@ -13,6 +13,7 @@ screen_messages = {
     None: "",
     "plain_board": " ",
     "manual_entry": " ",
+    "plain_board_file_info": "",
     "conflict": "Conflicting value",
     "full_house": "'Full House' technique",
     "visual_elimination": "'Visual Elimination' technique",
@@ -156,6 +157,9 @@ def puzzle_id(config, data):
 
 def sudoku_board(config, data, board, in_iterations=False):
     """ Show the sudoku board - print it or write to the log file """
+    if config["graphical_mode"]:        # TODO: clean it up!!!
+        return
+
     displ_board = bool(
         config["output_opts"]["board_start"]
         and not config["is_solved"]

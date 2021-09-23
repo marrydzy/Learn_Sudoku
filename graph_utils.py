@@ -1,4 +1,5 @@
 import time
+import os
 import sys
 import pygame
 
@@ -589,6 +590,7 @@ def animate_btn_clicked(window, *args, **kwargs):
     window.wait = False
     window.board_updated = True
 
+
 def reset_btn_clicked(window, _, board, *args, **kwargs):
     """ action on clicking 'Reset' button """
     solver_status.reset(board)
@@ -622,7 +624,7 @@ def toggle_pencil_marks_btn_clicked(window, _, board, *args, **kwargs):
 
 
 def quit_btn_clicked(window, *args, **kwargs):
-    """ action on clicking 'Quit' button - TODO: add the button  """
+    """ action on clicking 'Quit' button  """
     window.wait = False
     pygame.quit()
     sys.exit()
@@ -851,6 +853,7 @@ def set_methods():
             "scrub_pencil_marks": "c",
             "iterate": "z",
             "plain_board": "b",
+            "plain_board_file_info": "b",
             "manual_entry": "0",
             "xyz_wing": "1",
             "remote_pairs": "2",

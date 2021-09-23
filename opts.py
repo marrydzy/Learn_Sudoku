@@ -59,6 +59,7 @@ def _set_data_defaults(data):
     data["all_paths"] = {}  # all solver runs paths database
     data["iterations"] = []  # iterations per loop stats
     data["res_times"] = []  # resolution time per loop stats
+    data["critical_error"] = False  # critical error flag
     data["failures"] = 0  # total number of failures
     data["trials"] = []  # unsuccessful/successful trials to set a cell
     data["stat_iterations"] = []  # values of the number of iterations

@@ -2,13 +2,14 @@
 
 """ SUDOKU SOLVING METHODS """
 
-from pygame import K_b
+from sys import exit
+from pygame import K_b, quit
 from collections import defaultdict, namedtuple, OrderedDict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX
-from utils import ALL_NBRS
 from utils import is_clue, is_solved, set_cell_options, set_neighbours_options
-from utils import get_stats
+from display import screen_messages
+
 
 import singles
 import intersections
@@ -324,7 +325,8 @@ def _check_board_integrity(board, window):
                               union(_check_house(CELLS_IN_BOX[i]))
     incorrect_values = {cell for cell in range(81) if cell in solver_status.clues_found and
                         board[cell] != window.solved_board[cell]} if window and window.solved_board else set()
-    return conflicted_cells, incorrect_values
+    no_candidates = {cell for cell in range(81) if not board[cell]}
+    return conflicted_cells, incorrect_values, no_candidates
 
 
 def _set_manually(board, window):
@@ -347,7 +349,7 @@ def _set_manually(board, window):
             else:
                 _as_opt_and_undefined(board, window)
 
-        conflicted_cells, incorrect_values = _check_board_integrity(board, window)
+        conflicted_cells, incorrect_values, _ = _check_board_integrity(board, window)
         conflicted = {window.value_entered.cell, } if window.value_entered.cell in conflicted_cells else set()
         c_chain = {cell: () for cell in conflicted_cells if cell != window.value_entered.cell}
         window.value_entered = ValueEntered(None, None, None)
@@ -374,8 +376,7 @@ def _clear_stacks(board):
 strategies_failure_counter = 0     # TODO - for debugging/testing only!
 
 
-@get_stats
-def manual_solver(board, window, count_strategies_failures):
+def manual_solver(board, window, data, count_strategies_failures):
     """ Main solver loop:
      - The algorithm draws current board and waits until a predefined event happens
      - Each 'technique' function returns kwargs dictionary if the board is updated, empty dictionary otherwise
@@ -383,7 +384,7 @@ def manual_solver(board, window, count_strategies_failures):
 
     global strategies_failure_counter  # TODO - for debugging/testing only!
 
-    kwargs = {"solver_tool": "plain_board"}
+    kwargs = {"solver_tool": "plain_board_file_info"}
     while True:
         if window:
             _clear_stacks(board)
@@ -408,13 +409,21 @@ def manual_solver(board, window, count_strategies_failures):
                         if window.suggest_technique:
                             solver_status.restore_baseline(board, window)
                         if not window.critical_error:
-                            conflicted_cells, incorrect_values = _check_board_integrity(board, window)  # TODO: !!!
+                            conflicted_cells, _, no_candidates = _check_board_integrity(board, window)  # TODO: !!!
                             window.critical_error = conflicted_cells
+                    # print('Dupa_4')
                     break
         else:
+            if data["critical_error"]:
+                print(f'\n{data["critical_error"] = }')
             if not is_solved(board, solver_status):        # TODO: for debugging only!
                 if count_strategies_failures:
                     strategies_failure_counter += 1
                     # print(f"\n{strategies_failure_counter = }")
             return False
+        if window and (window.critical_error or no_candidates) and data["current_loop"] == -1:
+            print(f'\n{screen_messages["critical_error"]}\n')
+            quit()
+            exit()
+
     return True

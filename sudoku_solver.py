@@ -2,7 +2,16 @@
 
 """ SUDOKU SOLVER
 
-TO-DO:
+    GLOBAL FUNCTIONS:
+        main() - main pipeline of solving sudoku puzzles
+
+    LOCAL FUNCTIONS:
+        _reset_solver_runs_data() - reset a sudoku solver runs data
+        _solve_sudoku_puzzle() - solves a sudoku puzzle and outputs results according to command line options
+
+
+TODO:
+    - video_ocr() needs to properly handle failures of _run_solver()
     - to clean displaying multiple sudoku definition file (right now there is no information
       when displaying results in-line (verbose = 1) and redundant information when displaying
       detailed results (verbose > 1)
@@ -21,11 +30,12 @@ from progress.bar import Bar
 from solver_manual import manual_solver, get_prioritized_strategies
 from solver_manual import solver_status, board_image_stack, iter_stack, solver_status_stack
 
+from opts import set_solver_options, set_output_options
+from graph_utils import quit_btn_clicked
+
 import display
 import graphics
-import graph_utils
 import sudoku_ocr
-import opts
 from utils import remove_options, DeadEndException
 
 
@@ -34,32 +44,39 @@ data = {}
 boards = {}
 board = []
 methods = []
-lone_singles = []   # TODO - most likely it is obsolete
 
 
-def apply_standard_techniques():
+def _try_standard_techniques():
+    """ This version of calling manual_solver() is used when
+    failure of the function is expected i.e. when checking
+    which candidate makes clue) within  apply_brute_force() method
+     - than the exception  is 'translated' into False return value
     """
-    TODO
-    """
-
     try:
-        manual_solver(board, data["graph_display"], False)
+        manual_solver(board, data["graph_display"], data, False)
         return True
     except DeadEndException:
         return False
 
 
-def standard_techniques():
-    """ TODO """
+def _apply_standard_techniques():
+    """ This version of calling manual_solver() is used when
+    'critical error' type failure of manual solver methods is
+    unexpected
+     - then the exception causes rising data["critical_error"] flag but
+     the return value is True to avoid calling brute force method
+    """
     try:
-        return manual_solver(board, data["graph_display"], True)
+        return manual_solver(board, data["graph_display"], data, True)
     except DeadEndException:
-        print(f'\nDupa Jaś!')
+        data["critical_error"] = True
+        if data["current_loop"] != -1:
+            data["failures"] += 1
         return True
 
 
-def next_cell_to_resolve():
-    """Return index of the next_cell cell to be resolved and an iterator of possible clues.
+def _next_cell_to_resolve():
+    """ Return index of the next_cell cell to be resolved and an iterator of possible clues.
     The next_cell cell is always selected from the set of cells with the lowest number of options,
     either randomly or based on statistics of already set values.
     """
@@ -84,13 +101,13 @@ def next_cell_to_resolve():
     return next_cell, clue_options
 
 
-def apply_brute_force():
+def _apply_brute_force():
     """ try to resolve the sudoku puzzle by guessing value of an empty cell and then
     calling stack of standard techniques
     The sequence is repeated recursively until the puzzle is solved
     """
 
-    next_cell, clue_iterator = next_cell_to_resolve()
+    next_cell, clue_iterator = _next_cell_to_resolve()
     if next_cell is None:
         return True
 
@@ -122,7 +139,7 @@ def apply_brute_force():
         if window:
             window.draw_board(board, solver_tool="iterate", remove=to_remove, c_chain={next_cell: {(value, 'lime')}})
 
-        if apply_standard_techniques() and apply_brute_force():
+        if _try_standard_techniques() and _apply_brute_force():
             iter_stack.pop()
             board_image_stack.pop()
             solver_status_stack.pop()
@@ -135,73 +152,18 @@ def apply_brute_force():
     return False
 
 
-def init_cells_options():
-    """ Compile initial set of 'lone_singles' and initialize options of all empty cells """
-    for cell_id in range(81):
-        if board[cell_id] != ".":
-            lone_singles.append(cell_id)
-    cells_to_resolve = set(range(81)).difference(lone_singles)
-    for cell_id in cells_to_resolve:
-        board[cell_id] = "123456789"
-    if data["graph_display"]:
-        solver_status.capture_baseline(board, data["graph_display"])
-
-
-def init_board():
-    """ Initialize the sudoku board by reading the puzzle definition from the file """
-    board.clear()
-    for cell_id in range(81):
-        board.append(boards[data["current_sudoku"] - 1][cell_id])
-    if config['graphical_mode']:
-        data["graph_display"] = graphics.AppWindow(board, solver_status, config["peep"])
-        if config['fname']:
-            graph_utils.display_info(data["graph_display"], os.path.abspath(config['fname']))
+def _init_board():
+    """ Initialize the current sudoku puzle board """
     board_image_stack.clear()
     iter_stack.clear()
-
-
-def run_solver(progress_bar=None):
-    """Initialize the current sudoku board and resolve the puzzle.
-    Return: True if the sudoku puzzle was solved, False otherwise
-    """
-    start_time = time.time()            # TODO
-    init_board()
-    solver_status.initialize(board)
-    data["iter_counter"] = 0
-    config["is_solved"] = False
-    display.puzzle_filename(config, data)
-    display.sudoku_board(config, data, board)
-    if progress_bar:
-        if data["current_loop"] >= 0:
-            if data["current_loop"] == 0:
-                print()
-            progress_bar.next()
-        if data["current_loop"] == config["repeat"] - 1:
-            progress_bar.finish()
-
-    window = data["graph_display"]
-    if window:
-        window.solver_loop = data["current_loop"]
-        if window.solved_board is None and "solved_board" in data:
-            window.solved_board = data["solved_board"]
-
-    ret_code = standard_techniques()
-    if not ret_code:
-        ret_code = apply_brute_force()
-
-    # TODO: the code below is executed only in non-graphical mode!
-    data["resolution_time"] = time.time() - start_time
-    if window:
-        data["resolution_time"] -= window.time_in
-
-    if data["current_loop"] == 0:
-        data["tot_solution_time"] += data["resolution_time"]
-        data["tot_iterations"] += data["iter_counter"]
-        data["iterated"] += 1 if data["iter_counter"] > 0 else 0
-        data["max_iterations"] = max(data["max_iterations"], data["iter_counter"])
-    config["is_solved"] = ret_code
-    display.sudoku_board(config, data, board)
-    return ret_code
+    board.clear()
+    for cell in range(81):
+        board.append(boards[data["current_sudoku"] - 1][cell])
+    if config['graphical_mode']:
+        data["graph_display"].options_visible.clear()
+        data["graph_display"].critical_error = None
+        if config['fname']:
+            display.screen_messages["plain_board_file_info"] = os.path.abspath(config["fname"])
 
 
 def _update_shortes_path_data():
@@ -222,46 +184,6 @@ def _update_all_paths_data():
             data["all_paths"][data["iter_counter"]].append(item)
     else:
         data["all_paths"][data["iter_counter"]] = data["current_path"].copy()
-
-
-def _solve_sudoku_puzzle():
-    """ solve a sudoku puzzle and output results according to command line options """
-    loop_start = -1 if config["guess"] else 0
-    # solver_status.initialize(board)
-    if config["repeat"] == 1:
-        for data["current_loop"] in range(loop_start, 1):
-            ret = run_solver()
-            # data["graph_display"].solved_board = 666
-            if data["current_loop"] == -1:
-                data["solved_board"] = board.copy()
-        display.results(config, data, ret)
-        return ret
-
-    data["iterations"].clear()
-    data["res_times"].clear()
-    data["min_iters"] = sys.maxsize
-    data["failures"] = 0
-    data["all_paths"].clear()
-    data["shortest_paths"].clear()
-    progress_bar = None
-    if not config["puzzles_list"]:
-        progress_bar = Bar("Run", max=config["repeat"])
-        print("\r          ", end="")  # to mask the initial 'Run' title
-    for data["current_loop"] in range(loop_start, config["repeat"]):
-        data["current_path"].clear()
-        data["iter_counter"] = 0
-        if not run_solver(progress_bar):
-            data["failures"] += 1
-        if data["current_loop"] == -1:
-            data["solved_board"] = board.copy()
-        else:
-            data["iterations"].append(data["iter_counter"])
-            data["res_times"].append(data["resolution_time"])
-            if config["stats"]:
-                _update_shortes_path_data()
-                _update_all_paths_data()
-    display.solver_statistics(config, data)
-    return True  # DEBUG
 
 
 def _read_boards():
@@ -288,7 +210,7 @@ def _read_boards():
             sys.exit(0)
         if config["last_id"] - config["first_id"] > 0:
             config["puzzles_list"] = True
-    opts.set_output_options(config)
+    set_output_options(config)
 
 
 def _run_in_silence():
@@ -305,16 +227,8 @@ def _run_in_silence():
         print("\nDone with some failures!")
 
 
-def _set_tools():
-    """ TODO - refactor it !"""
-    methods_names = []
-    methods_functions = []
-    strategies = get_prioritized_strategies()
-    for _, strategy in strategies.items():
-        if strategy.active:
-            methods_names.append(strategy.name)
-            methods_functions.append(strategy.solver)
-    return methods_names, methods_functions
+def _get_methods():
+    return [(strategy.name, strategy.solver) for strategy in get_prioritized_strategies().values() if strategy.active]
 
 
 def _video_ocr():
@@ -323,7 +237,7 @@ def _video_ocr():
     config["ocr"] = True
     while True:
         boards[0] = ocr_engine.sudoku_ocr()
-        init_board()
+        _init_board()
         if _solve_sudoku_puzzle():
             break
         ocr_engine.image = None
@@ -331,34 +245,39 @@ def _video_ocr():
     ocr_engine.show_contour()
     ocr_engine.close()
     config["ocr"] = False
-    init_board()
+    _init_board()
     data["graph_display"] = graphics.AppWindow(board, solver_status, config["peep"])  # TODO
-    _solve_sudoku_puzzle()
+    _solve_sudoku_puzzle()      # TODO: is it needed?
 
 
 def _picture_ocr():
     ocr_engine = sudoku_ocr.SudokuOCR(img_fname=config["image"])
     boards[0] = ocr_engine.sudoku_ocr()
     ocr_engine.show_contour(10)
-    init_board()
+    _init_board()
     if config['graphical_mode']:
-        data["graph_display"] = graphics.AppWindow(board, solver_status, config["peep"])
+        data["graph_display"] = graphics.AppWindow(board, solver_status, config["peep"]) # TODO
         # data["graph_display"].display_info(os.path.abspath(config['image']))
     _solve_sudoku_puzzle()
 
 
+""" -----------------------------------------------------------------------------------------------"""
+
+
 def main():
-    """ main pipeline of solving sudoku puzzle:
+    """ main pipeline of solving sudoku puzzles:
         - parse command line arguments, set solver options and tools
-        - read input board(s) or OCR sudoku pictures
+        - read input board(s) or OCR sudoku picture
         - run solver for each puzzle (as specified)
         - print summary results
     """
 
     start_time = time.time()
-    opts.set_solver_options(config, data)
-    solver_tools, functions = _set_tools()
+    set_solver_options(config, data)    # set solver data & configuration parameters
     _read_boards()
+    if config['graphical_mode']:
+        data["graph_display"] = graphics.AppWindow(board, solver_status, config["peep"])
+
     if boards:
         if not config["puzzles_list"]:
             data["current_sudoku"] = config["first_id"]
@@ -369,7 +288,7 @@ def main():
             else:
                 for data["current_sudoku"] in range(config["first_id"], config["last_id"] + 1):
                     if not config["output_opts"]["results_in_line"]:
-                        display.puzzle_id(config, data)     # TODO
+                        display.puzzle_id(config, data)
                     _solve_sudoku_puzzle()
     elif config["image"]:
         _picture_ocr()
@@ -379,10 +298,108 @@ def main():
     display.total_execution_time(config, int(math.ceil(time.time() - start_time)))
     if config["output_opts"]["plot_paths_stats"]:
         display.plot_paths_stats(config, data)
-
     if config["method_stats"]:
-        display.methods_statistics(config, data, zip(solver_tools, functions))
+        display.methods_statistics(config, data, _get_methods())
     print()
+
+
+def _solve_sudoku_puzzle():
+    """ solves a sudoku puzzle and outputs results according to command line options """
+    loop_start = -1 if config["guess"] else 0
+    ret = False
+    if config["repeat"] == 1:
+        for data["current_loop"] in range(loop_start, 1):
+            ret = _run_solver()
+            if data["critical_error"]:
+                print(f'\n{display.screen_messages["critical_error"]}\n')
+                if config['graphical_mode']:
+                    quit_btn_clicked(data["graph_display"])
+                else:
+                    sys.exit()
+            elif data["current_loop"] == -1:
+                data["solved_board"] = board.copy()
+        display.results(config, data, ret)
+        return ret
+
+    _reset_solver_runs_data()
+    progress_bar = None
+    if not config["puzzles_list"]:
+        progress_bar = Bar("Run", max=config["repeat"])
+        print("\r          ", end="")  # to mask the initial 'Run' title
+    for data["current_loop"] in range(loop_start, config["repeat"]):
+        data["current_path"].clear()
+        data["iter_counter"] = 0
+        if _run_solver(progress_bar):
+            if data["current_loop"] == -1:
+                data["solved_board"] = board.copy()
+            else:
+                data["iterations"].append(data["iter_counter"])
+                data["res_times"].append(data["resolution_time"])
+                if config["stats"]:
+                    _update_shortes_path_data()
+                    _update_all_paths_data()
+        elif data["current_loop"] != -1:
+            data["failures"] += 1
+
+    display.solver_statistics(config, data)
+    return True  # DEBUG
+
+
+def _run_solver(progress_bar=None):
+    """Initialize the current sudoku board and resolve the puzzle.
+    Return: True if the sudoku puzzle was solved, False otherwise
+    """
+    start_time = time.time()
+    _init_board()
+    solver_status.initialize(board)
+    data["iter_counter"] = 0
+    config["is_solved"] = False
+    display.puzzle_filename(config, data)
+    display.sudoku_board(config, data, board)
+    if progress_bar:
+        if data["current_loop"] >= 0:
+            if data["current_loop"] == 0:
+                print()
+            progress_bar.next()
+        if data["current_loop"] == config["repeat"] - 1:
+            progress_bar.finish()
+
+    window = data["graph_display"]
+    if window:
+        window.solver_loop = data["current_loop"]
+        if window.solved_board is None and "solved_board" in data:
+            window.solved_board = data["solved_board"]
+
+    ret_code = _apply_standard_techniques()
+    if not ret_code:
+        ret_code = _apply_brute_force()
+
+    # TODO: the code below is executed only in non-graphical mode!
+    data["resolution_time"] = time.time() - start_time
+    if window:
+        data["resolution_time"] -= window.time_in
+
+    if data["current_loop"] == 0:
+        data["tot_solution_time"] += data["resolution_time"]
+        data["tot_iterations"] += data["iter_counter"]
+        data["iterated"] += 1 if data["iter_counter"] > 0 else 0
+        data["max_iterations"] = max(data["max_iterations"], data["iter_counter"])
+    config["is_solved"] = ret_code
+    display.sudoku_board(config, data, board)
+    return ret_code
+
+
+def _reset_solver_runs_data():
+    """ reset a sudoku solver runs data
+     - used when solving the sudoku more than once to collect statistics
+     """
+    data["iterations"].clear()
+    data["res_times"].clear()
+    data["min_iters"] = sys.maxsize
+    data["critical_error"] = False
+    data["failures"] = 0
+    data["all_paths"].clear()
+    data["shortest_paths"].clear()
 
 
 if __name__ == "__main__":
