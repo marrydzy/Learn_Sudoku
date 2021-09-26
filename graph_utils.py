@@ -4,7 +4,7 @@ import sys
 import pygame
 
 from collections import defaultdict
-from solver_manual import solver_status, ValueEntered
+from solver import solver_status, ValueEntered
 
 from utils import init_options
 from utils import CELL_ROW, CELL_COL
@@ -122,6 +122,7 @@ class Button:
 
     def set_pressed(self, pressed):
         self.pressed = pressed
+
 
     def is_pressed(self):
         return self.pressed
@@ -570,8 +571,8 @@ def accept_btn_clicked(window, *args, **kwargs):
 def solve_btn_clicked(window, *args, **kwargs):
     """ action on pressing 'Solve' button """
     window.selected_cell = None
-    window.buttons[pygame.K_s].set_pressed(True)
-    set_btn_status(window, False, (pygame.K_c, pygame.K_p, pygame.K_a, pygame.K_h, pygame.K_n, pygame.K_b, pygame.K_m))
+    window.buttons[pygame.K_s].press_and_deactivate(window.screen)
+    set_btn_status(window, False)
     set_keyboard_status(window, False)
     window.show_solution_steps = False
     window.board_updated = True
@@ -892,6 +893,8 @@ def set_btn_status(window, active, btn_ids=None):
         btn_ids = window.buttons.keys()
     for button in btn_ids:
         window.buttons[button].set_status(active)
+        window.buttons[button].draw(window.screen)
+        pygame.display.update()
 
 
 def set_btn_state(window, pressed, btn_ids=None):
@@ -900,12 +903,16 @@ def set_btn_state(window, pressed, btn_ids=None):
         btn_ids = window.buttons.keys()
     for button in btn_ids:
         window.buttons[button].set_pressed(pressed)
+        window.buttons[button].draw(window.screen)
+        pygame.display.update()
 
 
 def set_keyboard_status(window, status):
     """ Set status (active/inactive) of all keyboard keys """
-    for id in range(1, 10):
-        window.buttons[id].set_status(status)
+    for key in range(1, 10):
+        window.buttons[key].set_status(status)
+        window.buttons[key].draw(window.screen)
+        pygame.display.update()
 
 
 def get_keyboard_status(window):

@@ -9,7 +9,7 @@ from display import screen_messages
 from html_colors import html_color_codes
 from graph_utils import ANIMATION_STEP_TIME, CELL_SIZE, LEFT_MARGIN, TOP_MARGIN, CELL_COL, CELL_ROW
 from graph_utils import GREY    # TODO - use html color definition!
-from solver_manual import ValueEntered
+from solver import ValueEntered
 
 
 KEYBOARD_DIGITS = (1, 2, 3, 4, 5, 6, 7, 8, 9)

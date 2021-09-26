@@ -28,6 +28,8 @@ TODO:
     - to clean displaying multiple sudoku definition file (right now there is no information
       when displaying results in-line (verbose = 1) and redundant information when displaying
       detailed results (verbose > 1)
+     -integrate the main data structures: data, config, boards, board, and solver_status, remove
+      redundancies and simplify interfaces between solver modules/functions
 """
 
 import copy
@@ -40,8 +42,8 @@ import math
 
 from progress.bar import Bar
 
-from solver_manual import manual_solver, get_prioritized_strategies
-from solver_manual import solver_status, board_image_stack, iter_stack, solver_status_stack
+from solver import solver_loop, get_prioritized_strategies
+from solver import solver_status, board_image_stack, iter_stack, solver_status_stack
 
 from opts import set_solver_options, set_output_options
 from graph_utils import quit_btn_clicked
@@ -212,8 +214,9 @@ def _run_solver(progress_bar=None):
     if not ret_code:
         ret_code = _apply_brute_force()
 
-    # the code below is executed only in non-graphical mode!
-    assert not window
+    # the code below is executed only when running the
+    # solver in textual mode or when calculating the
+    # reference board (option -g)
     if not data["critical_error"]:
         data["resolution_time"] = time.time() - start_time
         if data["current_loop"] == 0:
@@ -227,27 +230,27 @@ def _run_solver(progress_bar=None):
 
 
 def _apply_standard_techniques():
-    """ This version of calling manual_solver() is used when
-    'critical error' type failure of manual solver methods is
+    """ This version of calling solver_loop() is used when
+    'critical error' type failure of solver methods is
     unexpected
      - then the exception causes rising data["critical_error"] flag but
      the return value is True to avoid calling brute force method
     """
     try:
-        return manual_solver(board, data["graph_display"], data, True)
+        return solver_loop(board, data["graph_display"], data)
     except DeadEndException:
         data["critical_error"] = True
         return True
 
 
 def _try_standard_techniques():
-    """ This version of calling manual_solver() is used when
+    """ This version of calling solver_loop() is used when
     failure of the function is expected i.e. when checking
     which candidate makes clue) within  apply_brute_force() method
      - than the exception  is 'translated' into False return value
     """
     try:
-        manual_solver(board, data["graph_display"], data, False)
+        solver_loop(board, data["graph_display"], data)
         return True
     except DeadEndException:
         return False
