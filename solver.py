@@ -1,6 +1,12 @@
 # -*- coding: UTF-8 -*-
 
 """ SUDOKU SOLVER MANAGER
+    CLASS DEFINITIONS:
+        Strategy - named tuple
+        Priority - named tuple
+        ValueEntered - named tuple
+        SolverStatus - class to store data needed to recover status of the puzzle solver
+                       prior to a move
 
     GLOBAL FUNCTIONS:
         solver_manager() - manages the process (manual or automatic moves) of solving a given sudoku puzzle
@@ -45,7 +51,65 @@ Strategy = namedtuple("Strategy", ["solver", "technique", "name", "priority", "d
 Priority = namedtuple("Priority", ["by_ranking", "by_hits", "by_effectiveness", "by_efficiency"])
 ValueEntered = namedtuple("ValueEntered", ["cell", "value", "as_clue"])
 
-""" --------------------------------------------------------------------------------------------------------------- """
+
+class SolverStatus:
+    """ class to store data needed to recover status of the puzzle solver prior to a move """
+    def __init__(self):
+        self.options_set = False
+        self.iteration = 0
+        self.clues_defined = set()
+        self.clues_found = set()
+        self.naked_singles = set()
+        self.board_baseline = list()
+        self.naked_singles_baseline = set()
+        self.clues_found_baseline = set()
+        self.options_visible_baseline = set()
+
+    def initialize(self, board):
+        self.clues_defined = set(cell_id for cell_id in range(81) if board[cell_id] != ".")
+        self.reset(board)
+
+    def capture_baseline(self, board, window):
+        if window and window.show_solution_steps:
+            self.board_baseline = board.copy()
+            self.naked_singles_baseline = self.naked_singles.copy()
+            self.clues_found_baseline = self.clues_found.copy()
+            self.options_visible_baseline = window.options_visible.copy()
+            if not window.animate:
+                window.buttons[K_b].set_status(True)
+
+    def restore_baseline(self, board, window):
+        for cell_id in range(81):
+            board[cell_id] = self.board_baseline[cell_id]
+        self.naked_singles = self.naked_singles_baseline.copy()
+        self.clues_found = self.clues_found_baseline.copy()
+        window.options_visible = self.options_visible_baseline.copy()
+
+    def restore(self, solver_status_baseline):
+        self.options_set = solver_status_baseline.options_set
+        self.clues_defined = solver_status_baseline.clues_defined.copy()
+        self.clues_found = solver_status_baseline.clues_found.copy()
+        self.naked_singles = solver_status_baseline.naked_singles.copy()
+        self.board_baseline = solver_status_baseline.board_baseline.copy()
+        self.naked_singles_baseline = solver_status_baseline.naked_singles_baseline.copy()
+        self.clues_found_baseline = solver_status_baseline.clues_found_baseline.copy()
+        self.options_visible_baseline = solver_status_baseline.options_visible_baseline.copy()
+        # self.conflicted_cells = solver_status_baseline.conflicted_cells.copy()
+
+    def reset(self, board):
+        self.options_set = False
+        self.clues_found.clear()
+        self.naked_singles.clear()
+        self.naked_singles_baseline.clear()
+        self.clues_found_baseline.clear()
+        self.options_visible_baseline.clear()
+        for cell_id in range(81):
+            if cell_id not in self.clues_defined:
+                board[cell_id] = "."
+        self.board_baseline = board.copy()
+
+
+solver_status = SolverStatus()
 
 
 def solver_loop(board, window, data):
@@ -368,67 +432,3 @@ strategy_priorities = {
     "Almost Locked Candidates": Priority(320, 44, 41, 41),
     "Franken X-Wing": Priority(300, 45, 34, 34),
 }
-
-
-class SolverStatus:
-    """ class to store data needed for recovering of puzzle
-    status prior to applying a method """
-    def __init__(self):
-        self.options_set = False
-        self.iteration = 0
-        self.clues_defined = set()
-        self.clues_found = set()
-        self.naked_singles = set()
-        self.board_baseline = list()
-        self.naked_singles_baseline = set()
-        self.clues_found_baseline = set()
-        self.options_visible_baseline = set()
-        # self.conflicted_cells = set()
-
-    def initialize(self, board):
-        self.clues_defined = set(cell_id for cell_id in range(81) if board[cell_id] != ".")
-        self.reset(board)
-
-    def capture_baseline(self, board, window):
-        if window and window.show_solution_steps:
-            self.board_baseline = board.copy()
-            self.naked_singles_baseline = self.naked_singles.copy()
-            self.clues_found_baseline = self.clues_found.copy()
-            self.options_visible_baseline = window.options_visible.copy()
-            if not window.animate:
-                window.buttons[K_b].set_status(True)
-
-    def restore_baseline(self, board, window):
-        for cell_id in range(81):
-            board[cell_id] = self.board_baseline[cell_id]
-        self.naked_singles = self.naked_singles_baseline.copy()
-        self.clues_found = self.clues_found_baseline.copy()
-        window.options_visible = self.options_visible_baseline.copy()
-
-    def restore(self, solver_status_baseline):
-        self.options_set = solver_status_baseline.options_set
-        self.clues_defined = solver_status_baseline.clues_defined.copy()
-        self.clues_found = solver_status_baseline.clues_found.copy()
-        self.naked_singles = solver_status_baseline.naked_singles.copy()
-        self.board_baseline = solver_status_baseline.board_baseline.copy()
-        self.naked_singles_baseline = solver_status_baseline.naked_singles_baseline.copy()
-        self.clues_found_baseline = solver_status_baseline.clues_found_baseline.copy()
-        self.options_visible_baseline = solver_status_baseline.options_visible_baseline.copy()
-        # self.conflicted_cells = solver_status_baseline.conflicted_cells.copy()
-
-    def reset(self, board):
-        self.options_set = False
-        self.clues_found.clear()
-        self.naked_singles.clear()
-        self.naked_singles_baseline.clear()
-        self.clues_found_baseline.clear()
-        self.options_visible_baseline.clear()
-        for cell_id in range(81):
-            if cell_id not in self.clues_defined:
-                board[cell_id] = "."
-        self.board_baseline = board.copy()
-
-
-solver_status = SolverStatus()
-
-

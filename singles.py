@@ -116,6 +116,10 @@ def naked_singles(solver_status, board, window):
     Rating: 4
     """
     kwargs = {}
+    if not (window or solver_status.options_set):
+        init_options(board, solver_status)
+        naked_singles.clues += len(solver_status.naked_singles)
+
     if solver_status.options_set:
         if not solver_status.naked_singles:
             return kwargs
@@ -163,8 +167,10 @@ def hidden_singles(solver_status, board, window):
             house_options = SUDOKU_VALUES_SET - set(''.join([board[cell_id] for cell_id in house]))
         unsolved = {cell for cell in house if len(board[cell]) > 1 or board[cell] == "."}
         for option in house_options:
-            in_cells = {cell for cell in unsolved if option in board[cell] or
-                        board[cell] == "." and option in get_options(cell, board, solver_status)}
+            if solver_status.options_set:
+                in_cells = {cell for cell in unsolved if option in board[cell]}
+            else:
+                in_cells = {cell for cell in unsolved if option in get_options(cell, board, solver_status)}
             if len(in_cells) == 1:
                 solver_status.capture_baseline(board, window)
                 clue_id = in_cells.pop()
@@ -184,13 +190,11 @@ def hidden_singles(solver_status, board, window):
                 kwargs["greyed_out"] = greyed_out
                 kwargs["remove"] = to_remove
                 kwargs["house"] = {cell for cell in house if len(board[cell]) > 1}
-                hidden_singles.clues += 1
+                hidden_singles.clues += 1 + len(solver_status.naked_singles)
                 hidden_singles.options_removed += len(to_remove)
                 return True
         return False
 
-    if not window:
-        init_options(board, solver_status)
     kwargs = {}
     for idx in range(9):
         if _find_hidden_single(CELLS_IN_ROW[idx]) or \

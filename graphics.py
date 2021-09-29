@@ -50,7 +50,6 @@ class AppWindow:
         self.inspect = self.peep
 
         self.solver_status = solver_status
-        # self.wrong_values = set()
         self.options_visible = set()
         self.selected_key = None
         self.selected_cell = None
