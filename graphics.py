@@ -226,6 +226,8 @@ class AppWindow:
             graph_utils.display_info(self, screen_messages[solver_tool])
         elif self.show_wrong_values and incorrect_values:
             graph_utils.display_info(self, screen_messages["incorrect_value"])
+        elif solver_tool == "options_integrity_issue":
+            graph_utils.display_info(self, screen_messages["options_integrity_issue"])
         elif solver_tool != "plain_board":
             graph_utils.display_info(self, solver_tool_message_prefix + screen_messages[solver_tool])
         else:

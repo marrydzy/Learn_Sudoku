@@ -128,7 +128,7 @@ def naked_singles(solver_status, board, window):
             solver_status.capture_baseline(board, window)
             naked_single = solver_status.naked_singles.pop()
             clue = board[naked_single]
-            to_remove = [(clue, cell) for cell in ALL_NBRS[naked_single] if clue in board[cell]]
+            to_remove = {(clue, cell) for cell in ALL_NBRS[naked_single] if clue in board[cell]}
             remove_options(solver_status, board, to_remove, window)
             kwargs["solver_tool"] = "naked_singles"
             kwargs["new_clue"] = naked_single

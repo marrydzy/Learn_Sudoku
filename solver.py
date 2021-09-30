@@ -28,7 +28,7 @@ from pygame import K_b, quit
 from collections import defaultdict, namedtuple, OrderedDict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX
-from utils import is_clue, is_solved, set_cell_options, set_neighbours_options
+from utils import is_clue, is_solved, set_cell_options, set_neighbours_options, get_options
 from display import screen_messages
 
 
@@ -291,7 +291,7 @@ def _as_opt_and_undefined(board, window):
 
 
 def _check_board_integrity(board, window):
-    """ Check integrity of the current board:
+    """ Check integrity of the current board (defined values and clues found):
      - for each row, column and box check if two or more cells have the same value
      - if solved board is defined, check entered values (clues) if they are correct
     """
@@ -314,6 +314,18 @@ def _check_board_integrity(board, window):
     incorrect_values = {cell for cell in range(81) if cell in solver_status.clues_found and
                         board[cell] != window.solved_board[cell]} if window and window.solved_board else set()
     return conflicted_cells, incorrect_values
+
+
+def _check_candidates(board, window):
+    """ Check if visible candidates have correct values """
+    c_chain = defaultdict(set)
+    for cell in window.options_visible:
+        if len(board[cell]) > 1:
+            candidates = get_options(cell, board, solver_status)
+            if candidates != set(board[cell]):
+                for value in candidates.symmetric_difference(set(board[cell])):
+                    c_chain[cell].add((value, 'pink'))
+    return c_chain
 
 
 """ --------------------------------------------------------------------------------------------------------------- """
@@ -369,7 +381,7 @@ solver_strategies = {
     "naked_xy_chain": Strategy(coloring.naked_xy_chain, "coloring", "Naked XY Chain", 32, 310, True),
     "hidden_xy_chain": Strategy(coloring.hidden_xy_chain, "coloring", "Hidden XY Chain", 33, 310, True),
     "empty_rectangle": Strategy(intermediate_techniques.empty_rectangle, "intermediate_techniques",
-                                "Epmpty Rectangle", 34, 130, True),
+                                "Empty Rectangle", 34, 130, True),
     "sue_de_coq": Strategy(intermediate_techniques.sue_de_coq, "intermediate_techniques", "Sue de Coq technique",
                            35, 130, True),
     "als_xy": Strategy(almost_locked_set.als_xy, "almost_locked_set", "ALS-XY", 36, 320, True),
@@ -419,7 +431,7 @@ strategy_priorities = {
     "3D Medusa": Priority(320, 4, 3, 6),
     "Naked XY Chain": Priority(310, 21, 20, 17),
     "Hidden XY Chain": Priority(310, 37, 35, 35),
-    "Epmpty Rectangle": Priority(130, 38, 29, 29),
+    "Empty Rectangle": Priority(130, 38, 29, 29),
     "Sue de Coq technique": Priority(130, 39, 36, 36),
     "ALS-XY": Priority(320, 15, 22, 28),
     "ALS-XZ": Priority(300, 7, 6, 22),

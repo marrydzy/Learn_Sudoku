@@ -14,6 +14,8 @@ screen_messages = {
     "plain_board": " ",
     "manual_entry": " ",
     "plain_board_file_info": "",
+    "options_integrity_issue": "Cell(s) candidates integrity issue",
+    "options_integrity_ok": "Cells candidates: no integrity issues found",
     "conflict": "Conflicting value",
     "full_house": "'Full House' technique",
     "visual_elimination": "'Visual Elimination' technique",

@@ -6,7 +6,7 @@ import pygame
 from collections import defaultdict
 from solver import solver_status, ValueEntered
 
-from utils import init_options
+from utils import init_options, get_options
 from utils import CELL_ROW, CELL_COL
 from html_colors import html_color_codes
 
@@ -176,6 +176,8 @@ def cell_color(window, cell, **kwargs):
         color = html_color_codes["lightcoral"]
     if "chain_d" in kwargs and cell in kwargs["chain_d"]:
         color = html_color_codes["yellow"]
+    if "chain_i" in kwargs and cell in kwargs["chain_i"]:
+        color = html_color_codes["lightyellow"]
     if "impacted_cells" in kwargs and cell in kwargs["impacted_cells"]:
         color = html_color_codes["palegreen"]
     if cell == window.selected_cell or \
@@ -402,6 +404,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     chain_b = kwargs["chain_b"] if "chain_b" in kwargs else None
     chain_c = kwargs["chain_c"] if "chain_c" in kwargs else None
     chain_d = kwargs["chain_d"] if "chain_d" in kwargs else None
+    chain_i = kwargs["chain_i"] if "chain_i" in kwargs else None
 
     if iterate is not None and cell_id == iterate:
         pygame.draw.rect(
@@ -435,6 +438,14 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
+
+    if chain_i:
+        if cell_id in chain_i:
+            for value, color in chain_i[cell_id]:
+                pygame.draw.rect(window.screen, html_color_codes[color],
+                                 (pos[0] + window.option_offsets[value][0],
+                                  pos[1] + window.option_offsets[value][1],
+                                  CELL_SIZE // 3, CELL_SIZE // 3))
 
     for value in window.solver_status.board_baseline[cell_id]:
         if claims and value in new_value and cell_id in claims:
@@ -617,11 +628,31 @@ def toggle_pencil_marks_btn_clicked(window, _, board, *args, **kwargs):
     """ action on pressing 'Toggle pencil marks' button - TODO: add the button """
     if not window.buttons[pygame.K_n].is_pressed():
         window.show_all_pencil_marks = not window.show_all_pencil_marks
-        # ndow.render_board(window.input_board, solver_tool="plain_board") TODO: why displaying input_board?
         window.render_board(board, solver_tool="plain_board")
         pygame.display.update()
         window.wait = False
         window.board_updated = False
+
+
+def check_options_integrity(window, _, board, *args, **kwargs):
+    """ check integrity of (entered) candidates """
+    chain_i = defaultdict(set)
+    for cell in window.options_visible:
+        if len(board[cell]) > 1:
+            candidates = get_options(cell, board, solver_status)
+            if candidates != set(board[cell]):
+                for value in candidates.symmetric_difference(set(board[cell])):
+                    chain_i[cell].add((value, 'pink'))
+    if chain_i:
+        solver_tool = "options_integrity_issue"
+        set_btn_status(window, False, (pygame.K_h, pygame.K_n, pygame.K_s, pygame.K_b, pygame.K_m))
+    else:
+        solver_tool = "options_integrity_ok"
+        set_btn_status(window, True, (pygame.K_h, pygame.K_n, pygame.K_s, pygame.K_m))
+    window.draw_board(board, solver_tool=solver_tool, chain_i=chain_i)
+    pygame.display.update()
+    window.wait = False
+    window.board_updated = False
 
 
 def quit_btn_clicked(window, *args, **kwargs):
@@ -752,6 +783,7 @@ def set_buttons(window):
     window.actions[pygame.K_r] = reset_btn_clicked
 
     window.actions[pygame.K_o] = toggle_pencil_marks_btn_clicked  # TODO - add buttons
+    window.actions[pygame.K_i] = check_options_integrity
 
 
 def window_size():
@@ -855,6 +887,8 @@ def set_methods():
             "iterate": "z",
             "plain_board": "b",
             "plain_board_file_info": "b",
+            "options_integrity_issue": "b",
+            "options_integrity_ok": "b",
             "manual_entry": "0",
             "xyz_wing": "1",
             "remote_pairs": "2",
