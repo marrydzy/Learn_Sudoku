@@ -31,7 +31,6 @@ from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX
 from utils import is_clue, is_solved, set_cell_options, set_neighbours_options, get_options
 from display import screen_messages
 
-
 import singles
 import intersections
 import subsets

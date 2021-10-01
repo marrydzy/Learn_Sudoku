@@ -102,10 +102,10 @@ class Button:
             self.draw(screen)
             pygame.display.update()
             time.sleep(BUTTON_PRESS_TIME)
-            self.pressed = False
             if deactivate:
+                self.pressed = False
                 self.active = False
-            self.draw(screen)
+                self.draw(screen)
             pygame.display.update()
 
     def being_pressed(self, wait_to_release=False):
@@ -122,7 +122,6 @@ class Button:
 
     def set_pressed(self, pressed):
         self.pressed = pressed
-
 
     def is_pressed(self):
         return self.pressed
@@ -582,7 +581,8 @@ def accept_btn_clicked(window, *args, **kwargs):
 def solve_btn_clicked(window, *args, **kwargs):
     """ action on pressing 'Solve' button """
     window.selected_cell = None
-    window.buttons[pygame.K_s].press_and_deactivate(window.screen)
+    window.buttons[pygame.K_s].press_and_deactivate(window.screen, deactivate=False)
+    # set_btn_state(window, True, (pygame.K_s, ))
     set_btn_status(window, False)
     set_keyboard_status(window, False)
     window.show_solution_steps = False

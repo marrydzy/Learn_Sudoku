@@ -122,6 +122,7 @@ class AppWindow:
         solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else None        # TODO - fix it !!!
         wrong_entry = bool("conflicted_cells" in kwargs and kwargs["conflicted_cells"] or
                            "incorrect_values" in kwargs and kwargs["incorrect_values"])
+
         if not solver_tool:
             pass
         elif self.critical_error:
@@ -132,7 +133,7 @@ class AppWindow:
             self.sudoku_solved_event(board)
         elif not (self.show_solution_steps and self.method[kwargs["solver_tool"]] in self.inspect):
             return True
-        elif solver_tool == "plain_board":
+        elif solver_tool == "plain_board" or solver_tool == "plain_board_file_info":
             self.plain_board_event()
         return False
 
