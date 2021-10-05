@@ -11,6 +11,8 @@
     GLOBAL FUNCTIONS:
         solver_manager() - manages the process (manual or automatic moves) of solving a given sudoku puzzle
         get_prioritized_strategies() - returns prioritized list of solver strategies (methods)
+        get_strategy_name() - if strategy is in _solver_strategies then it returns the method name string
+                              otherwise it returns screen_messages[strategy]
 
     LOCAL FUNCTIONS:
         _manual_move() - depending on board state: sets or removes entered digit as cell clue or candidate
@@ -20,13 +22,12 @@
         _as_opt_and_undefined() - entering an option (candidate) in undefined cell
         _check_board_integrity() - checks integrity of the current board state
 
-    GLOBAL DATA:
-        solver_strategies - dictionary of implemented solver methods
 TODO:
+
 """
 
 from sys import exit
-from pygame import K_b, quit
+from pygame import K_b, K_h, quit
 from collections import defaultdict, namedtuple, OrderedDict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX
@@ -48,9 +49,76 @@ board_image_stack = []
 iter_stack = []
 solver_status_stack = []
 
-Strategy = namedtuple("Strategy", ["solver", "technique", "name", "priority", "difficulty_rate", "active"])
+Strategy = namedtuple("Strategy", ["solver", "technique", "name", "difficulty_rate", "active"])
 Priority = namedtuple("Priority", ["by_ranking", "by_hits", "by_effectiveness", "by_efficiency"])
 ValueEntered = namedtuple("ValueEntered", ["cell", "value", "as_clue"])
+
+_solver_strategies = {
+    "full_house": Strategy(singles.full_house, "singles", "Full House", 4, True),
+    "visual_elimination": Strategy(singles.visual_elimination, "singles", "Visual Elimination", 4, True),
+    "naked_single": Strategy(singles.naked_single, "singles", "Naked Single", 4, True),
+    "hidden_single": Strategy(singles.hidden_single, "singles", "Hidden Single", 14, True),
+    "locked_candidates": Strategy(intersections.locked_candidates, "intersections", "Locked Candidates", 50, True),
+    "locked_candidates_type_1": Strategy(None, "", "Locked Candidates - Type 1 (Pointing)", 0, False),
+    "locked_candidates_type_2": Strategy(None, "", "Locked Candidates - Type 2 (Claiming)", 0, False),
+    "naked_pair": Strategy(subsets.naked_pair, "subsets", "Naked Pair", 60, True),
+    "hidden_pair": Strategy(subsets.hidden_pair, "subsets", "Hidden Pair", 70, True),
+    "swordfish": Strategy(fish.swordfish, "fish", "Swordfish", 140, True),
+    "xy_wing": Strategy(wings.xy_wing, "wings", "XY-Wing", 160, True),
+    "xyz_wing": Strategy(wings.xyz_wing, "wings", "XYZ-Wing", 180, True),
+    "wxyz_wing": Strategy(wings.wxyz_wing, "wings", "WXYZ-Wing", 240, True),
+    "wxyz_wing_type_1": Strategy(None, "", "WXYZ-Wing (Type 1)", 0, False),
+    "wxyz_wing_type_2": Strategy(None, "", "WXYZ-Wing (Type 2)", 0, False),
+    "wxyz_wing_type_3": Strategy(None, "", "WXYZ-Wing (Type 3)", 0, False),
+    "wxyz_wing_type_4": Strategy(None, "", "WXYZ-Wing (Type 4)", 0, False),
+    "wxyz_wing_type_5": Strategy(None, "", "WXYZ-Wing (Type 5)", 0, False),
+    "w_wing": Strategy(wings.w_wing, "wings", "W-Wing", 150, True),
+    "naked_triplet": Strategy(subsets.naked_triplet, "subsets", "Naked Triplet", 80, True),
+    "test_1": Strategy(uniqueness_tests.test_1, "uniqueness_tests", "Uniqueness Test 1", 100, True),
+    "test_2": Strategy(uniqueness_tests.test_2, "uniqueness_tests", "Uniqueness Test 2", 100, True),
+    "test_3": Strategy(uniqueness_tests.test_3, "uniqueness_tests", "Uniqueness Test 3", 100, True),
+    "test_4": Strategy(uniqueness_tests.test_4, "uniqueness_tests", "Uniqueness Test 4", 100, True),
+    "test_5": Strategy(uniqueness_tests.test_5, "uniqueness_tests", "Uniqueness Test 5", 100, True),
+    "test_6": Strategy(uniqueness_tests.test_6, "uniqueness_tests", "Uniqueness Test 6", 100, True),
+    "skyscraper": Strategy(intermediate_techniques.skyscraper, "Single Digit Patterns", "Skyscraper", 130, True),
+    "x_wing": Strategy(fish.x_wing, "fish", "X-Wing", 100, True),
+    "jellyfish": Strategy(fish.jellyfish, "fish", "Jellyfish", 470, True),
+    "finned_x_wing": Strategy(fish.finned_x_wing, "fish", "Finned X-Wing", 130, True),
+    "finned_swordfish": Strategy(fish.finned_swordfish, "fish", "Finned Swordfish", 200, True),
+    "finned_jellyfish": Strategy(fish.finned_jellyfish, "fish", "Finned Jellyfish", 240, True),
+    "finned_squirmbag": Strategy(fish.finned_squirmbag, "fish", "Finned Squirmbag", 470, True),
+    "finned_mutant_x_wing": Strategy(wings.finned_mutant_x_wing, "wings", "Finned Mutant X-Wing", 470, True),
+    "finned_rccb_mutant_x_wing": Strategy(None, "", "Finned RCCB Mutant X-Wing", 0, False),
+    "finned_rbcc_mutant_x_wing": Strategy(None, "", "Finned RBCC Mutant X-Wing", 0, False),
+    "finned_cbrc_mutant_x_wing": Strategy(None, "", "Finned CBRC Mutant X-Wing", 0, False),
+    "simple_colors": Strategy(coloring.simple_colors, "coloring", "Simple Colors", 150, True),
+    "color_trap": Strategy(None, "", "Simple Colors - Color Trap", 0, False),
+    "color_wrap": Strategy(None, "", "Simple Colors - Color Wrap", 0, False),
+    "multi_colors": Strategy(coloring.multi_colors, "coloring", "Multi-Colors", 200, True),
+    "multi_colors-color_wrap": Strategy(None, "", "Multi-Colors - Color Wrap", 0, False),
+    "multi_colors-color_wing": Strategy(None, "", "Multi-Colors - Color Wing", 0, False),
+    "x_colors": Strategy(coloring.x_colors, "coloring", "X-Colors", 200, True),
+    "x_colors_elimination": Strategy(None, "", "X-Colors - Elimination", 0, False),
+    "x_colors_contradiction": Strategy(None, "", "X-Colors - Contradiction", 0, False),
+    "three_d_medusa": Strategy(coloring.three_d_medusa, "coloring", "3D Medusa", 320, True),
+    "naked_xy_chain": Strategy(coloring.naked_xy_chain, "coloring", "Naked XY Chain", 310, True),
+    "hidden_xy_chain": Strategy(coloring.hidden_xy_chain, "coloring", "Hidden XY Chain", 310, True),
+    "empty_rectangle": Strategy(intermediate_techniques.empty_rectangle, "intermediate_techniques",
+                                "Empty Rectangle", 130, True),
+    "sue_de_coq": Strategy(intermediate_techniques.sue_de_coq, "intermediate_techniques", "Sue de Coq technique",
+                           130, True),
+    "als_xy": Strategy(almost_locked_set.als_xy, "almost_locked_set", "ALS-XY", 320, True),
+    "als_xz": Strategy(almost_locked_set.als_xz, "almost_locked_set", "ALS-XZ", 300, True),
+    "death_blossom": Strategy(almost_locked_set.death_blossom, "almost_locked_set", "Death Blossom", 360, True),
+    "als_xy_wing": Strategy(almost_locked_set.als_xy_wing, "almost_locked_set", "ALS-XY-Wing", 330, True),
+    "hidden_triplet": Strategy(subsets.hidden_triplet, "subsets", "Hidden Triplet", 100, True),
+    "squirmbag": Strategy(fish.squirmbag, "fish", "Squirmbag", 470, True),
+    "naked_quad": Strategy(subsets.naked_quad, "subsets", "Naked Quad", 120, True),
+    "hidden_quad": Strategy(subsets.hidden_quad, "subsets", "Hidden Quad", 150, True),
+    "almost_locked_candidates": Strategy(questionable.almost_locked_candidates, "questionable",
+                                         "Almost Locked Candidates", 320, True),
+    "franken_x_wing": Strategy(questionable.franken_x_wing, "questionable", "Franken X-Wing", 300, True),
+}
 
 
 class SolverStatus:
@@ -171,75 +239,6 @@ def get_prioritized_strategies():
     # priorities = "by_efficiency"          # 13-09-2021: 289 00:21:16
     priorities = "default"                  # 24-09-2021: 288 00:14:59
 
-    solver_strategies = {
-        "full_house": Strategy(singles.full_house, "singles", "Full House", 1, 4, True),
-        "visual_elimination": Strategy(singles.visual_elimination, "singles", "Visual Elimination", 2, 4, True),
-        "naked_singles": Strategy(singles.naked_singles, "singles", "Naked Single", 3, 4, True),
-        "hidden_singles": Strategy(singles.hidden_singles, "singles", "Hidden Single", 4, 14, True),
-        "locked_candidates": Strategy(intersections.locked_candidates, "intersections", "Locked Candidates", 5, 50,
-                                      True),
-        "locked_candidates_type_1": Strategy(None, "", "Locked Candidates - Type 1 (Pointing)", 999, 0, False),
-        "locked_candidates_type_2": Strategy(None, "", "Locked Candidates - Type 2 (Claiming)", 999, 0, False),
-        "naked_pair": Strategy(subsets.naked_pair, "subsets", "Naked Pair", 6, 60, True),
-        "hidden_pair": Strategy(subsets.hidden_pair, "subsets", "Hidden Pair", 7, 70, True),
-        "swordfish": Strategy(fish.swordfish, "fish", "Swordfish", 8, 140, True),
-        "xy_wing": Strategy(wings.xy_wing, "wings", "XY-Wing", 9, 160, True),
-        "xyz_wing": Strategy(wings.xyz_wing, "wings", "XYZ-Wing", 10, 180, True),
-        "wxyz_wing": Strategy(wings.wxyz_wing, "wings", "WXYZ-Wing", 11, 240, True),
-        "wxyz_wing_type_1": Strategy(None, "", "WXYZ-Wing (Type 1)", 999, 0, False),
-        "wxyz_wing_type_2": Strategy(None, "", "WXYZ-Wing (Type 2)", 999, 0, False),
-        "wxyz_wing_type_3": Strategy(None, "", "WXYZ-Wing (Type 3)", 999, 0, False),
-        "wxyz_wing_type_4": Strategy(None, "", "WXYZ-Wing (Type 4)", 999, 0, False),
-        "wxyz_wing_type_5": Strategy(None, "", "WXYZ-Wing (Type 5)", 999, 0, False),
-        "w_wing": Strategy(wings.w_wing, "wings", "W-Wing", 12, 150, True),
-        "naked_triplet": Strategy(subsets.naked_triplet, "subsets", "Naked Triplet", 13, 80, True),
-        "test_1": Strategy(uniqueness_tests.test_1, "uniqueness_tests", "Uniqueness Test 1", 14, 100, True),
-        "test_2": Strategy(uniqueness_tests.test_2, "uniqueness_tests", "Uniqueness Test 2", 15, 100, True),
-        "test_3": Strategy(uniqueness_tests.test_3, "uniqueness_tests", "Uniqueness Test 3", 16, 100, True),
-        "test_4": Strategy(uniqueness_tests.test_4, "uniqueness_tests", "Uniqueness Test 4", 17, 100, True),
-        "test_5": Strategy(uniqueness_tests.test_5, "uniqueness_tests", "Uniqueness Test 5", 18, 100, True),
-        "test_6": Strategy(uniqueness_tests.test_6, "uniqueness_tests", "Uniqueness Test 6", 19, 100, True),
-        "skyscraper": Strategy(intermediate_techniques.skyscraper, "Single Digit Patterns", "Skyscraper", 20, 130,
-                               True),
-        "x_wing": Strategy(fish.x_wing, "fish", "X-Wing", 21, 100, True),
-        "jellyfish": Strategy(fish.jellyfish, "fish", "Jellyfish", 22, 470, True),
-        "finned_x_wing": Strategy(fish.finned_x_wing, "fish", "Finned X-Wing", 23, 130, True),
-        "finned_swordfish": Strategy(fish.finned_swordfish, "fish", "Finned Swordfish", 24, 200, True),
-        "finned_jellyfish": Strategy(fish.finned_jellyfish, "fish", "Finned Jellyfish", 25, 240, True),
-        "finned_squirmbag": Strategy(fish.finned_squirmbag, "fish", "Finned Squirmbag", 26, 470, True),
-        "finned_mutant_x_wing": Strategy(wings.finned_mutant_x_wing, "wings", "Finned Mutant X-Wing", 27, 470, True),
-        "finned_rccb_mutant_x_wing": Strategy(None, "", "Finned RCCB Mutant X-Wing", 999, 0, False),
-        "finned_rbcc_mutant_x_wing": Strategy(None, "", "Finned RBCC Mutant X-Wing", 999, 0, False),
-        "finned_cbrc_mutant_x_wing": Strategy(None, "", "Finned CBRC Mutant X-Wing", 999, 0, False),
-        "simple_colors": Strategy(coloring.simple_colors, "coloring", "Simple Colors", 28, 150, True),
-        "color_trap": Strategy(None, "", "Simple Colors - Color Trap", 999, 0, False),
-        "color_wrap": Strategy(None, "", "Simple Colors - Color Wrap", 999, 0, False),
-        "multi_colors": Strategy(coloring.multi_colors, "coloring", "Multi-Colors", 29, 200, True),
-        "multi_colors-color_wrap": Strategy(None, "", "Multi-Colors - Color Wrap", 999, 0, False),
-        "multi_colors-color_wing": Strategy(None, "", "Multi-Colors - Color Wing", 999, 0, False),
-        "x_colors": Strategy(coloring.x_colors, "coloring", "X-Colors", 30, 200, True),
-        "x_colors_elimination": Strategy(None, "", "X-Colors - Elimination", 999, 0, False),
-        "x_colors_contradiction": Strategy(None, "", "X-Colors - Contradiction", 999, 0, False),
-        "three_d_medusa": Strategy(coloring.three_d_medusa, "coloring", "3D Medusa", 31, 320, True),
-        "naked_xy_chain": Strategy(coloring.naked_xy_chain, "coloring", "Naked XY Chain", 32, 310, True),
-        "hidden_xy_chain": Strategy(coloring.hidden_xy_chain, "coloring", "Hidden XY Chain", 33, 310, True),
-        "empty_rectangle": Strategy(intermediate_techniques.empty_rectangle, "intermediate_techniques",
-                                    "Empty Rectangle", 34, 130, True),
-        "sue_de_coq": Strategy(intermediate_techniques.sue_de_coq, "intermediate_techniques", "Sue de Coq technique",
-                               35, 130, True),
-        "als_xy": Strategy(almost_locked_set.als_xy, "almost_locked_set", "ALS-XY", 36, 320, True),
-        "als_xz": Strategy(almost_locked_set.als_xz, "almost_locked_set", "ALS-XZ", 37, 300, True),
-        "death_blossom": Strategy(almost_locked_set.death_blossom, "almost_locked_set", "Death Blossom", 38, 360, True),
-        "als_xy_wing": Strategy(almost_locked_set.als_xy_wing, "almost_locked_set", "ALS-XY-Wing", 39, 330, True),
-        "hidden_triplet": Strategy(subsets.hidden_triplet, "subsets", "Hidden Triplet", 40, 100, True),
-        "squirmbag": Strategy(fish.squirmbag, "fish", "Squirmbag", 41, 470, True),
-        "naked_quad": Strategy(subsets.naked_quad, "subsets", "Naked Quad", 42, 120, True),
-        "hidden_quad": Strategy(subsets.hidden_quad, "subsets", "Hidden Quad", 43, 150, True),
-        "almost_locked_candidates": Strategy(questionable.almost_locked_candidates, "questionable",
-                                             "Almost Locked Candidates", 44, 320, True),
-        "franken_x_wing": Strategy(questionable.franken_x_wing, "questionable", "Franken X-Wing", 45, 300, True),
-    }
-
     strategy_priorities = {
         "Full House": Priority(4, 28, 45, 45),
         "Visual Elimination": Priority(4, 27, 37, 37),
@@ -289,23 +288,31 @@ def get_prioritized_strategies():
     }
 
     if priorities == "by_ranking":
-        return OrderedDict(sorted(solver_strategies.items(),
+        return OrderedDict(sorted(_solver_strategies.items(),
                                   key=lambda key_value_pair: strategy_priorities[key_value_pair[1].name].by_ranking
                                   if key_value_pair[1].name in strategy_priorities else 99999))
     elif priorities == "by_hits":
-        return OrderedDict(sorted(solver_strategies.items(),
+        return OrderedDict(sorted(_solver_strategies.items(),
                                   key=lambda key_value_pair: strategy_priorities[key_value_pair[1].name].by_hits
                                   if key_value_pair[1].name in strategy_priorities else 99999))
     elif priorities == "by_effectiveness":
-        return OrderedDict(sorted(solver_strategies.items(),
+        return OrderedDict(sorted(_solver_strategies.items(),
                                   key=lambda key_value_pair: strategy_priorities[key_value_pair[1].name].by_effectiveness
                                   if key_value_pair[1].name in strategy_priorities else 99999))
     elif priorities == "by_efficiency":
-        return OrderedDict(sorted(solver_strategies.items(),
+        return OrderedDict(sorted(_solver_strategies.items(),
                                   key=lambda key_value_pair: strategy_priorities[key_value_pair[1].name].by_efficiency
                                   if key_value_pair[1].name in strategy_priorities else 99999))
     else:
-        return solver_strategies
+        return _solver_strategies
+
+
+def get_strategy_name(strategy):
+    if strategy in _solver_strategies:
+        message = "'" + _solver_strategies[strategy].name + "' technique"
+    else:
+        message = screen_messages[strategy]
+    return message
 
 
 def _manual_move(board, window):
@@ -337,6 +344,7 @@ def _manual_move(board, window):
                   "conflicted_cells": conflicted,
                   "c_chain": c_chain,
                   }
+        window.buttons[K_h].set_status(True)
     if is_solved(board, solver_status) and window.solver_loop != -1:
         kwargs["solver_tool"] = "end_of_game"
     return kwargs

@@ -1,6 +1,14 @@
 # -*- coding: UTF-8 -*-
 
-""" SUDOKU SOLVING METHODS """
+""" 'SINGLES' CLASS OF SOLVING METHODS
+    GLOBAL FUNCTIONS:
+        full_house() - when there is a row, column or box with a single unsolved cell
+        visual_elimination() - a simple technique of finding hidden singles
+        naked_single() - when there is only one (remaining) candidate in a cell
+        hidden_single() - when there is only one single candidate remaining for a specific digit in a row, column or box
+
+TODO:
+"""
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
@@ -19,16 +27,16 @@ def full_house(solver_status, board, window):
     """
 
     def _set_missing_number(house):
-        open_cells = [cell for cell in house if not is_clue(cell, board, solver_status)]
-        if len(open_cells) == 1:
+        unsolved_cells = [cell for cell in house if not is_clue(cell, board, solver_status)]
+        if len(unsolved_cells) == 1:
             solver_status.capture_baseline(board, window)
-            cell_id = open_cells.pop()
+            cell = unsolved_cells.pop()
             missing_value = SUDOKU_VALUES_SET - set(
                 ''.join(board[cell] for cell in house if is_clue(cell, board, solver_status)))
-            board[cell_id] = missing_value.pop()
-            solver_status.clues_found.add(cell_id)
+            board[cell] = missing_value.pop()
+            solver_status.clues_found.add(cell)
             kwargs["solver_tool"] = "full_house"
-            kwargs["new_clue"] = cell_id
+            kwargs["new_clue"] = cell
             full_house.clues += 1
             return True
         return False
@@ -104,7 +112,7 @@ def visual_elimination(solver_status, board, window):
 
 
 @get_stats
-def naked_singles(solver_status, board, window):
+def naked_single(solver_status, board, window):
     """ A naked single is the last remaining candidate in a cell.
     The Naked Single is categorized as a solving technique but you can hardly
     call it a technique. The only 'real work' is done when candidates in unsolved
@@ -118,7 +126,7 @@ def naked_singles(solver_status, board, window):
     kwargs = {}
     if not (window or solver_status.options_set):
         init_options(board, solver_status)
-        naked_singles.clues += len(solver_status.naked_singles)
+        naked_single.clues += len(solver_status.naked_singles)
 
     if solver_status.options_set:
         if not solver_status.naked_singles:
@@ -126,16 +134,16 @@ def naked_singles(solver_status, board, window):
         else:
             naked_singles_in = len(solver_status.naked_singles)
             solver_status.capture_baseline(board, window)
-            naked_single = solver_status.naked_singles.pop()
-            clue = board[naked_single]
-            to_remove = {(clue, cell) for cell in ALL_NBRS[naked_single] if clue in board[cell]}
+            the_single = solver_status.naked_singles.pop()
+            clue = board[the_single]
+            to_remove = {(clue, cell) for cell in ALL_NBRS[the_single] if clue in board[cell]}
             remove_options(solver_status, board, to_remove, window)
-            kwargs["solver_tool"] = "naked_singles"
-            kwargs["new_clue"] = naked_single
+            kwargs["solver_tool"] = "naked_single"
+            kwargs["new_clue"] = the_single
             kwargs["remove"] = to_remove
-            solver_status.clues_found.add(naked_single)
-            naked_singles.options_removed += len(to_remove)
-            naked_singles.clues += len(solver_status.naked_singles) - naked_singles_in + 1
+            solver_status.clues_found.add(the_single)
+            naked_single.options_removed += len(to_remove)
+            naked_single.clues += len(solver_status.naked_singles) - naked_singles_in + 1
             return kwargs
     else:
         for cell in range(81):
@@ -144,16 +152,16 @@ def naked_singles(solver_status, board, window):
                 if len(cell_opts) == 1:
                     solver_status.capture_baseline(board, window)
                     board[cell] = cell_opts.pop()
-                    kwargs["solver_tool"] = "naked_singles"
+                    kwargs["solver_tool"] = "naked_single"
                     kwargs["new_clue"] = cell
                     solver_status.clues_found.add(cell)
-                    naked_singles.clues += 1
+                    naked_single.clues += 1
                     return kwargs
         return kwargs
 
 
 @get_stats
-def hidden_singles(solver_status, board, window):
+def hidden_single(solver_status, board, window):
     """ A Hidden Single is a single candidate remaining for a specific digit in a row, column or box.
     'Hidden Singles' technique (see: https://www.learn-sudoku.com/hidden-singles.html)
     Rating: 6 - 20
@@ -190,8 +198,8 @@ def hidden_singles(solver_status, board, window):
                 kwargs["greyed_out"] = greyed_out
                 kwargs["remove"] = to_remove
                 kwargs["house"] = {cell for cell in house if len(board[cell]) > 1}
-                hidden_singles.clues += 1 + len(solver_status.naked_singles)
-                hidden_singles.options_removed += len(to_remove)
+                hidden_single.clues += 1 + len(solver_status.naked_singles)
+                hidden_single.options_removed += len(to_remove)
                 return True
         return False
 

@@ -9,7 +9,7 @@ from display import screen_messages
 from html_colors import html_color_codes
 from graph_utils import ANIMATION_STEP_TIME, CELL_SIZE, LEFT_MARGIN, TOP_MARGIN, CELL_COL, CELL_ROW
 from graph_utils import GREY    # TODO - use html color definition!
-from solver import ValueEntered
+from solver import ValueEntered, get_strategy_name
 
 
 KEYBOARD_DIGITS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
@@ -230,7 +230,7 @@ class AppWindow:
         elif solver_tool == "options_integrity_issue":
             graph_utils.display_info(self, screen_messages["options_integrity_issue"])
         elif solver_tool != "plain_board":
-            graph_utils.display_info(self, solver_tool_message_prefix + screen_messages[solver_tool])
+            graph_utils.display_info(self, solver_tool_message_prefix + get_strategy_name(solver_tool))
         else:
             graph_utils.display_info(self, screen_messages["plain_board"])
 

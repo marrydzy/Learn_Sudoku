@@ -550,7 +550,7 @@ def next_btn_clicked(window, _, board, **kwargs):
 def hint_btn_clicked(window, _, board, **kwargs):
     """ action on pressing 'Hing' button """
     if window.buttons[pygame.K_h].is_active():
-        window.buttons[pygame.K_h].press_and_deactivate(window.screen, False)
+        window.buttons[pygame.K_h].press_and_deactivate(window.screen)
         window.suggest_technique = True
         window.calculate_next_clue = True
         window.wait = False
@@ -843,7 +843,7 @@ def set_methods():
     """ Set and return dictionary of solver methods shortcuts """
     return {"full_house": "g",
             "visual_elimination": "v",
-            "naked_singles": "n",
+            "naked_single": "n",
             "hidden_singles": "u",
             "unique_values": "u",
             "hidden_pairs": "h",    # TODO - obsolete!
