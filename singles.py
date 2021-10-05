@@ -3,7 +3,7 @@
 """ 'SINGLES' CLASS OF SOLVING METHODS
     GLOBAL FUNCTIONS:
         full_house() - when there is a row, column or box with a single unsolved cell
-        visual_elimination() - a simple technique of finding hidden singles
+        visual_elimination() - basic technique of finding hidden singles
         naked_single() - when there is only one (remaining) candidate in a cell
         hidden_single() - when there is only one single candidate remaining for a specific digit in a row, column or box
 
@@ -193,7 +193,7 @@ def hidden_single(solver_status, board, window):
                 options_visible = window.options_visible if window else set()
                 greyed_out = {cell for cell in house if not is_clue(cell, board, solver_status) and
                               cell not in options_visible}
-                kwargs["solver_tool"] = "hidden_singles"
+                kwargs["solver_tool"] = "hidden_single"
                 kwargs["new_clue"] = clue_id
                 kwargs["greyed_out"] = greyed_out
                 kwargs["remove"] = to_remove

@@ -844,7 +844,7 @@ def set_methods():
     return {"full_house": "g",
             "visual_elimination": "v",
             "naked_single": "n",
-            "hidden_singles": "u",
+            "hidden_single": "u",
             "unique_values": "u",
             "hidden_pairs": "h",    # TODO - obsolete!
             "hidden_pair": "h",
