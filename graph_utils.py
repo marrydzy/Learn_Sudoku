@@ -386,7 +386,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
 
     global chain_counter
 
-    remove = kwargs["remove"] if "remove" in kwargs else None
+    eliminate = kwargs["eliminate"] if "eliminate" in kwargs else None
     claims = kwargs["claims"] if "claims" in kwargs else None
     iterate = kwargs["iterate"] if "iterate" in kwargs else None
     xy_wing = kwargs["y_wing"] if "y_wing" in kwargs else None
@@ -498,7 +498,7 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
-        if remove and (value, cell_id) in remove:
+        if eliminate and (value, cell_id) in eliminate:
             pygame.draw.rect(window.screen, html_color_codes['darkgray'],
                              (pos[0] + window.option_offsets[value][0],
                               pos[1] + window.option_offsets[value][1],

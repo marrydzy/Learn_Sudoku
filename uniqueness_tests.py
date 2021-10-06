@@ -24,7 +24,7 @@ from collections import defaultdict
 # from copy import deepcopy
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX, ALL_NBRS
-from utils import init_options, remove_options, get_stats
+from utils import init_options, eliminate_options, get_stats
 
 
 def _get_xyz(n_z, board, bi_value, cells_a, cells_b):
@@ -101,18 +101,18 @@ def test_1(solver_status, board, window):
                     if all(bi_value[0] in board[corner] and bi_value[1] in board[corner] for corner in rectangle):
                         for corner in rectangle:
                             if len(board[corner]) > 2:
-                                to_remove = {(candidate, corner) for candidate in bi_value}
+                                to_eliminate = {(candidate, corner) for candidate in bi_value}
                                 other_candidates = set(board[corner]).difference(bi_value)
                                 c_chain = _get_c_chain(rectangle, bi_value, other_candidates)
                                 solver_status.capture_baseline(board, window)
-                                remove_options(solver_status, board, to_remove, window)
+                                eliminate_options(solver_status, board, to_eliminate, window)
                                 if window:
                                     window.options_visible = window.options_visible.union(rectangle)
                                 kwargs = {"solver_tool": "uniqueness_test_1",
                                           "c_chain": c_chain,
-                                          "remove": to_remove, }
+                                          "eliminate": to_eliminate, }
                                 test_1.clues += len(solver_status.naked_singles)
-                                test_1.options_removed += len(to_remove)
+                                test_1.options_removed += len(to_eliminate)
                                 return kwargs
     return None
 
@@ -140,25 +140,25 @@ def test_2(solver_status, board, window):
                         boxes = {floor_a[2], floor_b[2], CELL_BOX[ceiling_a], CELL_BOX[ceiling_b]}
                         if board[ceiling_a] == board[ceiling_b] and len(boxes) == 2:
                             z_candidate = board[ceiling_a].replace(bi_value[0], '').replace(bi_value[1], '')
-                            to_remove = set()
+                            to_eliminate = set()
                             for cell in set(ALL_NBRS[ceiling_a]).intersection(ALL_NBRS[ceiling_b]):
                                 if z_candidate in board[cell]:
-                                    to_remove.add((z_candidate, cell))
-                            if to_remove:
+                                    to_eliminate.add((z_candidate, cell))
+                            if to_eliminate:
                                 rows = (floor_a[0], x_id) if by_row else (floor_a[1], floor_b[1])
                                 columns = (floor_a[1], floor_b[1]) if by_row else (floor_a[0], x_id)
                                 rectangle = _get_rectangle(sorted(rows), sorted(columns))
                                 c_chain = _get_c_chain(rectangle, bi_value, {z_candidate, })
                                 solver_status.capture_baseline(board, window)
-                                remove_options(solver_status, board, to_remove, window)
+                                eliminate_options(solver_status, board, to_eliminate, window)
                                 if window:
                                     window.options_visible = window.options_visible.union(c_chain.keys())
                                 kwargs["solver_tool"] = "uniqueness_test_2"
                                 kwargs["c_chain"] = c_chain
-                                kwargs["impacted_cells"] = {cell for _, cell in to_remove}
-                                kwargs["remove"] = to_remove
+                                kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
+                                kwargs["eliminate"] = to_eliminate
                                 test_2.clues += len(solver_status.naked_singles)
-                                test_2.options_removed += len(to_remove)
+                                test_2.options_removed += len(to_eliminate)
                                 return True
         return False
 
@@ -199,8 +199,8 @@ def test_3(solver_status, board, window):
                         impacted_cells = impacted_cells.intersection(ALL_NBRS[cell])
                     for cell in impacted_cells:
                         for candidate in naked_subset.intersection(board[cell]):
-                            to_remove.add((candidate, cell))
-                    if to_remove:
+                            to_eliminate.add((candidate, cell))
+                    if to_eliminate:
                         return naked_subset, subset_nodes
         return None, None
 
@@ -226,27 +226,27 @@ def test_3(solver_status, board, window):
                                 z_ab = set(z_a).union(z_b)
                                 naked_subset, subset_nodes = \
                                     find_naked_subset(n, ceiling_a, ceiling_b, bi_value, z_ab, by_row)
-                                if to_remove:
+                                if to_eliminate:
                                     rows = (floor_a[0], x_id) if by_row else (floor_a[1], floor_b[1])
                                     columns = (floor_a[1], floor_b[1]) if by_row else (floor_a[0], x_id)
                                     rectangle = _get_rectangle(sorted(rows), sorted(columns))
                                     c_chain = _get_c_chain(rectangle, bi_value, naked_subset, subset_nodes)
                                     solver_status.capture_baseline(board, window)
-                                    remove_options(solver_status, board, to_remove, window)
+                                    eliminate_options(solver_status, board, to_eliminate, window)
                                     if window:
                                         window.options_visible = window.options_visible.union(c_chain.keys())
                                     kwargs["solver_tool"] = "uniqueness_test_3"
                                     kwargs["c_chain"] = c_chain
-                                    kwargs["impacted_cells"] = {cell for _, cell in to_remove}
-                                    kwargs["remove"] = to_remove
+                                    kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
+                                    kwargs["eliminate"] = to_eliminate
                                     test_3.clues += len(solver_status.naked_singles)
-                                    test_3.options_removed += len(to_remove)
+                                    test_3.options_removed += len(to_eliminate)
                                     return True
         return False
 
     init_options(board, solver_status)
     kwargs = {}
-    to_remove = set()
+    to_eliminate = set()
     if _check_rectangles(True) or _check_rectangles(False):
         return kwargs
     return None
@@ -283,27 +283,27 @@ def test_4(solver_status, board, window):
                         ceiling_b = x_id * 9 + floor_b[1] if by_row else floor_b[1] * 9 + x_id
                         boxes = {floor_a[2], floor_b[2], CELL_BOX[ceiling_a], CELL_BOX[ceiling_b]}
                         if len(boxes) == 2:
-                            to_remove = None
+                            to_eliminate = None
                             cells = set(ALL_NBRS[ceiling_a]).intersection(ALL_NBRS[ceiling_b])
                             if not _get_candidate_count(cells, bi_value[0]):
-                                to_remove = {(bi_value[1], ceiling_a), (bi_value[1], ceiling_b)}
+                                to_eliminate = {(bi_value[1], ceiling_a), (bi_value[1], ceiling_b)}
                             elif not _get_candidate_count(cells, bi_value[1]):
-                                to_remove = {(bi_value[0], ceiling_a), (bi_value[0], ceiling_b)}
-                            if to_remove:
+                                to_eliminate = {(bi_value[0], ceiling_a), (bi_value[0], ceiling_b)}
+                            if to_eliminate:
                                 rows = (floor_a[0], x_id) if by_row else (floor_a[1], floor_b[1])
                                 columns = (floor_a[1], floor_b[1]) if by_row else (floor_a[0], x_id)
                                 rectangle = _get_rectangle(sorted(rows), sorted(columns))
                                 other_candidates = set(board[ceiling_a]).union(board[ceiling_b]).difference(bi_value)
                                 c_chain = _get_c_chain(rectangle, bi_value, other_candidates)
                                 solver_status.capture_baseline(board, window)
-                                remove_options(solver_status, board, to_remove, window)
+                                eliminate_options(solver_status, board, to_eliminate, window)
                                 if window:
                                     window.options_visible = window.options_visible.union(c_chain.keys()).union(cells)
                                 kwargs["solver_tool"] = "uniqueness_test_4"
                                 kwargs["c_chain"] = c_chain
-                                kwargs["remove"] = to_remove
+                                kwargs["eliminate"] = to_eliminate
                                 test_4.clues += len(solver_status.naked_singles)
-                                test_4.options_removed += len(to_remove)
+                                test_4.options_removed += len(to_eliminate)
                                 return True
         return False
 
@@ -343,19 +343,19 @@ def test_5(solver_status, board, window):
                         other_candidates = set(board[node_b]).difference(bi_value)
                         c_chain = _get_c_chain(nodes, bi_value, other_candidates)
                         z_value = other_candidates.pop()
-                        to_remove = {(z_value, cell) for cell in set(ALL_NBRS[node_b]).intersection(ALL_NBRS[node_d])
+                        to_eliminate = {(z_value, cell) for cell in set(ALL_NBRS[node_b]).intersection(ALL_NBRS[node_d])
                                      if z_value in board[cell]}
-                        if to_remove:
+                        if to_eliminate:
                             solver_status.capture_baseline(board, window)
-                            remove_options(solver_status, board, to_remove, window)
+                            eliminate_options(solver_status, board, to_eliminate, window)
                             if window:
                                 window.options_visible = window.options_visible.union(c_chain.keys())
                             kwargs["solver_tool"] = "uniqueness_test_4"
                             kwargs["c_chain"] = c_chain
-                            kwargs["impacted_cells"] = {cell for _, cell in to_remove}
-                            kwargs["remove"] = to_remove
+                            kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
+                            kwargs["eliminate"] = to_eliminate
                             test_5.clues += len(solver_status.naked_singles)
-                            test_5.options_removed += len(to_remove)
+                            test_5.options_removed += len(to_eliminate)
                             return kwargs
     return None
 
@@ -398,15 +398,15 @@ def test_6(solver_status, board, window):
                         if unique_value:
                             other_candidates = set(board[node_b]).union(board[node_d]).difference(bi_value)
                             c_chain = _get_c_chain(nodes, bi_value, other_candidates)
-                            to_remove = {(unique_value, node_b), (unique_value, node_d)}
+                            to_eliminate = {(unique_value, node_b), (unique_value, node_d)}
                             solver_status.capture_baseline(board, window)
-                            remove_options(solver_status, board, to_remove, window)
+                            eliminate_options(solver_status, board, to_eliminate, window)
                             if window:
                                 window.options_visible = window.options_visible.union(other_cells)
                             kwargs["solver_tool"] = "uniqueness_test_6"
                             kwargs["c_chain"] = c_chain
-                            kwargs["remove"] = to_remove
+                            kwargs["eliminate"] = to_eliminate
                             test_6.clues += len(solver_status.naked_singles)
-                            test_6.options_removed += len(to_remove)
+                            test_6.options_removed += len(to_eliminate)
                             return kwargs
     return None

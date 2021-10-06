@@ -14,7 +14,7 @@ from itertools import combinations
 import networkx as nx
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX, ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, remove_options, get_pair_house, init_options
+from utils import get_stats, is_clue, eliminate_options, get_pair_house, init_options
 from utils import get_strong_links, DeadEndException
 
 
@@ -274,14 +274,14 @@ def hidden_xy_chain(solver_status, board, window):
                     path = path[1:]
                     impacted_cells = {cell for cell in set(ALL_NBRS[path[0]]).intersection(set(ALL_NBRS[path[-1]]))
                                       if not is_clue(cell, board, solver_status)}
-                    to_remove = [(candidate, cell) for cell in impacted_cells if candidate in board[cell]]
+                    to_eliminate = [(candidate, cell) for cell in impacted_cells if candidate in board[cell]]
                     solver_status.capture_baseline(board, window)
                     if window:
                         window.options_visible = window.options_visible.union(set(path)).union({cell})
-                    remove_options(solver_status, board, to_remove, window)
+                    eliminate_options(solver_status, board, to_eliminate, window)
                     kwargs["solver_tool"] = "hidden_xy_chain"
                     kwargs["impacted_cells"] = impacted_cells
-                    kwargs["remove"] = to_remove
+                    kwargs["eliminate"] = to_eliminate
                     kwargs["c_chain"] = _color_hidden_xy_chain(graph, path, candidate)
                     return kwargs
 
@@ -328,19 +328,19 @@ def naked_xy_chain(solver_status, board, window):
                     if _check_bidirectional_traversing(candidate, path, board):
                         impacted_cells = {cell for cell in set(ALL_NBRS[path[0]]).intersection(set(ALL_NBRS[path[-1]]))
                                           if not is_clue(cell, board, solver_status)}
-                        to_remove = [(candidate, cell) for cell in impacted_cells if candidate in board[cell]]
+                        to_eliminate = [(candidate, cell) for cell in impacted_cells if candidate in board[cell]]
                         edges = [(path[n], path[n+1]) for n in range(len(path)-1)]
                         solver_status.capture_baseline(board, window)
                         if window:
                             window.options_visible = window.options_visible.union(
                                 _get_graph_houses(edges)).union({cell})
-                        remove_options(solver_status, board, to_remove, window)
+                        eliminate_options(solver_status, board, to_eliminate, window)
                         kwargs["solver_tool"] = "naked_xy_chain"
                         kwargs["impacted_cells"] = impacted_cells
-                        kwargs["remove"] = to_remove
+                        kwargs["eliminate"] = to_eliminate
                         kwargs["c_chain"] = _color_naked_xy_chain(graph, path, candidate)
                         kwargs["edges"] = edges
-                        naked_xy_chain.options_removed += len(to_remove)
+                        naked_xy_chain.options_removed += len(to_eliminate)
                         naked_xy_chain.clues += len(solver_status.naked_singles)
                         return kwargs
     return kwargs
@@ -362,25 +362,25 @@ def simple_colors(solver_status, board, window):
         outside of the chain that has a candidate equal to the value """
         impacted_cells = [cell for cell in range(81) if cell not in component and value in board[cell]
                           and not is_clue(cell, board, solver_status)]
-        to_remove = []
+        to_eliminate = []
         for cell in impacted_cells:
             impacting_chain_nodes = component.intersection(set(ALL_NBRS[cell]))
             web_nodes_colors = set(pair[1] for node in impacting_chain_nodes for pair in c_chain[node])
             if len(web_nodes_colors) > 1:
                 assert(len(web_nodes_colors) == 2)
-                to_remove.append((value, cell))
-        if to_remove:
+                to_eliminate.append((value, cell))
+        if to_eliminate:
             edges = [edge for edge in graph.edges if edge[0] in component]
             solver_status.capture_baseline(board, window)
             if window:
                 window.options_visible = window.options_visible.union(_get_graph_houses(edges))
-            remove_options(solver_status, board, to_remove, window)
+            eliminate_options(solver_status, board, to_eliminate, window)
             kwargs["solver_tool"] = "color_trap"
             kwargs["c_chain"] = c_chain
             kwargs["edges"] = edges
-            kwargs["remove"] = to_remove
-            kwargs["impacted_cells"] = [pair[1] for pair in to_remove]
-            simple_colors.options_removed += len(to_remove)
+            kwargs["eliminate"] = to_eliminate
+            kwargs["impacted_cells"] = [pair[1] for pair in to_eliminate]
+            simple_colors.options_removed += len(to_eliminate)
             simple_colors.clues += len(solver_status.naked_singles)
             return True
         return False
@@ -424,19 +424,19 @@ def simple_colors(solver_status, board, window):
         if conflicted_cells:
             assert(len(conflicting_color) == 1)
             conflicting_color = conflicting_color.pop()
-            to_remove = {(value, node) for node in component if (value, conflicting_color) in c_chain[node]}
+            to_eliminate = {(value, node) for node in component if (value, conflicting_color) in c_chain[node]}
             for node in conflicted_cells:
                 c_chain[node] = {(value, 'red')}
             edges = [edge for edge in graph.edges if edge[0] in component]
             solver_status.capture_baseline(board, window)
             if window:
                 window.options_visible = window.options_visible.union(_get_graph_houses(edges))
-            remove_options(solver_status, board, to_remove, window)
+            eliminate_options(solver_status, board, to_eliminate, window)
             kwargs["solver_tool"] = "color_wrap"
             kwargs["c_chain"] = c_chain
             kwargs["edges"] = edges
-            kwargs["remove"] = to_remove
-            simple_colors.options_removed += len(to_remove)
+            kwargs["eliminate"] = to_eliminate
+            simple_colors.options_removed += len(to_eliminate)
             simple_colors.clues += len(solver_status.naked_singles)
             return True
         return False
@@ -483,19 +483,19 @@ def multi_colors(solver_status, board, window):
                 see_color_nodes_b = color_nodes[color].intersection(ALL_NBRS[edge[1]])
                 if see_color_nodes_a and see_color_nodes_b:
                     edges = {edge for edge in graph.edges if edge[0] in components[m_id].union(components[s_id])}
-                    to_remove = {(value, node) for node in color_nodes[color]}
+                    to_eliminate = {(value, node) for node in color_nodes[color]}
                     solver_status.capture_baseline(board, window)
                     if window:
                         window.options_visible = window.options_visible.union(_get_graph_houses(edges))
-                    remove_options(solver_status, board, to_remove, window)
+                    eliminate_options(solver_status, board, to_eliminate, window)
                     c_chain = {**c_chains[m_id], **c_chains[s_id]}
                     for node in (see_color_nodes_a.pop(), see_color_nodes_b.pop()):
                         c_chain[node] = {(value, 'red')}
                     kwargs["solver_tool"] = "multi_colors-color_wrap"
                     kwargs["c_chain"] = c_chain
                     kwargs["edges"] = edges
-                    kwargs["remove"] = to_remove
-                    multi_colors.options_removed += len(to_remove)
+                    kwargs["eliminate"] = to_eliminate
+                    multi_colors.options_removed += len(to_eliminate)
                     multi_colors.clues += len(solver_status.naked_singles)
                     return True
         return False
@@ -516,25 +516,25 @@ def multi_colors(solver_status, board, window):
                         color_a = _get_second_color(color_nodes[0], color_0)
                         color_b = _get_second_color(color_nodes[1], color_1)
                         impacted_cells = set()
-                        to_remove = []
+                        to_eliminate = []
                         for cell in other_nodes:
                             if color_nodes[0][color_a].intersection(ALL_NBRS[cell]) \
                                     and color_nodes[1][color_b].intersection(ALL_NBRS[cell]):
                                 impacted_cells.add(cell)
-                                to_remove.append((value, cell))
-                        if to_remove:
+                                to_eliminate.append((value, cell))
+                        if to_eliminate:
                             edges = [edge for edge in graph.edges
                                      if edge[0] in components[0].union(components[1])]
                             solver_status.capture_baseline(board, window)
                             if window:
                                 window.options_visible = window.options_visible.union(_get_graph_houses(edges))
-                            remove_options(solver_status, board, to_remove, window)
+                            eliminate_options(solver_status, board, to_eliminate, window)
                             kwargs["solver_tool"] = "multi_colors-color_wing"
                             kwargs["c_chain"] = {**c_chains[0], **c_chains[1]}
                             kwargs["edges"] = edges
-                            kwargs["remove"] = to_remove
+                            kwargs["eliminate"] = to_eliminate
                             kwargs["impacted_cells"] = impacted_cells
-                            multi_colors.options_removed += len(to_remove)
+                            multi_colors.options_removed += len(to_eliminate)
                             multi_colors.clues += len(solver_status.naked_singles)
                             return True
         return False
@@ -590,7 +590,7 @@ def x_colors(solver_status, board, window):
                     and color_nodes['yellow'].intersection(ALL_NBRS[cell]):
                 to_be_removed.add((value, cell))
                 impacted_cells.add(cell)
-        if to_remove:   # TODO
+        if to_eliminate:   # TODO
             kwargs["solver_tool"] = "x_colors_elimination"
             # print('\ncolor_trap')
             return True
@@ -644,20 +644,20 @@ def x_colors(solver_status, board, window):
                 else:
                     break
 
-            to_remove = set()
+            to_eliminate = set()
             impacted_cells = set()
-            if _contradiction(to_remove) or _elimination(to_remove):
+            if _contradiction(to_eliminate) or _elimination(to_eliminate):
                 edges = {edge for edge in graph.edges if edge[0] in component}
                 show_options = with_value.union(_get_graph_houses(edges))
                 kwargs["c_chain"] = c_chain
                 kwargs["edges"] = edges
                 kwargs["impacted_cells"] = impacted_cells
-                kwargs["remove"] = to_remove
+                kwargs["eliminate"] = to_eliminate
                 solver_status.capture_baseline(board, window)
                 if window:
                     window.options_visible = window.options_visible.union(show_options)
-                remove_options(solver_status, board, to_remove, window)
-                x_colors.options_removed += len(to_remove)
+                eliminate_options(solver_status, board, to_eliminate, window)
+                x_colors.options_removed += len(to_eliminate)
                 x_colors.clues += len(solver_status.naked_singles)
                 return kwargs
     return None
@@ -814,21 +814,21 @@ def three_d_medusa(solver_status, board, window):
             additional_links = _paint_bi_value_cells(set())
             while additional_links:
                 additional_links = _paint_bi_value_cells(_paint_conjugate_pairs(additional_links))
-            to_remove = set()
+            to_eliminate = set()
             impacted_cells = set()
-            if _check_1(to_remove) or _check_2(to_remove) or _check_3(to_remove) or _check_4(to_remove) or \
-                    _check_5(to_remove):
+            if _check_1(to_eliminate) or _check_2(to_eliminate) or _check_3(to_eliminate) or _check_4(to_eliminate) or \
+                    _check_5(to_eliminate):
                 solver_status.capture_baseline(board, window)
                 if window:
                     window.options_visible = window.options_visible.union(cell for cell in c_chain).union(
                         impacted_cells)
-                remove_options(solver_status, board, to_remove, window)
+                eliminate_options(solver_status, board, to_eliminate, window)
                 kwargs["solver_tool"] = "3d_medusa"
                 kwargs["c_chain"] = c_chain
                 kwargs["edges"] = edges
                 kwargs["impacted_cells"] = impacted_cells
-                kwargs["remove"] = to_remove
-                three_d_medusa.options_removed += len(to_remove)
+                kwargs["eliminate"] = to_eliminate
+                three_d_medusa.options_removed += len(to_eliminate)
                 three_d_medusa.clues += len(solver_status.naked_singles)
                 return kwargs
     return None

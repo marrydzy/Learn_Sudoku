@@ -9,7 +9,7 @@ from itertools import combinations
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, init_options, remove_options
+from utils import get_stats, is_clue, init_options, eliminate_options
 from utils import get_bi_value_cells, get_house_pairs, get_strong_links, get_pair_house
 from display import strategy_name
 
@@ -81,20 +81,20 @@ def finned_x_wing(solver_status, board, window):
                                         other_cells.discard(col_2 * 9 + row_1)
                                         other_cells.discard(col_2 * 9 + row_2)
                             if other_cells:
-                                to_remove = [(option, cell) for cell in other_cells if option in board[cell]]
-                                if to_remove:
+                                to_eliminate = [(option, cell) for cell in other_cells if option in board[cell]]
+                                if to_eliminate:
                                     solver_status.capture_baseline(board, window)
                                     if window:
                                         window.options_visible = window.options_visible.union(house).union(other_cells)
-                                    remove_options(solver_status, board, to_remove, window)
+                                    eliminate_options(solver_status, board, to_eliminate, window)
                                     kwargs["solver_tool"] = "finned_x_wings"
                                     kwargs["singles"] = solver_status.naked_singles
                                     kwargs["finned_x_wing"] = corners
                                     kwargs["subset"] = [option]
-                                    kwargs["remove"] = to_remove
+                                    kwargs["eliminate"] = to_eliminate
                                     kwargs["house"] = house
                                     kwargs["impacted_cells"] = other_cells
-                                    finned_x_wing.options_removed += len(to_remove)
+                                    finned_x_wing.options_removed += len(to_eliminate)
                                     finned_x_wing.clues += len(solver_status.naked_singles)
                                     # print('\tfinned X-wing')
                                     return True
@@ -133,18 +133,18 @@ def finned_mutant_x_wing(solver_status, board, window):
                             if value in board[cell]:
                                 house = set(CELLS_IN_ROW[row]).union(set(CELLS_IN_COL[col]))
                                 impacted_cell = {cell}
-                                to_remove = [(value, cell), ]
+                                to_eliminate = [(value, cell), ]
                                 corners = [value, cells[0], cells[1], row * 9 + col_2[0], row_2[0] * 9 + col]
                                 solver_status.capture_baseline(board, window)
                                 if window:
                                     window.options_visible = window.options_visible.union(house).union(impacted_cell)
-                                remove_options(solver_status, board, to_remove, window)
+                                eliminate_options(solver_status, board, to_eliminate, window)
                                 kwargs["solver_tool"] = "finned_rccb_mutant_x_wing"
-                                kwargs["remove"] = to_remove
+                                kwargs["eliminate"] = to_eliminate
                                 kwargs["house"] = house
                                 kwargs["impacted_cells"] = impacted_cell
                                 kwargs["finned_x_wing"] = corners
-                                finned_mutant_x_wing.options_removed += len(to_remove)
+                                finned_mutant_x_wing.options_removed += len(to_eliminate)
                                 finned_mutant_x_wing.clues += len(solver_status.naked_singles)
                                 return True
         return False
@@ -182,21 +182,21 @@ def finned_mutant_x_wing(solver_status, board, window):
                                     impacted_cell = row_2 * 9 + col_2
                             if impacted_cell is not None and value in board[impacted_cell]:
                                 house = house_1.union(set(CELLS_IN_BOX[box]))
-                                to_remove = [(value, impacted_cell), ]
+                                to_eliminate = [(value, impacted_cell), ]
                                 corners = [cell for cell in cells]
                                 corners.extend(fins)
                                 corners.insert(0, value)
                                 solver_status.capture_baseline(board, window)
                                 if window:
                                     window.options_visible = window.options_visible.union(house).union({impacted_cell})
-                                remove_options(solver_status, board, to_remove, window)
+                                eliminate_options(solver_status, board, to_eliminate, window)
                                 kwargs["solver_tool"] = \
                                     "finned_cbrc_mutant_x_wing" if by_column else "finned_rbcc_mutant_x_wing"
-                                kwargs["remove"] = to_remove
+                                kwargs["eliminate"] = to_eliminate
                                 kwargs["house"] = house
                                 kwargs["impacted_cells"] = {impacted_cell}
                                 kwargs["finned_x_wing"] = corners
-                                finned_mutant_x_wing.options_removed += len(to_remove)
+                                finned_mutant_x_wing.options_removed += len(to_eliminate)
                                 finned_mutant_x_wing.clues += len(solver_status.naked_singles)
                                 # if len(fins) > 1:
                                 #     print('\nBingo!')
@@ -244,20 +244,20 @@ def xy_wing(solver_status, board, window):
             if len(xy.union(xz).union(yz)) == 3 and not xy.intersection(xz).intersection(yz):
                 z_value = xz.intersection(yz).pop()
                 impacted_cells = set(ALL_NBRS[pair[0]]).intersection(set(ALL_NBRS[pair[1]]))
-                to_remove = [(z_value, a_cell) for a_cell in impacted_cells if
+                to_eliminate = [(z_value, a_cell) for a_cell in impacted_cells if
                              z_value in board[a_cell] and not is_clue(a_cell, board, solver_status)]
-                if to_remove:
+                if to_eliminate:
                     solver_status.capture_baseline(board, window)
                     if window:
                         window.options_visible = window.options_visible.union(impacted_cells).union(
                             {cell_id, pair[0], pair[1]})
-                    remove_options(solver_status, board, to_remove, window)
+                    eliminate_options(solver_status, board, to_eliminate, window)
                     kwargs["solver_tool"] = "xy_wing"
                     kwargs["c_chain"] = _get_c_chain(cell_id, pair[0], pair[1])
                     kwargs["edges"] = [(cell_id, pair[0]), (cell_id, pair[1])]
-                    kwargs["remove"] = to_remove
-                    kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                    xy_wing.options_removed += len(to_remove)
+                    kwargs["eliminate"] = to_eliminate
+                    kwargs["impacted_cells"] = {a_cell for _, a_cell in to_eliminate}
+                    xy_wing.options_removed += len(to_eliminate)
                     xy_wing.clues += len(solver_status.naked_singles)
                     # print('\tXY-Wing')
                     return True
@@ -297,20 +297,20 @@ def xyz_wing(solver_status, board, window):
                 z_value = xyz.intersection(xz).intersection(yz).pop()
                 impacted_cells = set(ALL_NBRS[cell_id]).intersection(set(ALL_NBRS[pair[0]])).intersection(
                                  set(ALL_NBRS[pair[1]]))
-                to_remove = [(z_value, a_cell) for a_cell in impacted_cells if
+                to_eliminate = [(z_value, a_cell) for a_cell in impacted_cells if
                              z_value in board[a_cell] and not is_clue(cell, board, solver_status)]
-                if to_remove:
+                if to_eliminate:
                     solver_status.capture_baseline(board, window)
                     if window:
                         window.options_visible = window.options_visible.union(impacted_cells).union(
                             {cell_id, pair[0], pair[1]})
-                    remove_options(solver_status, board, to_remove, window)
+                    eliminate_options(solver_status, board, to_eliminate, window)
                     kwargs["solver_tool"] = "xyz_wing"
                     kwargs["c_chain"] = _get_c_chain(cell_id, pair[0], pair[1])
                     kwargs["edges"] = [(cell_id, pair[0]), (cell_id, pair[1])]
-                    kwargs["remove"] = to_remove
-                    kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                    xyz_wing.options_removed += len(to_remove)
+                    kwargs["eliminate"] = to_eliminate
+                    kwargs["impacted_cells"] = {a_cell for _, a_cell in to_eliminate}
+                    xyz_wing.options_removed += len(to_eliminate)
                     xyz_wing.clues += len(solver_status.naked_singles)
                     # print('\tXYZ-Wing')
                     return True
@@ -414,20 +414,20 @@ def wxyz_wing(solver_status, board, window):
                             if len(board[wing[0]]) == 4 or z not in board[wing[0]]:
                                 impacted_cells = _get_impacted_cells(wing, z)
                                 if impacted_cells:
-                                    to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
-                                    if to_remove:
+                                    to_eliminate = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
+                                    if to_eliminate:
                                         w = board[cell_c].replace(z, '')
                                         solver_status.capture_baseline(board, window)
                                         if window:
                                             window.options_visible = window.options_visible.union(wing).union(
                                                 impacted_cells)
-                                        remove_options(solver_status, board, to_remove, window)
+                                        eliminate_options(solver_status, board, to_eliminate, window)
                                         kwargs["solver_tool"] = "wxyz_wing_type_1"
                                         kwargs["chain_d"] = _get_chain(board, (wing[0],), z, w)
                                         kwargs["chain_a"] = _get_chain(board, wing[1:], z, w)
-                                        kwargs["remove"] = to_remove
-                                        kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                                        wxyz_wing.options_removed += len(to_remove)
+                                        kwargs["eliminate"] = to_eliminate
+                                        kwargs["impacted_cells"] = {a_cell for _, a_cell in to_eliminate}
+                                        wxyz_wing.options_removed += len(to_eliminate)
                                         wxyz_wing.clues += len(solver_status.naked_singles)
                                         # print(f'\t{kwargs["solver_tool"]}')
                                         return True
@@ -465,19 +465,19 @@ def wxyz_wing(solver_status, board, window):
                                     len(a_sum.intersection(board[wing[0]])) == 3:
                                 impacted_cells = _get_impacted_cells(wing, z)
                                 if impacted_cells:
-                                    to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
-                                    if to_remove:
+                                    to_eliminate = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
+                                    if to_eliminate:
                                         solver_status.capture_baseline(board, window)
                                         if window:
                                             window.options_visible = window.options_visible.union(wing).union(
                                                 impacted_cells)
-                                        remove_options(solver_status, board, to_remove, window)
+                                        eliminate_options(solver_status, board, to_eliminate, window)
                                         kwargs["solver_tool"] = "wxyz_wing_type_2"
                                         kwargs["chain_d"] = _get_chain(board, (wing[0],), z, w)
                                         kwargs["chain_a"] = _get_chain(board, wing[1:], z, w)
-                                        kwargs["remove"] = to_remove
-                                        kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                                        wxyz_wing.options_removed += len(to_remove)
+                                        kwargs["eliminate"] = to_eliminate
+                                        kwargs["impacted_cells"] = {a_cell for _, a_cell in to_eliminate}
+                                        wxyz_wing.options_removed += len(to_eliminate)
                                         wxyz_wing.clues += len(solver_status.naked_singles)
                                         # print(f'\t{kwargs["solver_tool"]}')
                                         return True
@@ -513,19 +513,19 @@ def wxyz_wing(solver_status, board, window):
                         if w in board[wing[0]] and (len(board[wing[0]]) > 2 or z not in board[wing[0]]):
                             impacted_cells = _get_impacted_cells(wing, z)
                             if impacted_cells:
-                                to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
-                                if to_remove:
+                                to_eliminate = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
+                                if to_eliminate:
                                     solver_status.capture_baseline(board, window)
                                     if window:
                                         window.options_visible = window.options_visible.union(wing).union(
                                             impacted_cells)
-                                    remove_options(solver_status, board, to_remove, window)
+                                    eliminate_options(solver_status, board, to_eliminate, window)
                                     kwargs["solver_tool"] = "wxyz_wing_type_3"
                                     kwargs["chain_d"] = _get_chain(board, (wing[0],), z, w)
                                     kwargs["chain_a"] = _get_chain(board, wing[1:], z, w)
-                                    kwargs["remove"] = to_remove
-                                    kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                                    wxyz_wing.options_removed += len(to_remove)
+                                    kwargs["eliminate"] = to_eliminate
+                                    kwargs["impacted_cells"] = {a_cell for _, a_cell in to_eliminate}
+                                    wxyz_wing.options_removed += len(to_eliminate)
                                     wxyz_wing.clues += len(solver_status.naked_singles)
                                     # print(f'\t{kwargs["solver_tool"]}')
                                     return True
@@ -558,21 +558,21 @@ def wxyz_wing(solver_status, board, window):
                     z = z.pop()
                     impacted_cells = _get_impacted_cells(wing, z)
                     if impacted_cells:
-                        to_remove = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
-                        if to_remove:
+                        to_eliminate = {(z, cell_id) for cell_id in impacted_cells if z in board[cell_id]}
+                        if to_eliminate:
                             base_candidates = set(''.join(board[cell_id] for cell_id in base_cells))
                             solver_status.capture_baseline(board, window)
                             if window:
                                 window.options_visible = window.options_visible.union(wing).union(
                                     impacted_cells)
-                            remove_options(solver_status, board, to_remove, window)
+                            eliminate_options(solver_status, board, to_eliminate, window)
                             kwargs["solver_tool"] = "wxyz_wing_type_4" if len (base_candidates) == 3 else\
                                                     "wxyz_wing_type_5"
                             kwargs["chain_d"] = _get_chain(board, base_cells, z)
                             kwargs["chain_a"] = _get_chain(board, (cell_a, cell_b), z)
-                            kwargs["remove"] = to_remove
-                            kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                            wxyz_wing.options_removed += len(to_remove)
+                            kwargs["eliminate"] = to_eliminate
+                            kwargs["impacted_cells"] = {a_cell for _, a_cell in to_eliminate}
+                            wxyz_wing.options_removed += len(to_eliminate)
                             wxyz_wing.clues += len(solver_status.naked_singles)
                             # print(f'\t{kwargs["solver_tool"]}')
                             return True
@@ -627,20 +627,20 @@ def w_wing(solver_status, board, window):
             other_value = vb if w_constraint == va else va
             impacted_cells = set(ALL_NBRS[positions[0]]).intersection(ALL_NBRS[positions[1]])
             impacted_cells = {cell for cell in impacted_cells if len(board[cell]) > 1}
-            to_remove = [(other_value, cell) for cell in impacted_cells if other_value in board[cell]]
-            if to_remove:
+            to_eliminate = [(other_value, cell) for cell in impacted_cells if other_value in board[cell]]
+            if to_eliminate:
                 kwargs = {}
                 solver_status.capture_baseline(board, window)
                 if window:
                     window.options_visible = window.options_visible.union(impacted_cells).union(
                         {positions[0], positions[1]}).union(get_pair_house(w_base))
-                remove_options(solver_status, board, to_remove, window)
+                eliminate_options(solver_status, board, to_eliminate, window)
                 kwargs["solver_tool"] = "w_wing"
                 kwargs["chain_a"] = _get_chain(board, positions[:2], other_value)
                 kwargs["chain_d"] = _get_chain(board, w_base, other_value, w_constraint)
-                kwargs["remove"] = to_remove
-                kwargs["impacted_cells"] = {a_cell for _, a_cell in to_remove}
-                w_wing.options_removed += len(to_remove)
+                kwargs["eliminate"] = to_eliminate
+                kwargs["impacted_cells"] = {a_cell for _, a_cell in to_eliminate}
+                w_wing.options_removed += len(to_eliminate)
                 w_wing.clues += len(solver_status.naked_singles)
                 # print('\tw_wing')
                 return kwargs
@@ -685,17 +685,17 @@ def franken_x_wing(solver_status, board, window):
                             house = set(cells[row]).union(set(CELLS_IN_BOX[box]))
                             corners = [option, corner_1, corner_2]
                             corners.extend(cell for cell in CELLS_IN_BOX[box] if option in board[cell])
-                            to_remove = [(option, cell) for cell in other_cells if option in board[cell]]
-                            if to_remove:
+                            to_eliminate = [(option, cell) for cell in other_cells if option in board[cell]]
+                            if to_eliminate:
                                 solver_status.capture_baseline(board, window)
                                 if window:
                                     window.options_visible = window.options_visible.union(house).union(other_cells)
-                                remove_options(solver_status, board, to_remove, window)
+                                eliminate_options(solver_status, board, to_eliminate, window)
                                 kwargs["solver_tool"] = "franken_x_wing"
                                 kwargs["singles"] = solver_status.naked_singles
                                 kwargs["finned_x_wing"] = corners
                                 kwargs["subset"] = [option]
-                                kwargs["remove"] = to_remove
+                                kwargs["eliminate"] = to_eliminate
                                 kwargs["house"] = house
                                 kwargs["impacted_cells"] = other_cells
                                 return True

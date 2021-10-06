@@ -51,7 +51,7 @@ from graph_utils import quit_btn_clicked
 import display
 import graphics
 import sudoku_ocr
-from utils import remove_options, DeadEndException
+from utils import eliminate_options, DeadEndException
 
 
 config = {}
@@ -281,11 +281,11 @@ def _apply_brute_force():
         _restore_board()
         solver_status.restore(solver_status_stack[-1])
 
-        to_remove = {(option, next_cell) for option in board[next_cell] if option != value}
+        to_eliminate = {(option, next_cell) for option in board[next_cell] if option != value}
         solver_status.capture_baseline(board, window)
         if window:
             window.options_visible = window.options_visible.union({next_cell})
-        remove_options(solver_status, board, to_remove, window)
+        eliminate_options(solver_status, board, to_eliminate, window)
 
         if config["output_opts"]["iterations"] and data["current_loop"] == config["repeat"] - 1:
             display.iteration(config, data, board, next_cell, value)
@@ -293,7 +293,7 @@ def _apply_brute_force():
             data["current_path"].append((data["current_loop"], next_cell // 9 + 1,
                                          next_cell % 9 + 1, value, board[next_cell], ))
         if window:
-            window.draw_board(board, solver_tool="iterate", remove=to_remove, c_chain={next_cell: {(value, 'lime')}})
+            window.draw_board(board, solver_tool="iterate", eliminate=to_eliminate, c_chain={next_cell: {(value, 'lime')}})
 
         if _try_standard_techniques() and _apply_brute_force():
             iter_stack.pop()

@@ -8,7 +8,7 @@ TODO:
 """
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX, SUDOKU_VALUES_SET
-from utils import get_stats, init_options, remove_options
+from utils import get_stats, init_options, eliminate_options
 
 
 @get_stats
@@ -45,12 +45,12 @@ def locked_candidates(solver_status, board, window):
                     to_eliminate = {(possibility, cell) for cell in impacted_cells if possibility in board[cell]}
                     if to_eliminate:
                         solver_status.capture_baseline(board, window)
-                        remove_options(solver_status, board, to_eliminate, window)
+                        eliminate_options(solver_status, board, to_eliminate, window)
                         if window:
                             window.options_visible = window.options_visible.union(house).union(impacted_cells)
                         kwargs["solver_tool"] = "locked_candidates_type_1"
                         kwargs["house"] = house
-                        kwargs["remove"] = to_eliminate
+                        kwargs["eliminate"] = to_eliminate
                         kwargs["chain_a"] = _paint_locked_candidates(house, possibility)
                         kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
                         locked_candidates.clues += len(solver_status.naked_singles)
@@ -75,12 +75,12 @@ def locked_candidates(solver_status, board, window):
                         to_eliminate = {(possibility, cell) for cell in impacted_cells if possibility in board[cell]}
                         if to_eliminate:
                             solver_status.capture_baseline(board, window)
-                            remove_options(solver_status, board, to_eliminate, window)
+                            eliminate_options(solver_status, board, to_eliminate, window)
                             if window:
                                 window.options_visible = window.options_visible.union(house).union(impacted_cells)
                             kwargs["solver_tool"] = "locked_candidates_type_2"
                             kwargs["house"] = house
-                            kwargs["remove"] = to_eliminate
+                            kwargs["eliminate"] = to_eliminate
                             kwargs["chain_a"] = _paint_locked_candidates(house, possibility)
                             kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
                             locked_candidates.clues += len(solver_status.naked_singles)

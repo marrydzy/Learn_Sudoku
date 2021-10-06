@@ -6,7 +6,7 @@ from itertools import combinations
 from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, init_options, remove_options, get_bi_value_cells
+from utils import get_stats, is_clue, init_options, eliminate_options, get_bi_value_cells
 
 
 @get_stats
@@ -51,20 +51,20 @@ def almost_locked_candidates(solver_status, board, window):
                         other_line_cells = {cell for cell in line if cell not in box and cell not in xy_pair}
                         if not {candidate for cell in other_line_cells for candidate in board[cell]}.intersection(bi_value):
                             impacted_cells = {cell for cell in box if cell not in line and cell not in xy_pair}
-                            to_remove = {(digit, cell) for digit in bi_value for cell in impacted_cells
+                            to_eliminate = {(digit, cell) for digit in bi_value for cell in impacted_cells
                                          if digit in board[cell]}
-                            if to_remove:
+                            if to_eliminate:
                                 solver_status.capture_baseline(board, window)
-                                remove_options(solver_status, board, to_remove, window)
+                                eliminate_options(solver_status, board, to_eliminate, window)
                                 if window:
                                     window.options_visible = window.options_visible.union(box).union(line)
                                 almost_locked_candidates.clues += len(solver_status.naked_singles)
-                                almost_locked_candidates.options_removed += len(to_remove)
+                                almost_locked_candidates.options_removed += len(to_eliminate)
                                 # print('\tAlmost Locked Candidates')
                                 return {
                                     "solver_tool": "almost_locked_candidates",
                                     "house": box,
-                                    "remove": to_remove,
+                                    "eliminate": to_eliminate,
                                     "c_chain": _get_c_chain(xy_pair, bi_value)}
     return None
 
@@ -107,21 +107,21 @@ def franken_x_wing(solver_status, board, window):
                             house = set(cells[row]).union(set(CELLS_IN_BOX[box]))
                             corners = [option, corner_1, corner_2]
                             corners.extend(cell for cell in CELLS_IN_BOX[box] if option in board[cell])
-                            to_remove = [(option, cell) for cell in other_cells if option in board[cell]]
-                            if to_remove:
+                            to_eliminate = [(option, cell) for cell in other_cells if option in board[cell]]
+                            if to_eliminate:
                                 solver_status.capture_baseline(board, window)
                                 if window:
                                     window.options_visible = window.options_visible.union(house).union(other_cells)
-                                remove_options(solver_status, board, to_remove, window)
+                                eliminate_options(solver_status, board, to_eliminate, window)
                                 kwargs["solver_tool"] = "franken_x_wing"
                                 kwargs["singles"] = solver_status.naked_singles
                                 kwargs["finned_x_wing"] = corners
                                 kwargs["subset"] = [option]
-                                kwargs["remove"] = to_remove
+                                kwargs["eliminate"] = to_eliminate
                                 kwargs["house"] = house
                                 kwargs["impacted_cells"] = other_cells
                                 franken_x_wing.clues += len(solver_status.naked_singles)
-                                franken_x_wing.options_removed += len(to_remove)
+                                franken_x_wing.options_removed += len(to_eliminate)
                                 return True
         return False
 

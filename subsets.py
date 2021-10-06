@@ -6,7 +6,7 @@ import itertools
 from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX, DeadEndException
-from utils import get_stats, init_options, remove_options, get_subsets, get_impacted_cells
+from utils import get_stats, init_options, eliminate_options, get_subsets, get_impacted_cells
 
 
 def _get_c_chain(subset_cells, subset_candidates):
@@ -48,20 +48,20 @@ def _hidden_subset(solver_status, board, window, subset_size):
             for subset in itertools.combinations(candidates, subset_size):
                 subset_nodes = {cell for candidate in subset for cell in candidates_positions[candidate]}
                 if len(subset_nodes) == subset_size:
-                    to_remove = {(candidate, cell) for cell in subset_nodes for candidate in board[cell]
+                    to_eliminate = {(candidate, cell) for cell in subset_nodes for candidate in board[cell]
                                  if candidate not in subset}
-                    if to_remove:
+                    if to_eliminate:
                         c_chain = _get_c_chain(subset_nodes, candidates_positions)
                         solver_status.capture_baseline(board, window)
-                        remove_options(solver_status, board, to_remove, window)
+                        eliminate_options(solver_status, board, to_eliminate, window)
                         if window:
                             window.options_visible = window.options_visible.union(unsolved)
                         kwargs = {
                             "solver_tool": subset_strategies[subset_size][0],
                             "c_chain": c_chain,
-                            "remove": to_remove, }
+                            "eliminate": to_eliminate, }
                         subset_strategies[subset_size][1].clues += len(solver_status.naked_singles)
-                        subset_strategies[subset_size][1].options_removed += len(to_remove)
+                        subset_strategies[subset_size][1].options_removed += len(to_eliminate)
                         return kwargs
     return None
 
@@ -81,21 +81,21 @@ def _naked_subset(solver_status, board, window, subset_size):
     for subset_dict in get_subsets(board, subset_size):
         subset_cells = {cell for cells in subset_dict.values() for cell in cells}
         impacted_cells = get_impacted_cells(board, subset_cells)
-        to_remove = {(candidate, cell)
+        to_eliminate = {(candidate, cell)
                      for cell in impacted_cells for candidate in set(board[cell]).intersection(subset_dict)}
-        if to_remove:
+        if to_eliminate:
             solver_status.capture_baseline(board, window)
             assert len(solver_status.naked_singles) == 0
-            remove_options(solver_status, board, to_remove, window)
+            eliminate_options(solver_status, board, to_eliminate, window)
             if window:
                 window.options_visible = window.options_visible.union(subset_cells).union(impacted_cells)
             kwargs = {
                 "solver_tool": subset_strategies[subset_size][0],
                 "c_chain": _get_c_chain(subset_cells, subset_dict),
-                "impacted_cells": {cell for _, cell in to_remove},
-                "remove": to_remove, }
+                "impacted_cells": {cell for _, cell in to_eliminate},
+                "eliminate": to_eliminate, }
             subset_strategies[subset_size][1].clues += len(solver_status.naked_singles)
-            subset_strategies[subset_size][1].options_removed += len(to_remove)
+            subset_strategies[subset_size][1].options_removed += len(to_eliminate)
             return kwargs
     return None
 

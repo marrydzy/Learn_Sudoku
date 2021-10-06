@@ -6,7 +6,7 @@ from itertools import combinations
 from collections import defaultdict
 
 from utils import ALL_NBRS
-from utils import get_stats, get_subsets, remove_options
+from utils import get_stats, get_subsets, eliminate_options
 
 
 def _get_restricted_commons(als_a, als_b, common_values):
@@ -158,21 +158,21 @@ def als_xz(solver_status, board, window):
                 for z in common_values.difference((x,)):
                     common_neighbours = _get_common_neighbours(als_a[z], als_b[z], impacted_cells)
                     if common_neighbours:
-                        to_remove = {(z, cell) for cell in common_neighbours if z in board[cell]}
-                        if to_remove:
+                        to_eliminate = {(z, cell) for cell in common_neighbours if z in board[cell]}
+                        if to_eliminate:
                             chain_a, chain_b, _ = _get_c_chain(als_a=als_a, als_b=als_b, x=z, y=x)
                             solver_status.capture_baseline(board, window)
-                            remove_options(solver_status, board, to_remove, window)
+                            eliminate_options(solver_status, board, to_eliminate, window)
                             if window:
                                 window.options_visible = window.options_visible.union(cells_a).union(
                                     cells_b).union(common_neighbours)
-                            als_xz.options_removed += len(to_remove)
+                            als_xz.options_removed += len(to_eliminate)
                             als_xz.clues += len(solver_status.naked_singles)
                             return {"solver_tool": "als_xz",
                                     "chain_a": chain_a,
                                     "chain_b": chain_b,
-                                    "remove": to_remove,
-                                    "impacted_cells": {cell for _, cell in to_remove}, }
+                                    "eliminate": to_eliminate,
+                                    "impacted_cells": {cell for _, cell in to_eliminate}, }
     return None
 
 
@@ -215,24 +215,24 @@ def als_xy_wing(solver_status, board, window):
                             for x in set(als_a).intersection(als_b).difference({y, z}):
                                 common_neighbours = _get_common_neighbours(als_a[x], als_b[x], impacted_cells)
                                 if common_neighbours:
-                                    to_remove = {(x, cell) for cell in common_neighbours if x in board[cell]}
-                                    if to_remove:
+                                    to_eliminate = {(x, cell) for cell in common_neighbours if x in board[cell]}
+                                    if to_eliminate:
                                         chain_a, chain_b, chain_c = _get_c_chain(als_a=als_a, als_b=als_b, als_c=als_c,
                                                                                  x=x, y=y, z=z)
-                                        impacted_cells = {cell for _, cell in to_remove}.difference(
+                                        impacted_cells = {cell for _, cell in to_eliminate}.difference(
                                             cells_a).difference(cells_b).difference(cells_c)
                                         solver_status.capture_baseline(board, window)
-                                        remove_options(solver_status, board, to_remove, window)
+                                        eliminate_options(solver_status, board, to_eliminate, window)
                                         if window:
                                             window.options_visible = window.options_visible.union(cells_a).union(
                                                 cells_b).union(cells_c).union(common_neighbours)
-                                        als_xy_wing.options_removed += len(to_remove)
+                                        als_xy_wing.options_removed += len(to_eliminate)
                                         als_xy_wing.clues += len(solver_status.naked_singles)
                                         return {"solver_tool": "als_xy_wing",
                                                 "chain_a": chain_a,
                                                 "chain_b": chain_b,
                                                 "chain_c": chain_c,
-                                                "remove": to_remove,
+                                                "eliminate": to_eliminate,
                                                 "impacted_cells": impacted_cells,
                                                 }
     return None
@@ -262,22 +262,22 @@ def death_blossom(solver_status, board, window):
                     blossom_cells = {cell for petal in blossom for cell in petal}
                     impacted_cells = unresolved.difference(blossom_cells)
                     possible_candidates = set(blossom)
-                    to_remove = set()
+                    to_eliminate = set()
                     for cell in impacted_cells:
                         if possible_candidates.intersection(board[cell]):
                             cell_neighbours = set(ALL_NBRS[cell])
                             for candidate in possible_candidates.intersection(board[cell]):
                                 candidate_cells = blossom[candidate]
                                 if candidate_cells.intersection(cell_neighbours) == candidate_cells:
-                                    to_remove.add((candidate, cell))
-                    if to_remove:
+                                    to_eliminate.add((candidate, cell))
+                    if to_eliminate:
                         solver_status.capture_baseline(board, window)
-                        remove_options(solver_status, board, to_remove, window)
+                        eliminate_options(solver_status, board, to_eliminate, window)
                         if window:
                             window.options_visible = window.options_visible.union(blossom_cells)
                         # print('\tDeath Blossom')
                         return {"solver_tool": "death_blossom",
-                                "remove": to_remove, }
+                                "eliminate": to_eliminate, }
     return None
 
 
@@ -295,43 +295,43 @@ def als_xy(solver_status, board, window):
         if len(common_values) > 1 and impacted_cells:
             restricted_commons = _get_restricted_commons(als_a, als_b, common_values)
             if len(restricted_commons) == 2:
-                to_remove = set()
+                to_eliminate = set()
                 x = list(restricted_commons)[0]
                 y = list(restricted_commons)[1]
                 for cell in impacted_cells:
                     if x in board[cell] and set(ALL_NBRS[cell]).intersection(als_a[x]) == als_a[x] and \
                             set(ALL_NBRS[cell]).intersection(als_b[x]) == als_b[x]:
-                        to_remove.add((x, cell))
+                        to_eliminate.add((x, cell))
                     if y in board[cell] and set(ALL_NBRS[cell]).intersection(als_a[y]) == als_a[y] and \
                             set(ALL_NBRS[cell]).intersection(als_b[y]) == als_b[y]:
-                        to_remove.add((y, cell))
-                # if to_remove:
+                        to_eliminate.add((y, cell))
+                # if to_eliminate:
                 #     print('\tBingo!')
                 for z in set(als_a).difference(restricted_commons):
                     for cell in impacted_cells:
                         if z in board[cell] and set(ALL_NBRS[cell]).intersection(als_a[z]) == als_a[z]:
-                            to_remove.add((z, cell))
+                            to_eliminate.add((z, cell))
                 for z in set(als_b).difference(restricted_commons):
                     for cell in impacted_cells:
                         if z in board[cell] and set(ALL_NBRS[cell]).intersection(als_b[z]) == als_b[z]:
-                            to_remove.add((z, cell))
-                if to_remove:
+                            to_eliminate.add((z, cell))
+                if to_eliminate:
                     cells_a = {cell for candidate in als_a for cell in als_a[candidate]}
                     cells_b = {cell for candidate in als_b for cell in als_b[candidate]}
                     c_chain, d_chain, _ = _get_c_chain(als_a=als_a, als_b=als_b,
                                                        x=restricted_commons.pop(), z=restricted_commons.pop())
                     solver_status.capture_baseline(board, window)
-                    remove_options(solver_status, board, to_remove, window)
+                    eliminate_options(solver_status, board, to_eliminate, window)
                     if window:
                         window.options_visible = window.options_visible.union(cells_a).union(
                             cells_b).union(impacted_cells)
                     # print(f'\n{cells_a = }, \n{cells_b = }, \n{restricted_commons = }')
-                    als_xy.options_removed += len(to_remove)
+                    als_xy.options_removed += len(to_eliminate)
                     als_xy.clues += len(solver_status.naked_singles)
                     return {"solver_tool": "als_xy",
                             "chain_a": c_chain,
                             "chain_b": d_chain,
-                            "remove": to_remove,
-                            "impacted_cells": {cell for _, cell in to_remove
+                            "eliminate": to_eliminate,
+                            "impacted_cells": {cell for _, cell in to_eliminate
                                                if cell not in cells_a.union(cells_b)}, }
     return None

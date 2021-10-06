@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, init_options, remove_options
+from utils import get_stats, is_clue, init_options, eliminate_options
 
 
 @get_stats
@@ -48,17 +48,17 @@ def remote_pairs(solver_status, board, window):
         chain = _find_chain(pair)
         if chain:
             impacted_cells = set(ALL_NBRS[chain[0]]).intersection(set(ALL_NBRS[chain[-1]]))
-            to_remove = [(value, cell) for value in pair for cell in impacted_cells
+            to_eliminate = [(value, cell) for value in pair for cell in impacted_cells
                          if value in board[cell] and not is_clue(cell, board, solver_status)]
-            if to_remove:
+            if to_eliminate:
                 solver_status.capture_baseline(board, window)
                 if window:
                     window.options_visible = window.options_visible.union(impacted_cells)
-                remove_options(solver_status, board, to_remove, window)
+                eliminate_options(solver_status, board, to_eliminate, window)
                 kwargs = {
                     "solver_tool": "remote_pairs",
                     "chain": chain,
-                    "remove": to_remove,
+                    "eliminate": to_eliminate,
                     "impacted_cells": impacted_cells,
                 }
                 return kwargs
@@ -81,22 +81,22 @@ def unique_rectangles_(solver_status, board, window):
     def _reduce_rectangle(a_pair, corners):
         if all(board[corner] == a_pair for corner in corners):
             return False
-        to_remove = []
+        to_eliminate = []
         for corner in corners:
             if board[corner] != a_pair:
                 subset = [cell for cell in rect if len(board[cell]) == 2]
                 if a_pair[0] in board[corner]:
-                    to_remove.append((a_pair[0], corner))
+                    to_eliminate.append((a_pair[0], corner))
                 if a_pair[1] in board[corner]:
-                    to_remove.append((a_pair[1], corner))
-                if to_remove:
+                    to_eliminate.append((a_pair[1], corner))
+                if to_eliminate:
                     solver_status.capture_baseline(board, window)
-                    remove_options(solver_status, board, to_remove, window)
+                    eliminate_options(solver_status, board, to_eliminate, window)
                     if window:
                         window.options_visible = window.options_visible.union(set(corners))
                     kwargs["solver_tool"] = "unique_rectangles"
                     kwargs["rectangle"] = rect
-                    kwargs["remove"] = to_remove
+                    kwargs["eliminate"] = to_eliminate
                     kwargs["subset"] = subset
                     print('\tUniueness Test 1')
                     return True
@@ -166,22 +166,22 @@ def skyscraper(solver_status, board, window):
                         for clue_id in clues:
                             impacted_cells.discard(clue_id)
                         corners_idx.insert(0, option)
-                        to_remove = [(option, cell) for cell in impacted_cells if option in board[cell]]  # TODO - check if not set
-                        if to_remove:
+                        to_eliminate = [(option, cell) for cell in impacted_cells if option in board[cell]]  # TODO - check if not set
+                        if to_eliminate:
                             solver_status.capture_baseline(board, window)
                             house = set(cells[row_1]).union(set(cells[row_2]))
                             if window:
                                 window.options_visible = window.options_visible.union(house).union(impacted_cells)
-                            remove_options(solver_status, board, to_remove, window)
+                            eliminate_options(solver_status, board, to_eliminate, window)
                             kwargs["solver_tool"] = "skyscraper"
                             kwargs["singles"] = solver_status.naked_singles
                             kwargs["skyscraper"] = corners_idx
                             kwargs["subset"] = [option]
-                            kwargs["remove"] = to_remove
+                            kwargs["eliminate"] = to_eliminate
                             kwargs["house"] = house
                             kwargs["impacted_cells"] = impacted_cells
                             skyscraper.clues += len(solver_status.naked_singles)
-                            skyscraper.options_removed += len(to_remove)
+                            skyscraper.options_removed += len(to_eliminate)
                             return True
         return False
 
@@ -221,17 +221,17 @@ def sue_de_coq(solver_status, board, window):
                                 options_12 = set(board[cell_1]).union(set(board[cell_2]))
                                 for pair in combinations(cells_3, 2):
                                     if options_12 == set(board[pair[0]]).union(board[pair[1]]):
-                                        to_remove = []
+                                        to_eliminate = []
                                         for opt in board[cell_1]:
                                             for cell in cells_4:
                                                 if cell != cell_1 and opt in board[cell]:
-                                                    to_remove.append((opt, cell))
+                                                    to_eliminate.append((opt, cell))
                                         for opt in board[cell_2]:
                                             for cell in cells_1:
                                                 if cell != cell_2 and cell != pair[0] and cell != pair[1] \
                                                         and opt in board[cell]:
-                                                    to_remove.append((opt, cell))
-                                        if to_remove:
+                                                    to_eliminate.append((opt, cell))
+                                        if to_eliminate:
                                             solver_status.capture_baseline(board, window)
                                             house = cells_b.union(cells_1)
                                             pattern = {cell_1, cell_2, pair[0], pair[1]}
@@ -240,14 +240,14 @@ def sue_de_coq(solver_status, board, window):
                                             if window:
                                                 window.options_visible = window.options_visible.union(house).union(
                                                     house)
-                                            remove_options(solver_status, board, to_remove, window)
+                                            eliminate_options(solver_status, board, to_eliminate, window)
                                             kwargs["solver_tool"] = "sue_de_coq"
                                             kwargs["singles"] = solver_status.naked_singles
                                             kwargs["sue_de_coq"] = pattern
-                                            kwargs["remove"] = to_remove
+                                            kwargs["eliminate"] = to_eliminate
                                             kwargs["house"] = house
                                             kwargs["impacted_cells"] = impacted_cells
-                                            kwargs["subset"] = [to_remove[0][0]]
+                                            kwargs["subset"] = [to_eliminate[0][0]]
                                             return True
         return False
 
@@ -274,20 +274,20 @@ def sue_de_coq(solver_status, board, window):
                                 options_3 = set(board[cells_3[0]]).union(set(board[cells_3[1]])).union(
                                         set(board[cells_3[2]]))
                                 if options_3.issuperset(options_12) and len(options_3.difference(options_12)) == 1:
-                                    to_remove = []
+                                    to_eliminate = []
                                     for opt in board[cell_1]:
                                         for cell in cells_4:
                                             if cell != cell_1 and opt in board[cell]:
-                                                to_remove.append((opt, cell))
+                                                to_eliminate.append((opt, cell))
                                     for opt in board[cell_2]:
                                         for cell in cells_2:
                                             if cell != cell_2 and opt in board[cell]:
-                                                to_remove.append((opt, cell))
+                                                to_eliminate.append((opt, cell))
                                     opt = options_3.difference(options_12).pop()
                                     for cell in set(cells_2).union(set(cells_4)):
                                         if opt in board[cell]:
-                                            to_remove.append((opt, cell))
-                                    if to_remove:
+                                            to_eliminate.append((opt, cell))
+                                    if to_eliminate:
                                         solver_status.capture_baseline(board, window)
                                         house = cells_b.union(cells_1)
                                         pattern = {cell_1, cell_2}.union(cells_3)
@@ -296,14 +296,14 @@ def sue_de_coq(solver_status, board, window):
                                         if window:
                                             window.options_visible = window.options_visible.union(house).union(
                                                 house)
-                                        remove_options(solver_status, board, to_remove, window)
+                                        eliminate_options(solver_status, board, to_eliminate, window)
                                         kwargs["solver_tool"] = "sue_de_coq"
                                         kwargs["singles"] = solver_status.naked_singles
                                         kwargs["sue_de_coq"] = pattern
-                                        kwargs["remove"] = to_remove
+                                        kwargs["eliminate"] = to_eliminate
                                         kwargs["house"] = house
                                         kwargs["impacted_cells"] = impacted_cells
-                                        kwargs["subset"] = [to_remove[0][0]]
+                                        kwargs["subset"] = [to_eliminate[0][0]]
                                         return True
         return False
 
@@ -358,8 +358,8 @@ def empty_rectangle(solver_status, board, window):
                                 if val in board[hole_cells[0]] or val in board[hole_cells[1]]:
                                     impacted_cell = cells_by_y[idy[(i + 1) % 2]][central_line]
                                     if val in board[impacted_cell]:
-                                        to_remove = [(val, impacted_cell)]
-                                        if to_remove:
+                                        to_eliminate = [(val, impacted_cell)]
+                                        if to_eliminate:
                                             corners = set(cell for cell in cells_by_x[idx] if val in board[cell])
                                             if val in board[hole_cells[0]]:
                                                 corners.add(hole_cells[0])
@@ -372,14 +372,14 @@ def empty_rectangle(solver_status, board, window):
                                             solver_status.capture_baseline(board, window)
                                             if window:
                                                 window.options_visible = window.options_visible.union(house)
-                                            remove_options(solver_status, board, to_remove, window)
+                                            eliminate_options(solver_status, board, to_eliminate, window)
                                             kwargs["solver_tool"] = "empty_rectangle"
                                             kwargs["house"] = house
                                             kwargs["impacted_cells"] = (impacted_cell,)
-                                            kwargs["remove"] = [(val, impacted_cell)]
+                                            kwargs["eliminate"] = [(val, impacted_cell)]
                                             kwargs["nodes"] = corners
                                             empty_rectangle.clues += len(solver_status.naked_singles)
-                                            empty_rectangle.options_removed += len(to_remove)
+                                            empty_rectangle.options_removed += len(to_eliminate)
                                             return True
         return False
 

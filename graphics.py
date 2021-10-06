@@ -143,7 +143,7 @@ class AppWindow:
         solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else "plain_board"
         incorrect_values = kwargs["incorrect_values"] if "incorrect_values" in kwargs else set()
         conflicted_cells = kwargs["conflicted_cells"] if "conflicted_cells" in kwargs else set()
-        removed = kwargs["remove"] if "remove" in kwargs else None
+        eliminated = kwargs["eliminate"] if "eliminate" in kwargs else None
 
         assert solver_tool is not None
 
@@ -173,8 +173,8 @@ class AppWindow:
                             graph_utils.highlight_options(self, cell_id, board[cell_id], cell_pos, **kwargs)
                         graph_utils.render_options(self, board[cell_id], cell_pos)
 
-        if removed:
-            for value, cell_id in removed:
+        if eliminated:
+            for value, cell_id in eliminated:
                 if self.show_all_pencil_marks or cell_id in self.options_visible:
                     cell_pos = (CELL_COL[cell_id] * CELL_SIZE + LEFT_MARGIN, CELL_ROW[cell_id] * CELL_SIZE + TOP_MARGIN)
                     graph_utils.render_options(self, value, cell_pos)

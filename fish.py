@@ -17,7 +17,7 @@ from itertools import combinations
 from collections import defaultdict
 
 from utils import CELL_BOX, CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX, SUDOKU_VALUES_LIST
-from utils import init_options, remove_options, get_stats, get_n_values
+from utils import init_options, eliminate_options, get_stats, get_n_values
 
 
 def _basic_fish(solver_status, board, window, n):
@@ -49,23 +49,23 @@ def _basic_fish(solver_status, board, window, n):
                         cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
                         houses = {cell for id_x in x_ids for cell in cells[id_x]}
                         impacted_cells = impacted_cells.difference(houses)
-                        to_remove = {(value, cell) for cell in impacted_cells if value in board[cell]}
-                        if to_remove:
+                        to_eliminate = {(value, cell) for cell in impacted_cells if value in board[cell]}
+                        if to_eliminate:
                             solver_status.capture_baseline(board, window)
                             if window:
                                 window.options_visible = window.options_visible.union(houses).union(impacted_cells)
-                            remove_options(solver_status, board, to_remove, window)
+                            eliminate_options(solver_status, board, to_eliminate, window)
                             if n == 2:
                                 rows = sorted(list(x_ids if by_row else secondary_ids))
                                 columns = sorted(list(secondary_ids if by_row else x_ids))
                                 kwargs["x_wing"] = _get_corners(rows, columns)
                             kwargs["solver_tool"] = fish_strategies[n][0]
                             kwargs["c_chain"] = _get_c_chain(value, cells, x_ids)
-                            kwargs["remove"] = to_remove
-                            kwargs["impacted_cells"] = {cell for _, cell in to_remove}
+                            kwargs["eliminate"] = to_eliminate
+                            kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
                             kwargs["house"] = houses
                             fish_strategies[n][1].clues += len(solver_status.naked_singles)
-                            fish_strategies[n][1].options_removed += len(to_remove)
+                            fish_strategies[n][1].options_removed += len(to_eliminate)
                             return True
         return False
 
@@ -138,21 +138,21 @@ def _finned_fish(solver_status, board, window, n):
                                 cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
                                 houses = {cell for id_x in x_ids for cell in cells[id_x]}
                                 impacted_cells = impacted_cells.difference(houses)
-                                to_remove = {(value, cell) for cell in impacted_cells if value in board[cell]}
-                                if to_remove:
+                                to_eliminate = {(value, cell) for cell in impacted_cells if value in board[cell]}
+                                if to_eliminate:
                                     solver_status.capture_baseline(board, window)
                                     if window:
                                         window.options_visible = window.options_visible.union(houses).union(impacted_cells)
-                                    remove_options(solver_status, board, to_remove, window)
+                                    eliminate_options(solver_status, board, to_eliminate, window)
                                     c_chain = _get_c_chain(value, cells, x_ids)
                                     strategy = _get_strategy_name(n_values, x_ids, fin_x, fin_ys)
                                     kwargs["solver_tool"] = strategy[0]
                                     kwargs["c_chain"] = c_chain
-                                    kwargs["remove"] = to_remove
-                                    kwargs["impacted_cells"] = {cell for _, cell in to_remove}
+                                    kwargs["eliminate"] = to_eliminate
+                                    kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
                                     kwargs["house"] = houses
                                     strategy[1].clues += len(solver_status.naked_singles)
-                                    strategy[1].options_removed += len(to_remove)
+                                    strategy[1].options_removed += len(to_eliminate)
                                     return True
         return False
 

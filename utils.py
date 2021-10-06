@@ -238,9 +238,9 @@ def init_options(board, solver_status):
         solver_status.options_set = True
 
 
-def remove_options(solver_status, board, to_remove, window):
-    """ utility function: removes options as per 'to_remove' list """
-    for option, cell in to_remove:
+def eliminate_options(solver_status, board, to_eliminate, window):
+    """ utility function: removes options as per 'to_eliminate' list """
+    for option, cell in to_eliminate:
         board[cell] = board[cell].replace(option, "")
         if not board[cell]:
             if window and solver_status.iteration == 0:
