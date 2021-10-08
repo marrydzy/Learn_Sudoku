@@ -6,7 +6,7 @@ import itertools
 from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX, DeadEndException
-from utils import get_stats, init_options, eliminate_options, get_subsets, get_impacted_cells
+from utils import get_stats, init_remaining_candidates, eliminate_options, get_subsets, get_impacted_cells
 
 
 def _get_c_chain(subset_cells, subset_candidates):
@@ -28,7 +28,7 @@ def _hidden_subset(solver_status, board, window, subset_size):
     subset will always be size 4 or smaller.
     """
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     subset_strategies = {2: ("hidden_pair", hidden_pair, 70),
                          3: ("hidden_triplet", hidden_triplet, 100),
                          4: ("hidden_quad", hidden_quad, 150), }
@@ -49,7 +49,7 @@ def _hidden_subset(solver_status, board, window, subset_size):
                 subset_nodes = {cell for candidate in subset for cell in candidates_positions[candidate]}
                 if len(subset_nodes) == subset_size:
                     to_eliminate = {(candidate, cell) for cell in subset_nodes for candidate in board[cell]
-                                 if candidate not in subset}
+                                    if candidate not in subset}
                     if to_eliminate:
                         c_chain = _get_c_chain(subset_nodes, candidates_positions)
                         solver_status.capture_baseline(board, window)
@@ -75,7 +75,7 @@ def _naked_subset(solver_status, board, window, subset_size):
     Since every Naked Subset is complemented by a Hidden Subset, the smallest of both sets
     will be no larger than 4 in a standard sized Sudoku.
     """
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     subset_strategies = {2: ("naked_pair", naked_pair, 60),
                          3: ("naked_triplet", naked_triplet, 80),
                          4: ("naked_quad", naked_quad, 120), }
@@ -163,4 +163,3 @@ def naked_quad(solver_status, board, window):
     Rating: 120
     """
     return _naked_subset(solver_status, board, window, 4)
-

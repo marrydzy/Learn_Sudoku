@@ -17,7 +17,7 @@ from itertools import combinations
 from collections import defaultdict
 
 from utils import CELL_BOX, CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX, SUDOKU_VALUES_LIST
-from utils import init_options, eliminate_options, get_stats, get_n_values
+from utils import init_remaining_candidates, eliminate_options, get_stats, get_n_values
 
 
 def _basic_fish(solver_status, board, window, n):
@@ -69,7 +69,7 @@ def _basic_fish(solver_status, board, window, n):
                             return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     if _find_fish(True):
         return kwargs
@@ -107,7 +107,7 @@ def _finned_fish(solver_status, board, window, n):
                             fins[id_x].add(id_y)
         return fins
 
-    def _get_strategy_name(n_values, x_ids, fin_x, fin_ys):
+    def _get_strategy_name(n_values, _, fin_x, fin_ys):
         y_ids = {id_y for id_y in n_values[fin_x] if id_y not in fin_ys}
         method_id = n if len(y_ids) >= 2 else n + 4
         return fish_strategies[method_id]
@@ -142,7 +142,8 @@ def _finned_fish(solver_status, board, window, n):
                                 if to_eliminate:
                                     solver_status.capture_baseline(board, window)
                                     if window:
-                                        window.options_visible = window.options_visible.union(houses).union(impacted_cells)
+                                        window.options_visible = window.options_visible.union(
+                                            houses).union(impacted_cells)
                                     eliminate_options(solver_status, board, to_eliminate, window)
                                     c_chain = _get_c_chain(value, cells, x_ids)
                                     strategy = _get_strategy_name(n_values, x_ids, fin_x, fin_ys)
@@ -156,7 +157,7 @@ def _finned_fish(solver_status, board, window, n):
                                     return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     if _find_finned_fish(True):
         return kwargs
@@ -252,4 +253,3 @@ def finned_squirmbag(solver_status, board, window):
     """
 
     return _finned_fish(solver_status, board, window, 5)
-

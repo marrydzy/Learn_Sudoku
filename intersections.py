@@ -8,7 +8,7 @@ TODO:
 """
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX, SUDOKU_VALUES_SET
-from utils import get_stats, init_options, eliminate_options
+from utils import get_stats, init_remaining_candidates, eliminate_options
 
 
 @get_stats
@@ -90,7 +90,7 @@ def locked_candidates(solver_status, board, window):
                             return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     if _type_1() or _type_2():
         return kwargs

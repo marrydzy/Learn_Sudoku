@@ -2,16 +2,14 @@
 
 """ SUDOKU SOLVING METHODS """
 
-from itertools import combinations
 from collections import defaultdict
 from itertools import combinations
 
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, init_options, eliminate_options
+from utils import get_stats, is_clue, init_remaining_candidates, eliminate_options
 from utils import get_bi_value_cells, get_house_pairs, get_strong_links, get_pair_house
-from display import strategy_name
 
 
 def _get_chain(board, nodes, z, w=None):
@@ -100,7 +98,7 @@ def finned_x_wing(solver_status, board, window):
                                     return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     for opt in SUDOKU_VALUES_LIST:
         if _find_finned_x_wing(True, opt):
@@ -203,7 +201,7 @@ def finned_mutant_x_wing(solver_status, board, window):
                                 return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     for i in range(9):
         if _find_finned_rccb_mutant_x_wing(i):
@@ -245,7 +243,7 @@ def xy_wing(solver_status, board, window):
                 z_value = xz.intersection(yz).pop()
                 impacted_cells = set(ALL_NBRS[pair[0]]).intersection(set(ALL_NBRS[pair[1]]))
                 to_eliminate = [(z_value, a_cell) for a_cell in impacted_cells if
-                             z_value in board[a_cell] and not is_clue(a_cell, board, solver_status)]
+                                z_value in board[a_cell] and not is_clue(a_cell, board, solver_status)]
                 if to_eliminate:
                     solver_status.capture_baseline(board, window)
                     if window:
@@ -263,7 +261,7 @@ def xy_wing(solver_status, board, window):
                     return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     for cell in range(81):
         if len(board[cell]) == 2 and _find_xy_wing(cell):
@@ -298,7 +296,7 @@ def xyz_wing(solver_status, board, window):
                 impacted_cells = set(ALL_NBRS[cell_id]).intersection(set(ALL_NBRS[pair[0]])).intersection(
                                  set(ALL_NBRS[pair[1]]))
                 to_eliminate = [(z_value, a_cell) for a_cell in impacted_cells if
-                             z_value in board[a_cell] and not is_clue(cell, board, solver_status)]
+                                z_value in board[a_cell] and not is_clue(cell, board, solver_status)]
                 if to_eliminate:
                     solver_status.capture_baseline(board, window)
                     if window:
@@ -316,7 +314,7 @@ def xyz_wing(solver_status, board, window):
                     return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     for cell in range(81):
         if len(board[cell]) == 3 and _find_xyz_wing(cell):
@@ -543,7 +541,7 @@ def wxyz_wing(solver_status, board, window):
         """
         for wing in wings:
             base_cells = [wing[0], ]
-            for cell_id in wing[1: ]:
+            for cell_id in wing[1:]:
                 if len(set(ALL_NBRS[cell_id]).intersection(wing)) == 3:
                     base_cells.append(cell_id)
             if len(base_cells) == 2:
@@ -566,7 +564,7 @@ def wxyz_wing(solver_status, board, window):
                                 window.options_visible = window.options_visible.union(wing).union(
                                     impacted_cells)
                             eliminate_options(solver_status, board, to_eliminate, window)
-                            kwargs["solver_tool"] = "wxyz_wing_type_4" if len (base_candidates) == 3 else\
+                            kwargs["solver_tool"] = "wxyz_wing_type_4" if len(base_candidates) == 3 else\
                                                     "wxyz_wing_type_5"
                             kwargs["chain_d"] = _get_chain(board, base_cells, z)
                             kwargs["chain_a"] = _get_chain(board, (cell_a, cell_b), z)
@@ -594,7 +592,7 @@ def w_wing(solver_status, board, window):
 
     bi_value_cells = get_bi_value_cells(board)
     strong_links = get_strong_links(board)
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     for pair in bi_value_cells:
         if len(bi_value_cells[pair]) > 1:
             va, vb = pair
@@ -701,7 +699,7 @@ def franken_x_wing(solver_status, board, window):
                                 return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     for opt in SUDOKU_VALUES_LIST:
         if _find_franken_x_wing(True, opt):

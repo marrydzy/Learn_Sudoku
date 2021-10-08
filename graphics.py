@@ -88,11 +88,11 @@ class AppWindow:
                 if len(board[kwargs["new_clue"]]) == 1:
                     if kwargs["new_clue"] in self.options_visible:
                         self.options_visible.remove(kwargs["new_clue"])
-                    self.solver_status.clues_found.add(kwargs["new_clue"])
+                    self.solver_status.cells_solved.add(kwargs["new_clue"])
                 else:
                     self.options_visible.add(kwargs["new_clue"])
             for cell in self.critical_error:
-                if cell not in self.solver_status.clues_defined:
+                if cell not in self.solver_status.givens:
                     self.options_visible.add(cell)
 
     def wrong_entry_event(self):
@@ -148,16 +148,16 @@ class AppWindow:
 
         assert solver_tool is not None
 
-        black_digits = self.solver_status.clues_defined
+        black_digits = self.solver_status.givens
         if not self.critical_error:
             if active_clue:
                 black_digits = black_digits.union({active_clue, })
             if chain_a:
                 black_digits = black_digits.union({cell for cell in chain_a if len(board[cell]) == 1})
-        red_digits = conflicted_cells.union(incorrect_values.intersection(self.solver_status.clues_found))
+        red_digits = conflicted_cells.union(incorrect_values.intersection(self.solver_status.cells_solved))
         if self.critical_error:
             red_digits = red_digits.union({cell for cell in self.critical_error if cell not in black_digits})
-        teal_digits = {cell for cell in self.solver_status.clues_found if len(board[cell]) == 1}
+        teal_digits = {cell for cell in self.solver_status.cells_solved if len(board[cell]) == 1}
 
         for row_id in range(9):
             for col_id in range(9):

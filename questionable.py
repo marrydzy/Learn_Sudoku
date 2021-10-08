@@ -6,7 +6,7 @@ from itertools import combinations
 from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, init_options, eliminate_options, get_bi_value_cells
+from utils import get_stats, is_clue, init_remaining_candidates, eliminate_options, get_bi_value_cells
 
 
 @get_stats
@@ -41,7 +41,7 @@ def almost_locked_candidates(solver_status, board, window):
                         line = col_0
                         box = box_1
                     elif set(row_1).intersection(box_0):
-                        line= row_1
+                        line = row_1
                         box = box_0
                     elif set(col_1).intersection(box_0):
                         line = col_1
@@ -49,10 +49,11 @@ def almost_locked_candidates(solver_status, board, window):
 
                     if line and box:
                         other_line_cells = {cell for cell in line if cell not in box and cell not in xy_pair}
-                        if not {candidate for cell in other_line_cells for candidate in board[cell]}.intersection(bi_value):
+                        if not {candidate for cell in other_line_cells for candidate in board[cell]}.intersection(
+                                bi_value):
                             impacted_cells = {cell for cell in box if cell not in line and cell not in xy_pair}
                             to_eliminate = {(digit, cell) for digit in bi_value for cell in impacted_cells
-                                         if digit in board[cell]}
+                                            if digit in board[cell]}
                             if to_eliminate:
                                 solver_status.capture_baseline(board, window)
                                 eliminate_options(solver_status, board, to_eliminate, window)
@@ -125,7 +126,7 @@ def franken_x_wing(solver_status, board, window):
                                 return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     for opt in SUDOKU_VALUES_LIST:
         if _find_franken_x_wing(True, opt):

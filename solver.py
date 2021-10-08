@@ -31,7 +31,7 @@ from pygame import K_b, K_h, quit
 from collections import defaultdict, namedtuple, OrderedDict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX
-from utils import is_clue, is_solved, set_cell_options, set_neighbours_options, get_options
+from utils import is_clue, is_solved, set_cell_candidates, set_neighbours_candidates, get_cell_candidates
 from display import screen_messages
 
 import singles
@@ -124,25 +124,25 @@ _solver_strategies = {
 class SolverStatus:
     """ class to store data needed to recover status of the puzzle solver prior to a move """
     def __init__(self):
-        self.options_set = False
+        self.pencilmarks = False
         self.iteration = 0
-        self.clues_defined = set()
-        self.clues_found = set()
+        self.givens = set()
+        self.cells_solved = set()
         self.naked_singles = set()
         self.board_baseline = list()
         self.naked_singles_baseline = set()
-        self.clues_found_baseline = set()
+        self.cells_solved_baseline = set()
         self.options_visible_baseline = set()
 
     def initialize(self, board):
-        self.clues_defined = set(cell_id for cell_id in range(81) if board[cell_id] != ".")
+        self.givens = set(cell_id for cell_id in range(81) if board[cell_id] != ".")
         self.reset(board)
 
     def capture_baseline(self, board, window):
         if window and window.show_solution_steps:
             self.board_baseline = board.copy()
             self.naked_singles_baseline = self.naked_singles.copy()
-            self.clues_found_baseline = self.clues_found.copy()
+            self.cells_solved_baseline = self.cells_solved.copy()
             self.options_visible_baseline = window.options_visible.copy()
             if not window.animate:
                 window.buttons[K_b].set_status(True)
@@ -151,28 +151,28 @@ class SolverStatus:
         for cell_id in range(81):
             board[cell_id] = self.board_baseline[cell_id]
         self.naked_singles = self.naked_singles_baseline.copy()
-        self.clues_found = self.clues_found_baseline.copy()
+        self.cells_solved = self.cells_solved_baseline.copy()
         window.options_visible = self.options_visible_baseline.copy()
 
     def restore(self, solver_status_baseline):
-        self.options_set = solver_status_baseline.options_set
-        self.clues_defined = solver_status_baseline.clues_defined.copy()
-        self.clues_found = solver_status_baseline.clues_found.copy()
+        self.pencilmarks = solver_status_baseline.pencilmarks
+        self.givens = solver_status_baseline.givens.copy()
+        self.cells_solved = solver_status_baseline.cells_solved.copy()
         self.naked_singles = solver_status_baseline.naked_singles.copy()
         self.board_baseline = solver_status_baseline.board_baseline.copy()
         self.naked_singles_baseline = solver_status_baseline.naked_singles_baseline.copy()
-        self.clues_found_baseline = solver_status_baseline.clues_found_baseline.copy()
+        self.cells_solved_baseline = solver_status_baseline.cells_solved_baseline.copy()
         self.options_visible_baseline = solver_status_baseline.options_visible_baseline.copy()
 
     def reset(self, board):
-        self.options_set = False
-        self.clues_found.clear()
+        self.pencilmarks = False
+        self.cells_solved.clear()
         self.naked_singles.clear()
         self.naked_singles_baseline.clear()
-        self.clues_found_baseline.clear()
+        self.cells_solved_baseline.clear()
         self.options_visible_baseline.clear()
         for cell_id in range(81):
-            if cell_id not in self.clues_defined:
+            if cell_id not in self.givens:
                 board[cell_id] = "."
         self.board_baseline = board.copy()
 
@@ -324,14 +324,14 @@ def _manual_move(board, window):
     if window and window.value_entered.cell is not None:
         solver_status.capture_baseline(board, window)
         cell_id, value, as_clue = window.value_entered
-        if cell_id in solver_status.clues_found:
+        if cell_id in solver_status.cells_solved:
             if board[cell_id] == value:
-                _the_same_as_clue_found(board, window, solver_status.options_set)
+                _the_same_as_clue_found(board, window, solver_status.pencilmarks)
             else:
-                _other_than_clue_found(board, window, solver_status.options_set)
+                _other_than_clue_found(board, window, solver_status.pencilmarks)
         else:
             if as_clue:
-                _as_clue_and_undefined(board, window, solver_status.options_set)
+                _as_clue_and_undefined(board, window, solver_status.pencilmarks)
             else:
                 _as_opt_and_undefined(board, window)
 
@@ -350,39 +350,39 @@ def _manual_move(board, window):
     return kwargs
 
 
-def _the_same_as_clue_found(board, window, options_set):
+def _the_same_as_clue_found(board, window, pencilmarks):
     """ Entered key is the same as clicked cell value """
     cell_id, value, as_clue = window.value_entered
-    solver_status.clues_found.remove(cell_id)
+    solver_status.cells_solved.remove(cell_id)
     if as_clue:
-        if options_set:
-            set_cell_options(cell_id, board, solver_status)
+        if pencilmarks:
+            set_cell_candidates(cell_id, board, solver_status)
         else:
             board[cell_id] = "."
     else:
         window.options_visible.add(cell_id)
         solver_status.naked_singles.add(cell_id)
-    if options_set:
-        set_neighbours_options(cell_id, board, window, solver_status)
+    if pencilmarks:
+        set_neighbours_candidates(cell_id, board, window, solver_status)
 
 
-def _other_than_clue_found(board, window, options_set):
+def _other_than_clue_found(board, window, pencilmarks):
     """ Entered key other than clicked cell value """
     cell_id, value, as_clue = window.value_entered
     if cell_id in solver_status.naked_singles:
         solver_status.naked_singles.remove(cell_id)
     board[cell_id] = value
     if as_clue:
-        solver_status.clues_found.add(cell_id)
+        solver_status.cells_solved.add(cell_id)
     else:
-        solver_status.clues_found.remove(cell_id)
+        solver_status.cells_solved.remove(cell_id)
         solver_status.naked_singles.add(cell_id)
         window.options_visible.add(cell_id)
-    if options_set:
-        set_neighbours_options(cell_id, board, window, solver_status)
+    if pencilmarks:
+        set_neighbours_candidates(cell_id, board, window, solver_status)
 
 
-def _as_clue_and_undefined(board, window, options_set):
+def _as_clue_and_undefined(board, window, pencilmarks):
     """ Entering clue in undefined cell """
     cell_id, value, as_clue = window.value_entered
     if cell_id in window.options_visible:
@@ -390,29 +390,30 @@ def _as_clue_and_undefined(board, window, options_set):
     if cell_id in solver_status.naked_singles:
         solver_status.naked_singles.remove(cell_id)
     board[cell_id] = value
-    solver_status.clues_found.add(cell_id)
-    if options_set:
-        set_neighbours_options(cell_id, board, window, solver_status)
+    solver_status.cells_solved.add(cell_id)
+    if pencilmarks:
+        set_neighbours_candidates(cell_id, board, window, solver_status)
 
 
 def _as_opt_and_undefined(board, window):
     """ Entering an option in undefined cell """
-    cell_id, value, as_clue = window.value_entered
+    cell_id, value, _ = window.value_entered
     if cell_id in window.options_visible or window.show_all_pencil_marks:
-        if cell_id in solver_status.naked_singles:
-            solver_status.naked_singles.remove(cell_id)
+        solver_status.naked_singles.discard(cell_id)
         if value in board[cell_id]:
             board[cell_id] = board[cell_id].replace(value, "")
             if len(board[cell_id]) == 0:
-                set_cell_options(cell_id, board, solver_status)
+                set_cell_candidates(cell_id, board, solver_status)
+                window.options_visible.discard(cell_id)
             elif len(board[cell_id]) == 1:
                 solver_status.naked_singles.add(cell_id)
         else:
             board[cell_id] += value
+            window.options_visible.add(cell_id)
     else:
         board[cell_id] = value
         solver_status.naked_singles.add(cell_id)
-    window.options_visible.add(cell_id)
+        window.options_visible.add(cell_id)
 
 
 def _check_board_integrity(board, window):
@@ -436,7 +437,7 @@ def _check_board_integrity(board, window):
     for i in range(9):
         conflicted_cells = conflicted_cells.union(_check_house(CELLS_IN_ROW[i])).union(_check_house(CELLS_IN_COL[i])).\
                               union(_check_house(CELLS_IN_BOX[i]))
-    incorrect_values = {cell for cell in range(81) if cell in solver_status.clues_found and
+    incorrect_values = {cell for cell in range(81) if cell in solver_status.cells_solved and
                         board[cell] != window.solved_board[cell]} if window and window.solved_board else set()
     return conflicted_cells, incorrect_values
 
@@ -446,7 +447,7 @@ def _check_candidates(board, window):
     c_chain = defaultdict(set)
     for cell in window.options_visible:
         if len(board[cell]) > 1:
-            candidates = get_options(cell, board, solver_status)
+            candidates = get_cell_candidates(cell, board, solver_status)
             if candidates != set(board[cell]):
                 for value in candidates.symmetric_difference(set(board[cell])):
                     c_chain[cell].add((value, 'pink'))

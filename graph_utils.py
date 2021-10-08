@@ -1,12 +1,11 @@
 import time
-import os
 import sys
 import pygame
 
 from collections import defaultdict
 from solver import solver_status, ValueEntered
 
-from utils import init_options, get_options
+from utils import init_remaining_candidates, get_cell_candidates
 from utils import CELL_ROW, CELL_COL
 from html_colors import html_color_codes
 
@@ -540,7 +539,7 @@ def pencil_mark_btn_clicked(window, _, board, *args, **kwargs):
         window.buttons[pygame.K_p].draw(window.screen)
         window.buttons[pygame.K_c].set_pressed(False)
         window.buttons[pygame.K_c].draw(window.screen)
-        init_options(board, solver_status)
+        init_remaining_candidates(board, solver_status)
 
 
 def next_btn_clicked(window, _, board, **kwargs):
@@ -615,7 +614,7 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     solver_status.reset(board)
     window.show_solution_steps = True
     window.inspect = window.peep
-    window.solver_status.clues_found.clear()
+    window.solver_status.cells_solved.clear()
     window.options_visible.clear()
     # window.wrong_values.clear()
     window.show_wrong_values = True
@@ -646,7 +645,7 @@ def check_options_integrity(window, _, board, *args, **kwargs):
     chain_i = defaultdict(set)
     for cell in window.options_visible:
         if len(board[cell]) > 1:
-            candidates = get_options(cell, board, solver_status)
+            candidates = get_cell_candidates(cell, board, solver_status)
             if candidates != set(board[cell]):
                 for value in candidates.symmetric_difference(set(board[cell])):
                     chain_i[cell].add((value, 'pink'))
@@ -701,7 +700,7 @@ def cell_clicked(window, cell_id, *args, **kwargs):
     """
     if get_keyboard_status(window):
         cell_id -= CELL_ID_OFFSET
-        if cell_id not in solver_status.clues_defined:
+        if cell_id not in solver_status.givens:
             if window.selected_key:
                 window.value_entered = ValueEntered(cell_id, window.selected_key,
                                                   True if window.buttons[pygame.K_c].is_pressed() else False)

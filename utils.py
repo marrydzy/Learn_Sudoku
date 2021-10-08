@@ -91,7 +91,7 @@ def is_solved(board, solver_status):
 def is_clue(cell_id, board, solver_status):
     """ check if the cell has clue (is solved) """
     if board[cell_id] == "." or len(board[cell_id]) != 1 or \
-            (cell_id not in solver_status.clues_defined and cell_id not in solver_status.clues_found):
+            (cell_id not in solver_status.givens and cell_id not in solver_status.cells_solved):
         return False
     return True
 
@@ -135,6 +135,14 @@ def get_impacting_cells(digit, greyed_out, board):
     return impacting_cells
 
 
+def get_impacted_cells(board, subset):
+    """ return set of unsolved cells impacted by subset cells """
+    impacted_cells = set(range(81))
+    for cell in subset:
+        impacted_cells = impacted_cells.intersection(ALL_NBRS[cell])
+    return {cell for cell in impacted_cells if len(board[cell]) > 1}
+
+
 def get_impacted_houses(cell, base_house=None, to_eliminate=None):
     """ return union of houses the cell belongs to (cell row, column and box)
      - 'base_house' if not None is always included in the union of the cell houses
@@ -154,14 +162,6 @@ def get_impacted_houses(cell, base_house=None, to_eliminate=None):
         if to_eliminate.intersection(CELLS_IN_BOX[CELL_BOX[cell]]):
             houses = houses.union(CELLS_IN_BOX[CELL_BOX[cell]])
     return houses
-
-
-def get_impacted_cells(board, subset):
-    """ return set of unsolved cells impacted by subset cells """
-    impacted_cells = set(range(81))
-    for cell in subset:
-        impacted_cells = impacted_cells.intersection(ALL_NBRS[cell])
-    return {cell for cell in impacted_cells if len(board[cell]) > 1}
 
 
 def get_bi_value_cells(board):
@@ -202,10 +202,10 @@ def get_strong_links(board):
     return strong_links
 
 
-def get_options(cell_id, board, solver_status):
+def get_cell_candidates(cell_id, board, solver_status):
     """ return set of options of the cell """
-    return SUDOKU_VALUES_SET.copy() - set(''.join(
-        [board[cell] for cell in ALL_NBRS[cell_id] if is_clue(cell, board, solver_status)]))
+    return SUDOKU_VALUES_SET.difference(
+        ''.join([board[cell] for cell in ALL_NBRS[cell_id] if is_clue(cell, board, solver_status)]))
 
 
 def get_pairs(board, by_row):
@@ -254,9 +254,9 @@ def get_house_pairs(house, board):
     return pairs_dict
 
 
-def init_options(board, solver_status):
-    """ Initialize options of unsolved cells """
-    if not solver_status.options_set:
+def init_remaining_candidates(board, solver_status):
+    """ initialize remaining candidates for all unsolved cells """
+    if not solver_status.pencilmarks:
         for cell in range(81):
             if not is_clue(cell, board, solver_status):
                 nbr_clues = [board[nbr_cell] for nbr_cell in ALL_NBRS[cell]
@@ -264,7 +264,7 @@ def init_options(board, solver_status):
                 board[cell] = "".join(value for value in SUDOKU_VALUES_LIST if value not in nbr_clues)
                 if len(board[cell]) == 1:
                     solver_status.naked_singles.add(cell)
-        solver_status.options_set = True
+        solver_status.pencilmarks = True
 
 
 def eliminate_options(solver_status, board, to_eliminate, window):
@@ -289,7 +289,7 @@ def place_digit(cell_id, digit, board, solver_status, window):
     if window:
         solver_status.capture_baseline(board, window)
     board[cell_id] = digit
-    solver_status.clues_found.add(cell_id)
+    solver_status.cells_solved.add(cell_id)
     solver_status.naked_singles.discard(cell_id)
 
     impacted_cells = {cell for cell in ALL_NBRS[cell_id] if digit in board[cell]}
@@ -301,40 +301,34 @@ def place_digit(cell_id, digit, board, solver_status, window):
     return eliminate, impacted_cells
 
 
-def set_cell_options(cell_id, board, solver_status):
-    """ Set cell options """
-    board[cell_id] = ''.join(get_options(cell_id, board, solver_status))
+def set_cell_candidates(cell_id, board, solver_status):
+    """ Set cell remaining candidates """
+    board[cell_id] = ''.join(get_cell_candidates(cell_id, board, solver_status))
     if len(board[cell_id]) == 1:
         solver_status.naked_singles.add(cell_id)
 
 
-def set_neighbours_options(cell_id, board, window, solver_status):
-    """ Set options of the cell neighbours.
-    For 'visible' options:
+def set_neighbours_candidates(cell_id, board, window, solver_status):
+    """ Set candidates of the cell neighbours.
+    For 'visible' pencilmarks:
         - remove all options that are not allowed
         - if the set is empty, set allowed options and remove the cell
           from the set with 'visible' options """
     for cell in ALL_NBRS[cell_id]:
         if not is_clue(cell, board, solver_status):
             if cell in window.options_visible:
-                updated_opts = set(board[cell]) & get_options(cell, board, solver_status)
+                updated_opts = set(board[cell]) & get_cell_candidates(cell, board, solver_status)
                 if updated_opts:
                     board[cell] = ''.join(updated_opts)
                 else:
-                    board[cell] = ''.join(get_options(cell, board, solver_status))
+                    board[cell] = ''.join(get_cell_candidates(cell, board, solver_status))
                     window.options_visible.remove(cell)
             else:
-                board[cell] = ''.join(get_options(cell, board, solver_status))
+                board[cell] = ''.join(get_cell_candidates(cell, board, solver_status))
             if len(board[cell]) > 1 and cell in solver_status.naked_singles:
                 solver_status.naked_singles.remove(cell)
             if len(board[cell]) == 1:
                 solver_status.naked_singles.add(cell)
-
-
-def in_options(board, cell_id, value):
-    """ check if the value can make correct clue of the cell """
-    options = SUDOKU_VALUES_SET.copy() - set(''.join([board[cell_id] for cell_id in ALL_NBRS[cell_id]]))
-    return True if value in options else False
 
 
 def check_file(pathname, data, additional_info=""):

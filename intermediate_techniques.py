@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, init_options, eliminate_options
+from utils import get_stats, is_clue, init_remaining_candidates, eliminate_options
 
 
 @get_stats
@@ -37,7 +37,7 @@ def remote_pairs(solver_status, board, window):
         else:
             return []
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     pairs_positions = defaultdict(list)
     for cell in range(81):
         if len(board[cell]) == 2:
@@ -49,7 +49,7 @@ def remote_pairs(solver_status, board, window):
         if chain:
             impacted_cells = set(ALL_NBRS[chain[0]]).intersection(set(ALL_NBRS[chain[-1]]))
             to_eliminate = [(value, cell) for value in pair for cell in impacted_cells
-                         if value in board[cell] and not is_clue(cell, board, solver_status)]
+                            if value in board[cell] and not is_clue(cell, board, solver_status)]
             if to_eliminate:
                 solver_status.capture_baseline(board, window)
                 if window:
@@ -102,7 +102,7 @@ def unique_rectangles_(solver_status, board, window):
                     return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     pairs = defaultdict(list)
     for i in range(81):
@@ -185,7 +185,7 @@ def skyscraper(solver_status, board, window):
                             return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     for opt in SUDOKU_VALUES_LIST:
         if _find_skyscraper(True, opt):
@@ -307,7 +307,7 @@ def sue_de_coq(solver_status, board, window):
                                         return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     for sqr in range(9):
         if _find_sue_de_coq_type_1(sqr, True):
@@ -383,7 +383,7 @@ def empty_rectangle(solver_status, board, window):
                                             return True
         return False
 
-    init_options(board, solver_status)
+    init_remaining_candidates(board, solver_status)
     kwargs = {}
     for indx in range(9):
         if _find_empty_rectangle(indx, True):
