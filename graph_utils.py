@@ -168,7 +168,11 @@ def cell_color(window, cell, **kwargs):
     if "c_chain" in kwargs and cell in kwargs["c_chain"]:
         color = html_color_codes["orange"]
     if "chain_a" in kwargs and cell in kwargs["chain_a"]:
-        color = html_color_codes["orange"]
+        # color = html_color_codes["orange"]
+        # color = html_color_codes["moccasin"]
+        # color = html_color_codes["sandybrown"]
+        color = html_color_codes["lightsalmon"]
+
     if "chain_b" in kwargs and cell in kwargs["chain_b"]:
         color = html_color_codes["peru"]
     if "chain_c" in kwargs and cell in kwargs["chain_c"]:
@@ -178,7 +182,10 @@ def cell_color(window, cell, **kwargs):
     if "chain_i" in kwargs and cell in kwargs["chain_i"]:
         color = html_color_codes["lightyellow"]
     if "impacted_cells" in kwargs and cell in kwargs["impacted_cells"]:
-        color = html_color_codes["palegreen"]
+        # color = html_color_codes["palegreen"]
+        # color = html_color_codes["moccasin"]
+        color = html_color_codes["lightgreen"]
+
     if cell == window.selected_cell or \
             "new_clue" in kwargs and cell == kwargs["new_clue"]:
         color = html_color_codes["palegreen"]

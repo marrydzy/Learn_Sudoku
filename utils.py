@@ -124,7 +124,36 @@ def get_subsets(board, n_size_subset, als=False):
                         for cell in subset:
                             for candidate in board[cell]:
                                 subset_data[candidate].add(cell)
-                        yield subset_data
+                        yield house, subset_data
+
+
+def get_impacting_cells(digit, greyed_out, board):
+    """ return set of (solved) cells that impose restraint on the greyed-out cells """
+    impacting_cells = set()
+    for cell_id in greyed_out:
+        impacting_cells = impacting_cells.union({cell for cell in ALL_NBRS[cell_id] if board[cell] == digit})
+    return impacting_cells
+
+
+def get_impacted_houses(cell, base_house=None, to_eliminate=None):
+    """ return union of houses the cell belongs to (cell row, column and box)
+     - 'base_house' if not None is always included in the union of the cell houses
+     - if 'to_eliminate' is neither None nor an empty set only the houses that intersect with
+       it are included in the union of the cell houses
+    """
+    houses = base_house if base_house is not None else set()
+    if to_eliminate is None:
+        houses = houses.union(CELLS_IN_ROW[CELL_ROW[cell]])
+        houses = houses.union(CELLS_IN_COL[CELL_COL[cell]])
+        houses = houses.union(CELLS_IN_BOX[CELL_BOX[cell]])
+    else:
+        if to_eliminate.intersection(CELLS_IN_ROW[CELL_ROW[cell]]):
+            houses = houses.union(CELLS_IN_ROW[CELL_ROW[cell]])
+        if to_eliminate.intersection(CELLS_IN_COL[CELL_COL[cell]]):
+            houses = houses.union(CELLS_IN_COL[CELL_COL[cell]])
+        if to_eliminate.intersection(CELLS_IN_BOX[CELL_BOX[cell]]):
+            houses = houses.union(CELLS_IN_BOX[CELL_BOX[cell]])
+    return houses
 
 
 def get_impacted_cells(board, subset):
@@ -249,6 +278,27 @@ def eliminate_options(solver_status, board, to_eliminate, window):
                 raise DeadEndException
         elif len(board[cell]) == 1:
             solver_status.naked_singles.add(cell)
+
+
+def place_digit(cell_id, digit, board, solver_status, window):
+    """ establish the given digit as cell value
+    Returns:
+     - set of eliminated candidates (set of (digit, cell) tuples)
+     - set of cells with visible candidates impacted by the elimination
+    """
+    if window:
+        solver_status.capture_baseline(board, window)
+    board[cell_id] = digit
+    solver_status.clues_found.add(cell_id)
+    solver_status.naked_singles.discard(cell_id)
+
+    impacted_cells = {cell for cell in ALL_NBRS[cell_id] if digit in board[cell]}
+    eliminate = {(digit, cell) for cell in impacted_cells}
+    if window:
+        impacted_cells = {cell for cell in impacted_cells
+                          if cell in window.options_visible or window.show_all_pencil_marks}
+    eliminate_options(solver_status, board, eliminate, window)
+    return eliminate, impacted_cells
 
 
 def set_cell_options(cell_id, board, solver_status):

@@ -56,7 +56,7 @@ def _get_alses(board):
     alses = []
     for n in range(1, 8):
         n_alses = []
-        for als in get_subsets(board, n, als=True):
+        for _, als in get_subsets(board, n, als=True):
             if als not in n_alses:
                 n_alses.append(als)
         alses.extend(n_alses)

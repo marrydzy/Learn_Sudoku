@@ -49,6 +49,8 @@ html_color_codes = {
     'gray': (128, 128, 128),
     'hotpink': (255, 105, 180),
     'indianred': (),
+    'khaki': (240, 230, 140),
+    'lemonchiffon': (255, 250, 205),
     'lightblue': (),
     'lightcoral': (240, 128, 128),
     'lightgray': (211, 211, 211),

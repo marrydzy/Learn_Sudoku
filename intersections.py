@@ -50,6 +50,7 @@ def locked_candidates(solver_status, board, window):
                             window.options_visible = window.options_visible.union(house).union(impacted_cells)
                         kwargs["solver_tool"] = "locked_candidates_type_1"
                         kwargs["house"] = house
+                        # kwargs["impacted_cells"] = impacted_cells
                         kwargs["eliminate"] = to_eliminate
                         kwargs["chain_a"] = _paint_locked_candidates(house, possibility)
                         kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
@@ -80,9 +81,10 @@ def locked_candidates(solver_status, board, window):
                                 window.options_visible = window.options_visible.union(house).union(impacted_cells)
                             kwargs["solver_tool"] = "locked_candidates_type_2"
                             kwargs["house"] = house
+                            kwargs["impacted_cells"] = impacted_cells
                             kwargs["eliminate"] = to_eliminate
                             kwargs["chain_a"] = _paint_locked_candidates(house, possibility)
-                            kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
+                            # kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
                             locked_candidates.clues += len(solver_status.naked_singles)
                             locked_candidates.options_removed += len(to_eliminate)
                             return True

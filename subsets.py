@@ -59,7 +59,8 @@ def _hidden_subset(solver_status, board, window, subset_size):
                         kwargs = {
                             "solver_tool": subset_strategies[subset_size][0],
                             "c_chain": c_chain,
-                            "eliminate": to_eliminate, }
+                            "eliminate": to_eliminate,
+                            "house": house, }
                         subset_strategies[subset_size][1].clues += len(solver_status.naked_singles)
                         subset_strategies[subset_size][1].options_removed += len(to_eliminate)
                         return kwargs
@@ -78,11 +79,11 @@ def _naked_subset(solver_status, board, window, subset_size):
     subset_strategies = {2: ("naked_pair", naked_pair, 60),
                          3: ("naked_triplet", naked_triplet, 80),
                          4: ("naked_quad", naked_quad, 120), }
-    for subset_dict in get_subsets(board, subset_size):
+    for house, subset_dict in get_subsets(board, subset_size):
         subset_cells = {cell for cells in subset_dict.values() for cell in cells}
         impacted_cells = get_impacted_cells(board, subset_cells)
         to_eliminate = {(candidate, cell)
-                     for cell in impacted_cells for candidate in set(board[cell]).intersection(subset_dict)}
+                        for cell in impacted_cells for candidate in set(board[cell]).intersection(subset_dict)}
         if to_eliminate:
             solver_status.capture_baseline(board, window)
             assert len(solver_status.naked_singles) == 0
@@ -91,9 +92,10 @@ def _naked_subset(solver_status, board, window, subset_size):
                 window.options_visible = window.options_visible.union(subset_cells).union(impacted_cells)
             kwargs = {
                 "solver_tool": subset_strategies[subset_size][0],
-                "c_chain": _get_c_chain(subset_cells, subset_dict),
-                "impacted_cells": {cell for _, cell in to_eliminate},
-                "eliminate": to_eliminate, }
+                "chain_a": _get_c_chain(subset_cells, subset_dict),
+                # "impacted_cells": {cell for _, cell in to_eliminate},
+                "eliminate": to_eliminate,
+                "house": set(house).union(impacted_cells), }
             subset_strategies[subset_size][1].clues += len(solver_status.naked_singles)
             subset_strategies[subset_size][1].options_removed += len(to_eliminate)
             return kwargs

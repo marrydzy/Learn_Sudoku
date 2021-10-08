@@ -140,6 +140,7 @@ class AppWindow:
     def render_board(self, board, **kwargs):
         """ render board (TODO) """
         active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
+        chain_a = kwargs["chain_a"] if "chain_a" in kwargs else None
         solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else "plain_board"
         incorrect_values = kwargs["incorrect_values"] if "incorrect_values" in kwargs else set()
         conflicted_cells = kwargs["conflicted_cells"] if "conflicted_cells" in kwargs else set()
@@ -148,8 +149,11 @@ class AppWindow:
         assert solver_tool is not None
 
         black_digits = self.solver_status.clues_defined
-        if not self.critical_error and active_clue:
-            black_digits = black_digits.union({active_clue, })
+        if not self.critical_error:
+            if active_clue:
+                black_digits = black_digits.union({active_clue, })
+            if chain_a:
+                black_digits = black_digits.union({cell for cell in chain_a if len(board[cell]) == 1})
         red_digits = conflicted_cells.union(incorrect_values.intersection(self.solver_status.clues_found))
         if self.critical_error:
             red_digits = red_digits.union({cell for cell in self.critical_error if cell not in black_digits})
