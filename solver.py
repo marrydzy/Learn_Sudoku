@@ -16,11 +16,12 @@
 
     LOCAL FUNCTIONS:
         _manual_move() - depending on board state: sets or removes entered digit as cell clue or candidate
-        _the_same_as_clue_found() - entered key is the same as clicked cell current value
-        _other_than_clue_found() - entered key is other than clicked cell current value
-        _as_clue_and_undefined() - entering a digit as clue of undefined cell
-        _as_opt_and_undefined() - entering an option (candidate) in undefined cell
-        _check_board_integrity() - checks integrity of the current board state
+        _the_same_as_value_set() - entered key is the same as clicked cell current value
+        _other_than_value_set() - entered key is other than clicked cell current value
+        _as_value_and_unresolved() - entered key as value of unresolved cell
+        _as_candidate_and_unresolved() - entered key as candidate of unresolved cell
+        _check_board_integrity() - check integrity of the current board (givens and cells values:
+                                   candidates are ignored)
 
 TODO:
 
@@ -132,7 +133,7 @@ class SolverStatus:
         self.board_baseline = list()
         self.naked_singles_baseline = set()
         self.cells_solved_baseline = set()
-        self.options_visible_baseline = set()
+        self.visible_pencilmarks_baseline = set()
 
     def initialize(self, board):
         self.givens = set(cell_id for cell_id in range(81) if board[cell_id] != ".")
@@ -143,7 +144,7 @@ class SolverStatus:
             self.board_baseline = board.copy()
             self.naked_singles_baseline = self.naked_singles.copy()
             self.cells_solved_baseline = self.cells_solved.copy()
-            self.options_visible_baseline = window.options_visible.copy()
+            self.visible_pencilmarks_baseline = window.options_visible.copy()
             if not window.animate:
                 window.buttons[K_b].set_status(True)
 
@@ -152,7 +153,7 @@ class SolverStatus:
             board[cell_id] = self.board_baseline[cell_id]
         self.naked_singles = self.naked_singles_baseline.copy()
         self.cells_solved = self.cells_solved_baseline.copy()
-        window.options_visible = self.options_visible_baseline.copy()
+        window.options_visible = self.visible_pencilmarks_baseline.copy()
 
     def restore(self, solver_status_baseline):
         self.pencilmarks = solver_status_baseline.pencilmarks
@@ -162,7 +163,7 @@ class SolverStatus:
         self.board_baseline = solver_status_baseline.board_baseline.copy()
         self.naked_singles_baseline = solver_status_baseline.naked_singles_baseline.copy()
         self.cells_solved_baseline = solver_status_baseline.cells_solved_baseline.copy()
-        self.options_visible_baseline = solver_status_baseline.options_visible_baseline.copy()
+        self.visible_pencilmarks_baseline = solver_status_baseline.visible_pencilmarks_baseline.copy()
 
     def reset(self, board):
         self.pencilmarks = False
@@ -170,7 +171,7 @@ class SolverStatus:
         self.naked_singles.clear()
         self.naked_singles_baseline.clear()
         self.cells_solved_baseline.clear()
-        self.options_visible_baseline.clear()
+        self.visible_pencilmarks_baseline.clear()
         for cell_id in range(81):
             if cell_id not in self.givens:
                 board[cell_id] = "."
@@ -297,7 +298,8 @@ def get_prioritized_strategies():
                                   if key_value_pair[1].name in strategy_priorities else 99999))
     elif priorities == "by_effectiveness":
         return OrderedDict(sorted(_solver_strategies.items(),
-                                  key=lambda key_value_pair: strategy_priorities[key_value_pair[1].name].by_effectiveness
+                                  key=lambda key_value_pair: strategy_priorities[
+                                      key_value_pair[1].name].by_effectiveness
                                   if key_value_pair[1].name in strategy_priorities else 99999))
     elif priorities == "by_efficiency":
         return OrderedDict(sorted(_solver_strategies.items(),
@@ -323,17 +325,17 @@ def _manual_move(board, window):
     kwargs = {}
     if window and window.value_entered.cell is not None:
         solver_status.capture_baseline(board, window)
-        cell_id, value, as_clue = window.value_entered
+        cell_id, value, as_value = window.value_entered
         if cell_id in solver_status.cells_solved:
             if board[cell_id] == value:
-                _the_same_as_clue_found(board, window, solver_status.pencilmarks)
+                _the_same_as_value_set(board, window, solver_status.pencilmarks)
             else:
-                _other_than_clue_found(board, window, solver_status.pencilmarks)
+                _other_than_value_set(board, window, solver_status.pencilmarks)
         else:
-            if as_clue:
-                _as_clue_and_undefined(board, window, solver_status.pencilmarks)
+            if as_value:
+                _as_value_and_unresolved(board, window, solver_status.pencilmarks)
             else:
-                _as_opt_and_undefined(board, window)
+                _as_candidate_and_unresolved(board, window)
 
         conflicted_cells, incorrect_values = _check_board_integrity(board, window)
         conflicted = {window.value_entered.cell, } if window.value_entered.cell in conflicted_cells else set()
@@ -350,11 +352,11 @@ def _manual_move(board, window):
     return kwargs
 
 
-def _the_same_as_clue_found(board, window, pencilmarks):
+def _the_same_as_value_set(board, window, pencilmarks):
     """ Entered key is the same as clicked cell value """
-    cell_id, value, as_clue = window.value_entered
+    cell_id, value, as_value = window.value_entered
     solver_status.cells_solved.remove(cell_id)
-    if as_clue:
+    if as_value:
         if pencilmarks:
             set_cell_candidates(cell_id, board, solver_status)
         else:
@@ -366,13 +368,13 @@ def _the_same_as_clue_found(board, window, pencilmarks):
         set_neighbours_candidates(cell_id, board, window, solver_status)
 
 
-def _other_than_clue_found(board, window, pencilmarks):
+def _other_than_value_set(board, window, pencilmarks):
     """ Entered key other than clicked cell value """
-    cell_id, value, as_clue = window.value_entered
+    cell_id, value, as_value = window.value_entered
     if cell_id in solver_status.naked_singles:
         solver_status.naked_singles.remove(cell_id)
     board[cell_id] = value
-    if as_clue:
+    if as_value:
         solver_status.cells_solved.add(cell_id)
     else:
         solver_status.cells_solved.remove(cell_id)
@@ -382,9 +384,9 @@ def _other_than_clue_found(board, window, pencilmarks):
         set_neighbours_candidates(cell_id, board, window, solver_status)
 
 
-def _as_clue_and_undefined(board, window, pencilmarks):
-    """ Entering clue in undefined cell """
-    cell_id, value, as_clue = window.value_entered
+def _as_value_and_unresolved(board, window, pencilmarks):
+    """ Entering key as value of unresolved cell """
+    cell_id, value, _ = window.value_entered
     if cell_id in window.options_visible:
         window.options_visible.remove(cell_id)
     if cell_id in solver_status.naked_singles:
@@ -395,8 +397,8 @@ def _as_clue_and_undefined(board, window, pencilmarks):
         set_neighbours_candidates(cell_id, board, window, solver_status)
 
 
-def _as_opt_and_undefined(board, window):
-    """ Entering an option in undefined cell """
+def _as_candidate_and_unresolved(board, window):
+    """ Entering key as candidate of unresolved cell """
     cell_id, value, _ = window.value_entered
     if cell_id in window.options_visible or window.show_all_pencil_marks:
         solver_status.naked_singles.discard(cell_id)

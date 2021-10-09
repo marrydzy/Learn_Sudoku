@@ -36,7 +36,7 @@ def full_house(solver_status, board, window):
                 ''.join(board[cell] for cell in house if is_clue(cell, board, solver_status)))
             board[cell] = missing_digit.pop()
             solver_status.cells_solved.add(cell)
-            kwargs["solver_tool"] = "full_house"
+            kwargs["solver_tool"] = full_house.__name__
             kwargs["house"] = house
             kwargs["new_clue"] = cell
             full_house.clues += 1
@@ -95,7 +95,7 @@ def visual_elimination(solver_status, board, window):
                 clue_found = possibilities.pop()
                 board[clue_found] = value
                 solver_status.cells_solved.add(clue_found)
-                kwargs["solver_tool"] = "visual_elimination"
+                kwargs["solver_tool"] = visual_elimination.__name__
                 kwargs["new_clue"] = clue_found
                 kwargs["greyed_out"] = greyed_out
                 kwargs["chain_a"] = {cell: set() for cell in with_clue}
@@ -139,7 +139,7 @@ def naked_single(solver_status, board, window):
             eliminate, impacted_cells = place_digit(the_single, board[the_single], board, solver_status, window)
             naked_single.options_removed += len(eliminate)
             naked_single.clues += len(solver_status.naked_singles) - naked_singles_on_entry + 1
-            kwargs["solver_tool"] = "naked_single"
+            kwargs["solver_tool"] = naked_single.__name__
             if window:
                 kwargs["new_clue"] = the_single
                 kwargs["eliminate"] = eliminate
@@ -152,7 +152,7 @@ def naked_single(solver_status, board, window):
                 if len(cell_opts) == 1:
                     solver_status.capture_baseline(board, window)
                     board[cell] = cell_opts.pop()
-                    kwargs["solver_tool"] = "naked_single"
+                    kwargs["solver_tool"] = naked_single.__name__
                     kwargs["new_clue"] = cell
                     solver_status.cells_solved.add(cell)
                     naked_single.clues += 1
@@ -185,7 +185,7 @@ def hidden_single(solver_status, board, window):
                 eliminate, impacted_cells = place_digit(clue_found, candidate, board, solver_status, window)
                 hidden_single.clues += 1 + len(solver_status.naked_singles)
                 hidden_single.options_removed += len(eliminate)
-                kwargs["solver_tool"] = "hidden_single"
+                kwargs["solver_tool"] = hidden_single.__name__
                 if window:
                     if solver_status.pencilmarks:
                         window.options_visible = window.options_visible.union(house)

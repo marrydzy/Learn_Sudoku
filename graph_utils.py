@@ -915,7 +915,7 @@ def set_methods():
             # "x_colors": "6",
             "x_colors_elimination": "6",
             "x_colors_contradiction": "6",
-            "3d_medusa": "6",
+            "three_d_medusa": "6",
             "naked_xy_chain": "9",
             "hidden_xy_chain": "9",
             "y_wings": "9",             # TODO!!!

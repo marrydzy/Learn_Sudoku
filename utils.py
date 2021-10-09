@@ -67,7 +67,7 @@ def get_stats(func):
     function_wrapper.clues = 0
     function_wrapper.options_removed = 0
     function_wrapper.time_in = 0
-    # function_wrapper.rating = 0
+    function_wrapper.__name__ = func.__name__
     return function_wrapper
 
 
@@ -89,11 +89,10 @@ def is_solved(board, solver_status):
 
 
 def is_clue(cell_id, board, solver_status):
-    """ check if the cell has clue (is solved) """
-    if board[cell_id] == "." or len(board[cell_id]) != 1 or \
-            (cell_id not in solver_status.givens and cell_id not in solver_status.cells_solved):
-        return False
-    return True
+    """ return True if cell_id has been solved (is a digit and is not in 'solver_status.naked_singles'),
+     False otherwise
+    """
+    return not bool(board[cell_id] == "." or len(board[cell_id]) != 1 or cell_id in solver_status.naked_singles)
 
 
 def is_single(board, house, value):

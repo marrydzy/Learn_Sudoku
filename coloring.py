@@ -823,7 +823,7 @@ def three_d_medusa(solver_status, board, window):
                     window.options_visible = window.options_visible.union(cell for cell in c_chain).union(
                         impacted_cells)
                 eliminate_options(solver_status, board, to_eliminate, window)
-                kwargs["solver_tool"] = "3d_medusa"
+                kwargs["solver_tool"] = "three_d_medusa"
                 kwargs["c_chain"] = c_chain
                 kwargs["edges"] = edges
                 kwargs["impacted_cells"] = impacted_cells

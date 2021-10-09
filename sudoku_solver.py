@@ -284,7 +284,7 @@ def _apply_brute_force():
         to_eliminate = {(option, next_cell) for option in board[next_cell] if option != value}
         solver_status.capture_baseline(board, window)
         if window:
-            window.options_visible = window.options_visible.union({next_cell})
+            window.options_visible.add(next_cell)
         eliminate_options(solver_status, board, to_eliminate, window)
 
         if config["output_opts"]["iterations"] and data["current_loop"] == config["repeat"] - 1:
