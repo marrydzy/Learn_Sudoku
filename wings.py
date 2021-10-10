@@ -8,7 +8,7 @@ from itertools import combinations
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, init_remaining_candidates, eliminate_options
+from utils import get_stats, set_remaining_candidates, eliminate_options
 from utils import get_bi_value_cells, get_house_pairs, get_strong_links, get_pair_house
 
 
@@ -31,12 +31,12 @@ def finned_x_wing(solver_status, board, window):
         cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
         for row_1 in range(9):
             r1_cols = set(col for col in range(9) if
-                          option in board[cells[row_1][col]] and not is_clue(cells[row_1][col], board, solver_status))
+                          option in board[cells[row_1][col]] and len(board[cells[row_1][col]]) > 1)
             if len(r1_cols) == 2:
                 for row_2 in range(9):
                     if row_2 != row_1:
                         r2_cols = set(col for col in range(9) if option in board[cells[row_2][col]]
-                                      and not is_clue(cells[row_2][col], board, solver_status))
+                                      and len(board[cells[row_2][col]]) > 1)
                         if r2_cols.issuperset(r1_cols):
                             fin = r2_cols.difference(r1_cols)
                             other_cells = set()
@@ -98,7 +98,7 @@ def finned_x_wing(solver_status, board, window):
                                     return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     for opt in SUDOKU_VALUES_LIST:
         if _find_finned_x_wing(True, opt):
@@ -162,7 +162,7 @@ def finned_mutant_x_wing(solver_status, board, window):
                                  and not set(CELLS_IN_BOX[box]).intersection(house_1)]
                         for box in boxes:
                             fins = [cell for cell in set(CELLS_IN_BOX[box]).difference(house_2)
-                                    if value in board[cell] and not is_clue(cell, board, solver_status)]
+                                    if value in board[cell] and len(board[cell]) > 1]
                             impacted_cell = None
                             if by_column:
                                 col_2 = CELL_COL[fins[0]] if fins else None
@@ -201,7 +201,7 @@ def finned_mutant_x_wing(solver_status, board, window):
                                 return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     for i in range(9):
         if _find_finned_rccb_mutant_x_wing(i):
@@ -243,7 +243,7 @@ def xy_wing(solver_status, board, window):
                 z_value = xz.intersection(yz).pop()
                 impacted_cells = set(ALL_NBRS[pair[0]]).intersection(set(ALL_NBRS[pair[1]]))
                 to_eliminate = [(z_value, a_cell) for a_cell in impacted_cells if
-                                z_value in board[a_cell] and not is_clue(a_cell, board, solver_status)]
+                                z_value in board[a_cell] and len(board[a_cell]) > 1]
                 if to_eliminate:
                     solver_status.capture_baseline(board, window)
                     if window:
@@ -261,7 +261,7 @@ def xy_wing(solver_status, board, window):
                     return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     for cell in range(81):
         if len(board[cell]) == 2 and _find_xy_wing(cell):
@@ -296,7 +296,7 @@ def xyz_wing(solver_status, board, window):
                 impacted_cells = set(ALL_NBRS[cell_id]).intersection(set(ALL_NBRS[pair[0]])).intersection(
                                  set(ALL_NBRS[pair[1]]))
                 to_eliminate = [(z_value, a_cell) for a_cell in impacted_cells if
-                                z_value in board[a_cell] and not is_clue(cell, board, solver_status)]
+                                z_value in board[a_cell] and len(board[cell]) > 1]
                 if to_eliminate:
                     solver_status.capture_baseline(board, window)
                     if window:
@@ -314,7 +314,7 @@ def xyz_wing(solver_status, board, window):
                     return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     for cell in range(81):
         if len(board[cell]) == 3 and _find_xyz_wing(cell):
@@ -592,7 +592,7 @@ def w_wing(solver_status, board, window):
 
     bi_value_cells = get_bi_value_cells(board)
     strong_links = get_strong_links(board)
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     for pair in bi_value_cells:
         if len(bi_value_cells[pair]) > 1:
             va, vb = pair
@@ -659,7 +659,7 @@ def franken_x_wing(solver_status, board, window):
         cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
         for row in range(9):
             cols_1 = [col for col in range(9) if
-                      option in board[cells[row][col]] and not is_clue(cells[row][col], board, solver_status)]
+                      option in board[cells[row][col]] and len(board[cells[row][col]]) > 1]
             if len(cols_1) == 2:
                 corner_1 = cells[row][cols_1[0]]
                 corner_2 = cells[row][cols_1[1]]
@@ -668,10 +668,10 @@ def franken_x_wing(solver_status, board, window):
                     for box in other_boxes:
                         if by_row:
                             cols_2 = set(CELL_COL[cell] for cell in CELLS_IN_BOX[box]
-                                         if option in board[cell] and not is_clue(cell, board, solver_status))
+                                         if option in board[cell] and len(board[cell]) > 1)
                         else:
                             cols_2 = set(CELL_ROW[cell] for cell in CELLS_IN_BOX[box]
-                                         if option in board[cell] and not is_clue(cell, board, solver_status))
+                                         if option in board[cell] and len(board[cell]) > 1)
                         if set(cols_1) == cols_2:
                             if by_row:
                                 other_cells = set(CELLS_IN_COL[cols_1[0]]).union(set(CELLS_IN_COL[cols_1[1]]))
@@ -699,7 +699,7 @@ def franken_x_wing(solver_status, board, window):
                                 return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     for opt in SUDOKU_VALUES_LIST:
         if _find_franken_x_wing(True, opt):

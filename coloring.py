@@ -14,7 +14,7 @@ from itertools import combinations
 import networkx as nx
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX, ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, eliminate_options, get_pair_house, init_remaining_candidates
+from utils import get_stats, eliminate_options, get_pair_house, set_remaining_candidates
 from utils import get_strong_links, DeadEndException
 
 
@@ -24,7 +24,7 @@ def _get_strongly_connected_cells(board, solver_status):
     {(cell_1, cell_2): {candidate_1, candidate_2, ...}, ...} """
 
     def _add_connected(cells):
-        unsolved_cells = [cell for cell in cells if not is_clue(cell, board, solver_status)]
+        unsolved_cells = [cell for cell in cells if len(board[cell]) > 1]
         if unsolved_cells:
             candidates = ''.join(board[cell] for cell in unsolved_cells)
             for value in SUDOKU_VALUES_LIST:
@@ -52,8 +52,7 @@ def _get_graph_houses(edges):
 
 def _build_graph(value, board, solver_status):
     def _for_house(cells):
-        nodes = [cell for cell in cells if
-                 value in board[cell] and not is_clue(cell, board, solver_status)]
+        nodes = [cell for cell in cells if value in board[cell] and len(board[cell]) > 1]
         if len(nodes) == 2:
             graph.add_edge(nodes[0], nodes[1])
 
@@ -273,7 +272,7 @@ def hidden_xy_chain(solver_status, board, window):
                 if path and hidden_xy_chain.failures == 0:
                     path = path[1:]
                     impacted_cells = {cell for cell in set(ALL_NBRS[path[0]]).intersection(set(ALL_NBRS[path[-1]]))
-                                      if not is_clue(cell, board, solver_status)}
+                                      if len(board[cell]) > 1}
                     to_eliminate = [(candidate, cell) for cell in impacted_cells if candidate in board[cell]]
                     solver_status.capture_baseline(board, window)
                     if window:
@@ -312,7 +311,7 @@ def naked_xy_chain(solver_status, board, window):
                  for other_cell in neighbours if len(set(board[cell]).intersection(set(board[other_cell]))) == 1])
         return graph
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     graph = _build_bi_value_cells_graph()
     components = list(nx.connected_components(graph))
     unresolved = [cell for cell in range(81) if len(board[cell]) > 2]
@@ -327,7 +326,7 @@ def naked_xy_chain(solver_status, board, window):
                     path = nx.algorithms.shortest_paths.generic.shortest_path(graph, ends[0], ends[1])
                     if _check_bidirectional_traversing(candidate, path, board):
                         impacted_cells = {cell for cell in set(ALL_NBRS[path[0]]).intersection(set(ALL_NBRS[path[-1]]))
-                                          if not is_clue(cell, board, solver_status)}
+                                          if len(board[cell]) > 1}
                         to_eliminate = [(candidate, cell) for cell in impacted_cells if candidate in board[cell]]
                         edges = [(path[n], path[n+1]) for n in range(len(path)-1)]
                         solver_status.capture_baseline(board, window)
@@ -361,7 +360,7 @@ def simple_colors(solver_status, board, window):
         """ two chain cells with different color are pointing at another cell
         outside of the chain that has a candidate equal to the value """
         impacted_cells = [cell for cell in range(81) if cell not in component and value in board[cell]
-                          and not is_clue(cell, board, solver_status)]
+                          and len(board[cell]) > 1]
         to_eliminate = []
         for cell in impacted_cells:
             impacting_chain_nodes = component.intersection(set(ALL_NBRS[cell]))
@@ -512,7 +511,7 @@ def multi_colors(solver_status, board, window):
                     if color_nodes[1][color_1].intersection(ALL_NBRS[node]):
                         other_nodes = set(range(81)).difference(components[0].union(components[1]))
                         other_nodes = {node for node in other_nodes if value in board[node]
-                                       and not is_clue(node, board, solver_status)}
+                                       and len(board[node]) > 1}
                         color_a = _get_second_color(color_nodes[0], color_0)
                         color_b = _get_second_color(color_nodes[1], color_1)
                         impacted_cells = set()

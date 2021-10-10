@@ -12,7 +12,7 @@ TODO:
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import SUDOKU_VALUES_LIST, SUDOKU_VALUES_SET
-from utils import get_stats, is_clue, get_cell_candidates, init_remaining_candidates, get_impacted_houses
+from utils import get_stats, is_digit, get_cell_candidates, set_remaining_candidates, get_impacted_houses
 from utils import place_digit, get_impacting_cells
 
 
@@ -28,17 +28,17 @@ def full_house(solver_status, board, window):
     """
 
     def _set_missing_number(house):
-        unsolved_cells = [cell for cell in house if not is_clue(cell, board, solver_status)]
+        unsolved_cells = [cell for cell in house if not is_digit(cell, board, solver_status)]
         if len(unsolved_cells) == 1:
             solver_status.capture_baseline(board, window)
             cell = unsolved_cells.pop()
             missing_digit = SUDOKU_VALUES_SET - set(
-                ''.join(board[cell] for cell in house if is_clue(cell, board, solver_status)))
+                ''.join(board[cell] for cell in house if is_digit(cell, board, solver_status)))
             board[cell] = missing_digit.pop()
             solver_status.cells_solved.add(cell)
             kwargs["solver_tool"] = full_house.__name__
             kwargs["house"] = house
-            kwargs["new_clue"] = cell
+            kwargs["cell_solved"] = cell
             full_house.clues += 1
             return True
         return False
@@ -67,38 +67,39 @@ def visual_elimination(solver_status, board, window):
         chute = chute % 3
         cols_rows = CELLS_IN_COL if vertical else CELLS_IN_ROW
         house = {cell for offset in range(3) for cell in cols_rows[3 * chute + offset]}
-        with_clue = [cell for cell in house if board[cell] == value]
-        if len(with_clue) == 2 and CELL_BOX[with_clue[0]] != CELL_BOX[with_clue[1]]:
+        with_value = [cell for cell in house if board[cell] == value]
+        if len(with_value) == 2 and CELL_BOX[with_value[0]] != CELL_BOX[with_value[1]]:
             boxes = [chute + 3*offset if vertical else 3*chute + offset for offset in range(3)]
-            boxes.remove(CELL_BOX[with_clue[0]])
-            boxes.remove(CELL_BOX[with_clue[1]])
+            boxes.remove(CELL_BOX[with_value[0]])
+            boxes.remove(CELL_BOX[with_value[1]])
             box_cells = set(CELLS_IN_BOX[boxes.pop()])
             if vertical:
-                other_cells = set(CELLS_IN_COL[CELL_COL[with_clue[0]]]).union(CELLS_IN_COL[CELL_COL[with_clue[1]]])
+                other_cells = set(CELLS_IN_COL[CELL_COL[with_value[0]]]).union(CELLS_IN_COL[CELL_COL[with_value[1]]])
             else:
-                other_cells = set(CELLS_IN_ROW[CELL_ROW[with_clue[0]]]).union(CELLS_IN_ROW[CELL_ROW[with_clue[1]]])
+                other_cells = set(CELLS_IN_ROW[CELL_ROW[with_value[0]]]).union(CELLS_IN_ROW[CELL_ROW[with_value[1]]])
             possibilities = set()
             greyed_out = set()
-            for cell in {cell for cell in box_cells.difference(other_cells) if not is_clue(cell, board, solver_status)}:
+            for cell in {cell for cell in box_cells.difference(other_cells)
+                         if not is_digit(cell, board, solver_status)}:
                 if vertical:
-                    other_clue = {cell_id for cell_id in CELLS_IN_ROW[CELL_ROW[cell]] if board[cell_id] == value}
+                    interacting = {cell_id for cell_id in CELLS_IN_ROW[CELL_ROW[cell]] if board[cell_id] == value}
                 else:
-                    other_clue = {cell_id for cell_id in CELLS_IN_COL[CELL_COL[cell]] if board[cell_id] == value}
-                if other_clue:
-                    assert len(other_clue) == 1
-                    with_clue.append(other_clue.pop())
+                    interacting = {cell_id for cell_id in CELLS_IN_COL[CELL_COL[cell]] if board[cell_id] == value}
+                if interacting:
+                    assert len(interacting) == 1
+                    with_value.append(interacting.pop())
                     greyed_out.add(cell)
                 else:
                     possibilities.add(cell)
             if len(possibilities) == 1:
                 solver_status.capture_baseline(board, window)
-                clue_found = possibilities.pop()
-                board[clue_found] = value
-                solver_status.cells_solved.add(clue_found)
+                cell_solved = possibilities.pop()
+                board[cell_solved] = value
+                solver_status.cells_solved.add(cell_solved)
                 kwargs["solver_tool"] = visual_elimination.__name__
-                kwargs["new_clue"] = clue_found
+                kwargs["cell_solved"] = cell_solved
                 kwargs["greyed_out"] = greyed_out
-                kwargs["chain_a"] = {cell: set() for cell in with_clue}
+                kwargs["chain_a"] = {cell: set() for cell in with_value}
                 kwargs["house"] = house
                 visual_elimination.clues += 1
                 return True
@@ -127,7 +128,7 @@ def naked_single(solver_status, board, window):
     """
     kwargs = {}
     if not (window or solver_status.pencilmarks):
-        init_remaining_candidates(board, solver_status)
+        set_remaining_candidates(board, solver_status)
         naked_single.clues += len(solver_status.naked_singles)
 
     if solver_status.pencilmarks:
@@ -141,19 +142,19 @@ def naked_single(solver_status, board, window):
             naked_single.clues += len(solver_status.naked_singles) - naked_singles_on_entry + 1
             kwargs["solver_tool"] = naked_single.__name__
             if window:
-                kwargs["new_clue"] = the_single
+                kwargs["cell_solved"] = the_single
                 kwargs["eliminate"] = eliminate
                 kwargs["house"] = get_impacted_houses(the_single, base_house=None, to_eliminate=impacted_cells)
             return kwargs
     else:
         for cell in range(81):
             if board[cell] == ".":
-                cell_opts = get_cell_candidates(cell, board, solver_status)
+                cell_opts = get_cell_candidates(cell, board)
                 if len(cell_opts) == 1:
                     solver_status.capture_baseline(board, window)
                     board[cell] = cell_opts.pop()
                     kwargs["solver_tool"] = naked_single.__name__
-                    kwargs["new_clue"] = cell
+                    kwargs["cell_solved"] = cell
                     solver_status.cells_solved.add(cell)
                     naked_single.clues += 1
                     return kwargs
@@ -179,20 +180,20 @@ def hidden_single(solver_status, board, window):
             if solver_status.pencilmarks:
                 in_cells = {cell for cell in unsolved if candidate in board[cell]}
             else:
-                in_cells = {cell for cell in unsolved if candidate in get_cell_candidates(cell, board, solver_status)}
+                in_cells = {cell for cell in unsolved if candidate in get_cell_candidates(cell, board)}
             if len(in_cells) == 1:
-                clue_found = in_cells.pop()
-                eliminate, impacted_cells = place_digit(clue_found, candidate, board, solver_status, window)
+                cell_solved = in_cells.pop()
+                eliminate, impacted_cells = place_digit(cell_solved, candidate, board, solver_status, window)
                 hidden_single.clues += 1 + len(solver_status.naked_singles)
                 hidden_single.options_removed += len(eliminate)
                 kwargs["solver_tool"] = hidden_single.__name__
                 if window:
                     if solver_status.pencilmarks:
                         window.options_visible = window.options_visible.union(house)
-                    greyed_out = {cell for cell in house if not is_clue(cell, board, solver_status) and
+                    greyed_out = {cell for cell in house if not is_digit(cell, board, solver_status) and
                                   cell not in window.options_visible}
-                    kwargs["house"] = get_impacted_houses(clue_found, base_house=house, to_eliminate=impacted_cells)
-                    kwargs["new_clue"] = clue_found
+                    kwargs["house"] = get_impacted_houses(cell_solved, base_house=house, to_eliminate=impacted_cells)
+                    kwargs["cell_solved"] = cell_solved
                     kwargs["greyed_out"] = greyed_out
                     kwargs["eliminate"] = eliminate
                     kwargs["chain_a"] = {cell: set() for cell in get_impacting_cells(candidate, greyed_out, board)}

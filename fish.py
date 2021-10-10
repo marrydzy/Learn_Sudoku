@@ -17,7 +17,7 @@ from itertools import combinations
 from collections import defaultdict
 
 from utils import CELL_BOX, CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX, SUDOKU_VALUES_LIST
-from utils import init_remaining_candidates, eliminate_options, get_stats, get_n_values
+from utils import set_remaining_candidates, eliminate_options, get_stats, get_n_values
 
 
 def _basic_fish(solver_status, board, window, n):
@@ -69,7 +69,7 @@ def _basic_fish(solver_status, board, window, n):
                             return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     if _find_fish(True):
         return kwargs
@@ -157,7 +157,7 @@ def _finned_fish(solver_status, board, window, n):
                                     return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     if _find_finned_fish(True):
         return kwargs

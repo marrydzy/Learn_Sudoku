@@ -1,15 +1,32 @@
 # -*- coding: UTF-8 -*-
 
-""" SUDOKU SOLVING METHODS """
+""" 'SUBSETS' CLASS OF SOLVING METHODS
+
+    GLOBAL FUNCTIONS:
+        hidden_pair() - 'Hidden Pair' sudoku solving strategy
+        hidden_triplet() - 'Hidden Triplet' sudoku solving strategy
+        hidden_quad() - 'Hidden Quad' sudoku solving strategy
+        naked_pair() - 'Naked Pair' sudoku solving strategy
+        naked_triplet() - 'Naked Triplet' sudoku solving strategy
+        naked_quad() - 'Naked Quad' sudoku solving strategy
+
+    LOCAL FUNCTIONS:
+        _get_chain() - returns chain of cells with subset candidates
+        _hidden_subset() - generic algorithm of finding hidden subsets
+        _naked_subset() - generic algorithm of finding naked subsets
+
+TODO:
+
+"""
 
 import itertools
 from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX, DeadEndException
-from utils import get_stats, init_remaining_candidates, eliminate_options, get_subsets, get_impacted_cells
+from utils import get_stats, set_remaining_candidates, eliminate_options, get_subsets, get_impacted_cells
 
 
-def _get_c_chain(subset_cells, subset_candidates):
+def _get_chain(subset_cells, subset_candidates):
     chain = defaultdict(set)
     for cell in subset_cells:
         for candidate in subset_candidates:
@@ -28,10 +45,10 @@ def _hidden_subset(solver_status, board, window, subset_size):
     subset will always be size 4 or smaller.
     """
 
-    init_remaining_candidates(board, solver_status)
-    subset_strategies = {2: ("hidden_pair", hidden_pair, 70),
-                         3: ("hidden_triplet", hidden_triplet, 100),
-                         4: ("hidden_quad", hidden_quad, 150), }
+    set_remaining_candidates(board, solver_status)
+    subset_strategies = {2: (hidden_pair, 70),
+                         3: (hidden_triplet, 100),
+                         4: (hidden_quad, 150), }
 
     for cells in (CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX):
         for house in cells:
@@ -40,7 +57,6 @@ def _hidden_subset(solver_status, board, window, subset_size):
                 continue
             candidates = set("".join(board[cell] for cell in unsolved))
             if len(unsolved) != len(candidates):
-                # print('\n_hidden_subset')       # TODO
                 raise DeadEndException
 
             candidates_positions = {candidate: {cell for cell in unsolved if candidate in board[cell]}
@@ -51,18 +67,18 @@ def _hidden_subset(solver_status, board, window, subset_size):
                     to_eliminate = {(candidate, cell) for cell in subset_nodes for candidate in board[cell]
                                     if candidate not in subset}
                     if to_eliminate:
-                        c_chain = _get_c_chain(subset_nodes, candidates_positions)
+                        c_chain = _get_chain(subset_nodes, candidates_positions)
                         solver_status.capture_baseline(board, window)
                         eliminate_options(solver_status, board, to_eliminate, window)
                         if window:
                             window.options_visible = window.options_visible.union(unsolved)
                         kwargs = {
-                            "solver_tool": subset_strategies[subset_size][0],
-                            "c_chain": c_chain,
+                            "solver_tool": subset_strategies[subset_size][0].__name__,
+                            "chain_a": c_chain,
                             "eliminate": to_eliminate,
                             "house": house, }
-                        subset_strategies[subset_size][1].clues += len(solver_status.naked_singles)
-                        subset_strategies[subset_size][1].options_removed += len(to_eliminate)
+                        subset_strategies[subset_size][0].clues += len(solver_status.naked_singles)
+                        subset_strategies[subset_size][0].options_removed += len(to_eliminate)
                         return kwargs
     return None
 
@@ -75,10 +91,10 @@ def _naked_subset(solver_status, board, window, subset_size):
     Since every Naked Subset is complemented by a Hidden Subset, the smallest of both sets
     will be no larger than 4 in a standard sized Sudoku.
     """
-    init_remaining_candidates(board, solver_status)
-    subset_strategies = {2: ("naked_pair", naked_pair, 60),
-                         3: ("naked_triplet", naked_triplet, 80),
-                         4: ("naked_quad", naked_quad, 120), }
+    set_remaining_candidates(board, solver_status)
+    subset_strategies = {2: (naked_pair, 60),
+                         3: (naked_triplet, 80),
+                         4: (naked_quad, 120), }
     for house, subset_dict in get_subsets(board, subset_size):
         subset_cells = {cell for cells in subset_dict.values() for cell in cells}
         impacted_cells = get_impacted_cells(board, subset_cells)
@@ -86,18 +102,16 @@ def _naked_subset(solver_status, board, window, subset_size):
                         for cell in impacted_cells for candidate in set(board[cell]).intersection(subset_dict)}
         if to_eliminate:
             solver_status.capture_baseline(board, window)
-            assert len(solver_status.naked_singles) == 0
             eliminate_options(solver_status, board, to_eliminate, window)
             if window:
                 window.options_visible = window.options_visible.union(subset_cells).union(impacted_cells)
             kwargs = {
-                "solver_tool": subset_strategies[subset_size][0],
-                "chain_a": _get_c_chain(subset_cells, subset_dict),
-                # "impacted_cells": {cell for _, cell in to_eliminate},
+                "solver_tool": subset_strategies[subset_size][0].__name__,
+                "chain_a": _get_chain(subset_cells, subset_dict),
                 "eliminate": to_eliminate,
-                "house": set(house).union(impacted_cells), }
-            subset_strategies[subset_size][1].clues += len(solver_status.naked_singles)
-            subset_strategies[subset_size][1].options_removed += len(to_eliminate)
+                "house": impacted_cells.union(house), }
+            subset_strategies[subset_size][0].clues += len(solver_status.naked_singles)
+            subset_strategies[subset_size][0].options_removed += len(to_eliminate)
             return kwargs
     return None
 

@@ -5,7 +5,7 @@ import pygame
 from collections import defaultdict
 from solver import solver_status, ValueEntered
 
-from utils import init_remaining_candidates, get_cell_candidates
+from utils import set_remaining_candidates, get_cell_candidates
 from utils import CELL_ROW, CELL_COL
 from html_colors import html_color_codes
 
@@ -146,15 +146,15 @@ def show_pencil_marks(window, cell, **kwargs):
 def render_clue(window, clue, pos, color):
     """ Render board clue """
     digit = window.font_clues.render(clue, True, color)
-    window.screen.blit(digit, (pos[0] + window.clue_shift_x, pos[1] + window.clue_shift_y))
+    window.screen.blit(digit, (pos[0] + window.digit_shift_x, pos[1] + window.digit_shift_y))
 
 
 def render_options(window, options, pos):
     """ Render cell options (pencil marks) """
     for value in options:
         digit = window.font_options.render(value, True, html_color_codes['black'])
-        window.screen.blit(digit, (pos[0] + window.option_offsets[value][0] + window.option_shift_x,
-                           pos[1] + window.option_offsets[value][1] + window.option_shift_y))
+        window.screen.blit(digit, (pos[0] + window.pencilmark_offset[value][0] + window.pencilmark_shift_x,
+                           pos[1] + window.pencilmark_offset[value][1] + window.pencilmark_shift_y))
 
 
 def cell_color(window, cell, **kwargs):
@@ -186,7 +186,7 @@ def cell_color(window, cell, **kwargs):
         color = html_color_codes["lightgreen"]
 
     if cell == window.selected_cell or \
-            "new_clue" in kwargs and cell == kwargs["new_clue"]:
+            "cell_solved" in kwargs and cell == kwargs["cell_solved"]:
         color = html_color_codes["palegreen"]
     if "conflicted_cells" in kwargs and cell in kwargs["conflicted_cells"]:
         color = html_color_codes["pink"]
@@ -448,66 +448,66 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
         if cell_id in chain_i:
             for value, color in chain_i[cell_id]:
                 pygame.draw.rect(window.screen, html_color_codes[color],
-                                 (pos[0] + window.option_offsets[value][0],
-                                  pos[1] + window.option_offsets[value][1],
+                                 (pos[0] + window.pencilmark_offset[value][0],
+                                  pos[1] + window.pencilmark_offset[value][1],
                                   CELL_SIZE // 3, CELL_SIZE // 3))
 
     for value in window.solver_status.board_baseline[cell_id]:
         if claims and value in new_value and cell_id in claims:
             pygame.draw.rect(window.screen, html_color_codes["cyan"],
-                             (pos[0] + window.option_offsets[value][0],
-                              pos[1] + window.option_offsets[value][1],
+                             (pos[0] + window.pencilmark_offset[value][0],
+                              pos[1] + window.pencilmark_offset[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if claims and (value, cell_id) in claims:
             pygame.draw.rect(window.screen, html_color_codes["cyan"],
-                             (pos[0] + window.option_offsets[value][0],
-                              pos[1] + window.option_offsets[value][1],
+                             (pos[0] + window.pencilmark_offset[value][0],
+                              pos[1] + window.pencilmark_offset[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if x_wing and value == x_wing[0] and cell_id in x_wing[1:]:
             pygame.draw.rect(window.screen, html_color_codes["cyan"],
-                             (pos[0] + window.option_offsets[value][0],
-                              pos[1] + window.option_offsets[value][1],
+                             (pos[0] + window.pencilmark_offset[value][0],
+                              pos[1] + window.pencilmark_offset[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if xy_wing and value == xy_wing[0] and cell_id in xy_wing[1:] or \
                 wxy_wing and value == wxy_wing[0] and cell_id in wxy_wing[1:]:
             pygame.draw.rect(window.screen, html_color_codes["cyan"],
-                             (pos[0] + window.option_offsets[value][0],
-                              pos[1] + window.option_offsets[value][1],
+                             (pos[0] + window.pencilmark_offset[value][0],
+                              pos[1] + window.pencilmark_offset[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if nodes and value == nodes[0] and cell_id in nodes[1:]:
             pygame.draw.rect(window.screen, html_color_codes["cyan"],
-                             (pos[0] + window.option_offsets[value][0],
-                              pos[1] + window.option_offsets[value][1],
+                             (pos[0] + window.pencilmark_offset[value][0],
+                              pos[1] + window.pencilmark_offset[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if c_chain and cell_id in c_chain:
             for candidate, color in c_chain[cell_id]:
                 if value == candidate:
                     pygame.draw.rect(window.screen, html_color_codes[color],
-                                     (pos[0] + window.option_offsets[value][0],
-                                      pos[1] + window.option_offsets[value][1],
+                                     (pos[0] + window.pencilmark_offset[value][0],
+                                      pos[1] + window.pencilmark_offset[value][1],
                                       CELL_SIZE // 3, CELL_SIZE // 3))
         for chain in (chain_a, chain_b, chain_c, chain_d):
             if chain and cell_id in chain:
                 for candidate, color in chain[cell_id]:
                     if value == candidate:
                         pygame.draw.rect(window.screen, html_color_codes[color],
-                                         (pos[0] + window.option_offsets[value][0],
-                                          pos[1] + window.option_offsets[value][1],
+                                         (pos[0] + window.pencilmark_offset[value][0],
+                                          pos[1] + window.pencilmark_offset[value][1],
                                           CELL_SIZE // 3, CELL_SIZE // 3))
         if skyscraper and value == skyscraper[0] and cell_id in skyscraper[1:]:
             pygame.draw.rect(window.screen, html_color_codes["cyan"],
-                             (pos[0] + window.option_offsets[value][0],
-                              pos[1] + window.option_offsets[value][1],
+                             (pos[0] + window.pencilmark_offset[value][0],
+                              pos[1] + window.pencilmark_offset[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if sue_de_coq and cell_id in sue_de_coq:
             pygame.draw.rect(window.screen, html_color_codes["cyan"],
-                             (pos[0] + window.option_offsets[value][0],
-                              pos[1] + window.option_offsets[value][1],
+                             (pos[0] + window.pencilmark_offset[value][0],
+                              pos[1] + window.pencilmark_offset[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if eliminate and (value, cell_id) in eliminate:
             pygame.draw.rect(window.screen, html_color_codes['darkgray'],
-                             (pos[0] + window.option_offsets[value][0],
-                              pos[1] + window.option_offsets[value][1],
+                             (pos[0] + window.pencilmark_offset[value][0],
+                              pos[1] + window.pencilmark_offset[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
 
 
@@ -539,7 +539,7 @@ def pencil_mark_btn_clicked(window, _, board, *args, **kwargs):
         window.buttons[pygame.K_p].draw(window.screen)
         window.buttons[pygame.K_c].set_pressed(False)
         window.buttons[pygame.K_c].draw(window.screen)
-        init_remaining_candidates(board, solver_status)
+        set_remaining_candidates(board, solver_status)
 
 
 def next_btn_clicked(window, _, board, **kwargs):
@@ -645,7 +645,7 @@ def check_options_integrity(window, _, board, *args, **kwargs):
     chain_i = defaultdict(set)
     for cell in window.options_visible:
         if len(board[cell]) > 1:
-            candidates = get_cell_candidates(cell, board, solver_status)
+            candidates = get_cell_candidates(cell, board)
             if candidates != set(board[cell]):
                 for value in candidates.symmetric_difference(set(board[cell])):
                     chain_i[cell].add((value, 'pink'))
@@ -831,7 +831,7 @@ def set_keypad_keys():
     return keypad_keys
 
 
-def set_option_offsets():
+def set_pencilmark_offset():
     """ Set and return dictionary of offsets for options display """
     return {'1': (0, 0),
             '2': (CELL_SIZE // 3, 0),

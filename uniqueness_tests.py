@@ -24,7 +24,7 @@ from collections import defaultdict
 # from copy import deepcopy
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX, ALL_NBRS
-from utils import init_remaining_candidates, eliminate_options, get_stats
+from utils import set_remaining_candidates, eliminate_options, get_stats
 
 
 def _get_xyz(n_z, board, bi_value, cells_a, cells_b):
@@ -88,7 +88,7 @@ def test_1(solver_status, board, window):
     Rating: 100
     """
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     bi_values = _get_bi_values_dictionary(board, range(81))
     for bi_value, coordinates in bi_values.items():
         if len(coordinates) > 2:
@@ -162,7 +162,7 @@ def test_2(solver_status, board, window):
                                 return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     if _check_rectangles(True) or _check_rectangles(False):
         return kwargs
@@ -244,7 +244,7 @@ def test_3(solver_status, board, window):
                                     return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     to_eliminate = set()
     if _check_rectangles(True) or _check_rectangles(False):
@@ -307,7 +307,7 @@ def test_4(solver_status, board, window):
                                 return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     bi_values = defaultdict(set)
     if _check_rectangles(True) or _check_rectangles(False):
@@ -325,7 +325,7 @@ def test_5(solver_status, board, window):
     Rating: 100
     """
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     bi_values = _get_bi_values_dictionary(board, range(81))
     bi_values = {key: value for key, value in bi_values.items() if len(value) > 1}
@@ -344,7 +344,7 @@ def test_5(solver_status, board, window):
                         c_chain = _get_c_chain(nodes, bi_value, other_candidates)
                         z_value = other_candidates.pop()
                         to_eliminate = {(z_value, cell) for cell in set(ALL_NBRS[node_b]).intersection(ALL_NBRS[node_d])
-                                     if z_value in board[cell]}
+                                        if z_value in board[cell]}
                         if to_eliminate:
                             solver_status.capture_baseline(board, window)
                             eliminate_options(solver_status, board, to_eliminate, window)
@@ -371,7 +371,7 @@ def test_6(solver_status, board, window):
     Rating: 100
     """
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     bi_values = _get_bi_values_dictionary(board, range(81))
     bi_values = {key: value for key, value in bi_values.items() if len(value) > 1}

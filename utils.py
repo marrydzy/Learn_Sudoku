@@ -74,21 +74,21 @@ def get_stats(func):
 def is_solved(board, solver_status):
     """ check if the board is solved """
     for row in range(9):
-        clues = set(''.join(board[cell] for cell in CELLS_IN_ROW[row] if is_clue(cell, board, solver_status)))
+        clues = set(''.join(board[cell] for cell in CELLS_IN_ROW[row] if is_digit(cell, board, solver_status)))
         if clues != SUDOKU_VALUES_SET:
             return False
     for col in range(9):
-        clues = set(''.join(board[cell] for cell in CELLS_IN_COL[col] if is_clue(cell, board, solver_status)))
+        clues = set(''.join(board[cell] for cell in CELLS_IN_COL[col] if is_digit(cell, board, solver_status)))
         if clues != SUDOKU_VALUES_SET:
             return False
     for box in range(9):
-        clues = set(''.join(board[cell] for cell in CELLS_IN_BOX[box] if is_clue(cell, board, solver_status)))
+        clues = set(''.join(board[cell] for cell in CELLS_IN_BOX[box] if is_digit(cell, board, solver_status)))
         if clues != SUDOKU_VALUES_SET:
             return False
     return True
 
 
-def is_clue(cell_id, board, solver_status):
+def is_digit(cell_id, board, solver_status):
     """ return True if cell_id has been solved (is a digit and is not in 'solver_status.naked_singles'),
      False otherwise
     """
@@ -201,10 +201,9 @@ def get_strong_links(board):
     return strong_links
 
 
-def get_cell_candidates(cell_id, board, solver_status):
-    """ return set of options of the cell """
-    return SUDOKU_VALUES_SET.difference(
-        ''.join([board[cell] for cell in ALL_NBRS[cell_id] if is_clue(cell, board, solver_status)]))
+def get_cell_candidates(cell_id, board):
+    """ return set of cell candidates """
+    return SUDOKU_VALUES_SET.difference(''.join(board[cell] for cell in ALL_NBRS[cell_id] if len(board[cell_id]) == 1))
 
 
 def get_pairs(board, by_row):
@@ -253,19 +252,6 @@ def get_house_pairs(house, board):
     return pairs_dict
 
 
-def init_remaining_candidates(board, solver_status):
-    """ initialize remaining candidates for all unsolved cells """
-    if not solver_status.pencilmarks:
-        for cell in range(81):
-            if not is_clue(cell, board, solver_status):
-                nbr_clues = [board[nbr_cell] for nbr_cell in ALL_NBRS[cell]
-                             if is_clue(nbr_cell, board, solver_status)]
-                board[cell] = "".join(value for value in SUDOKU_VALUES_LIST if value not in nbr_clues)
-                if len(board[cell]) == 1:
-                    solver_status.naked_singles.add(cell)
-        solver_status.pencilmarks = True
-
-
 def eliminate_options(solver_status, board, to_eliminate, window):
     """ utility function: removes options as per 'to_eliminate' list """
     for option, cell in to_eliminate:
@@ -302,7 +288,7 @@ def place_digit(cell_id, digit, board, solver_status, window):
 
 def set_cell_candidates(cell_id, board, solver_status):
     """ Set cell remaining candidates """
-    board[cell_id] = ''.join(get_cell_candidates(cell_id, board, solver_status))
+    board[cell_id] = ''.join(get_cell_candidates(cell_id, board))
     if len(board[cell_id]) == 1:
         solver_status.naked_singles.add(cell_id)
 
@@ -314,20 +300,33 @@ def set_neighbours_candidates(cell_id, board, window, solver_status):
         - if the set is empty, set allowed options and remove the cell
           from the set with 'visible' options """
     for cell in ALL_NBRS[cell_id]:
-        if not is_clue(cell, board, solver_status):
+        if not is_digit(cell, board, solver_status):
             if cell in window.options_visible:
-                updated_opts = set(board[cell]) & get_cell_candidates(cell, board, solver_status)
+                updated_opts = set(board[cell]) & get_cell_candidates(cell, board)
                 if updated_opts:
                     board[cell] = ''.join(updated_opts)
                 else:
-                    board[cell] = ''.join(get_cell_candidates(cell, board, solver_status))
+                    board[cell] = ''.join(get_cell_candidates(cell, board))
                     window.options_visible.remove(cell)
             else:
-                board[cell] = ''.join(get_cell_candidates(cell, board, solver_status))
+                board[cell] = ''.join(get_cell_candidates(cell, board))
             if len(board[cell]) > 1 and cell in solver_status.naked_singles:
                 solver_status.naked_singles.remove(cell)
             if len(board[cell]) == 1:
                 solver_status.naked_singles.add(cell)
+
+
+def set_remaining_candidates(board, solver_status):
+    """ initialize remaining candidates for all unsolved cells """
+    if not solver_status.pencilmarks:
+        for cell in range(81):
+            if not is_digit(cell, board, solver_status):
+                nbr_clues = [board[nbr_cell] for nbr_cell in ALL_NBRS[cell]
+                             if is_digit(nbr_cell, board, solver_status)]
+                board[cell] = "".join(value for value in SUDOKU_VALUES_LIST if value not in nbr_clues)
+                if len(board[cell]) == 1:
+                    solver_status.naked_singles.add(cell)
+        solver_status.pencilmarks = True
 
 
 def check_file(pathname, data, additional_info=""):

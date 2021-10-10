@@ -8,7 +8,7 @@ TODO:
 """
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX, SUDOKU_VALUES_SET
-from utils import get_stats, init_remaining_candidates, eliminate_options
+from utils import get_stats, set_remaining_candidates, eliminate_options
 
 
 @get_stats
@@ -49,11 +49,10 @@ def locked_candidates(solver_status, board, window):
                         if window:
                             window.options_visible = window.options_visible.union(house).union(impacted_cells)
                         kwargs["solver_tool"] = "locked_candidates_type_1"
-                        kwargs["house"] = house
-                        # kwargs["impacted_cells"] = impacted_cells
+                        kwargs["house"] = impacted_cells.union(house)
                         kwargs["eliminate"] = to_eliminate
                         kwargs["chain_a"] = _paint_locked_candidates(house, possibility)
-                        kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
+                        # kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
                         locked_candidates.clues += len(solver_status.naked_singles)
                         locked_candidates.options_removed += len(to_eliminate)
                         return True
@@ -80,17 +79,15 @@ def locked_candidates(solver_status, board, window):
                             if window:
                                 window.options_visible = window.options_visible.union(house).union(impacted_cells)
                             kwargs["solver_tool"] = "locked_candidates_type_2"
-                            kwargs["house"] = house
-                            kwargs["impacted_cells"] = impacted_cells
+                            kwargs["house"] = impacted_cells.union(house)
                             kwargs["eliminate"] = to_eliminate
                             kwargs["chain_a"] = _paint_locked_candidates(house, possibility)
-                            # kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
                             locked_candidates.clues += len(solver_status.naked_singles)
                             locked_candidates.options_removed += len(to_eliminate)
                             return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     if _type_1() or _type_2():
         return kwargs

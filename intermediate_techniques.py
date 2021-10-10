@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELL_BOX, CELL_ROW, CELL_COL, CELLS_IN_BOX
 from utils import ALL_NBRS, SUDOKU_VALUES_LIST
-from utils import get_stats, is_clue, init_remaining_candidates, eliminate_options
+from utils import get_stats, is_digit, set_remaining_candidates, eliminate_options
 
 
 @get_stats
@@ -37,7 +37,7 @@ def remote_pairs(solver_status, board, window):
         else:
             return []
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     pairs_positions = defaultdict(list)
     for cell in range(81):
         if len(board[cell]) == 2:
@@ -49,7 +49,7 @@ def remote_pairs(solver_status, board, window):
         if chain:
             impacted_cells = set(ALL_NBRS[chain[0]]).intersection(set(ALL_NBRS[chain[-1]]))
             to_eliminate = [(value, cell) for value in pair for cell in impacted_cells
-                            if value in board[cell] and not is_clue(cell, board, solver_status)]
+                            if value in board[cell] and len(board[cell]) > 1]
             if to_eliminate:
                 solver_status.capture_baseline(board, window)
                 if window:
@@ -102,7 +102,7 @@ def unique_rectangles_(solver_status, board, window):
                     return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     pairs = defaultdict(list)
     for i in range(81):
@@ -136,11 +136,11 @@ def skyscraper(solver_status, board, window):
         cells = CELLS_IN_ROW if by_row else CELLS_IN_COL
         for row_1 in range(8):
             cols_1 = set(col for col in range(9) if option in board[cells[row_1][col]]
-                         and not is_clue(cells[row_1][col], board, solver_status))
+                         and len(board[cells[row_1][col]]) > 1)
             if len(cols_1) == 2:
                 for row_2 in range(row_1+1, 9):
                     cols_2 = set(col for col in range(9) if option in board[cells[row_2][col]]
-                                 and not is_clue(cells[row_2][col], board, solver_status))
+                                 and len(board[cells[row_2][col]]) > 1)
                     if len(cols_2) == 2 and len(cols_1.union(cols_2)) == 3:
                         different_cols = cols_1.symmetric_difference(cols_2)
                         cl_1_list = sorted(list(cols_1))
@@ -162,7 +162,7 @@ def skyscraper(solver_status, board, window):
                         impacted_cells = set(ALL_NBRS[corners_idx[1]]).intersection(ALL_NBRS[corners_idx[2]])
                         for corner in corners_idx:
                             impacted_cells.discard(corner)
-                        clues = [cell for cell in impacted_cells if is_clue(cell, board, solver_status)]
+                        clues = [cell for cell in impacted_cells if is_digit(cell, board, solver_status)]
                         for clue_id in clues:
                             impacted_cells.discard(clue_id)
                         corners_idx.insert(0, option)
@@ -185,7 +185,7 @@ def skyscraper(solver_status, board, window):
                             return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     for opt in SUDOKU_VALUES_LIST:
         if _find_skyscraper(True, opt):
@@ -209,12 +209,9 @@ def sue_de_coq(solver_status, board, window):
                 for indx in indexes:
                     cells_b = set(CELLS_IN_BOX[box])
                     cells_1 = set(CELLS_IN_ROW[indx]) if by_rows else set(CELLS_IN_COL[indx])
-                    cells_2 = [cell for cell in cells_1.difference(cells_b)
-                               if not is_clue(cell, board, solver_status)]
-                    cells_3 = [cell for cell in cells_1.intersection(cells_b)
-                               if not is_clue(cell, board, solver_status)]
-                    cells_4 = [cell for cell in cells_b.difference(cells_1)
-                               if not is_clue(cell, board, solver_status)]
+                    cells_2 = [cell for cell in cells_1.difference(cells_b) if len(board[cell]) > 1]
+                    cells_3 = [cell for cell in cells_1.intersection(cells_b) if len(board[cell]) > 1]
+                    cells_4 = [cell for cell in cells_b.difference(cells_1) if len(board[cell]) > 1]
                     if len(cells_3) > 1:
                         for cell_2 in cells_2:
                             if len(board[cell_2]) == 2 and not set(board[cell_1]).intersection(set(board[cell_2])):
@@ -261,12 +258,9 @@ def sue_de_coq(solver_status, board, window):
                 for indx in indexes:
                     cells_b = set(CELLS_IN_BOX[box])
                     cells_1 = set(CELLS_IN_ROW[indx]) if by_rows else set(CELLS_IN_COL[indx])
-                    cells_2 = [cell for cell in cells_1.difference(cells_b)
-                               if not is_clue(cell, board, solver_status)]
-                    cells_3 = [cell for cell in cells_1.intersection(cells_b)
-                               if not is_clue(cell, board, solver_status)]
-                    cells_4 = [cell for cell in cells_b.difference(cells_1)
-                               if not is_clue(cell, board, solver_status)]
+                    cells_2 = [cell for cell in cells_1.difference(cells_b) if len(board[cell]) > 1]
+                    cells_3 = [cell for cell in cells_1.intersection(cells_b) if len(board[cell]) > 1]
+                    cells_4 = [cell for cell in cells_b.difference(cells_1) if len(board[cell]) > 1]
                     if len(cells_3) == 3:
                         for cell_2 in cells_2:
                             if len(board[cell_2]) == 2 and not set(board[cell_1]).intersection(set(board[cell_2])):
@@ -307,7 +301,7 @@ def sue_de_coq(solver_status, board, window):
                                         return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     for sqr in range(9):
         if _find_sue_de_coq_type_1(sqr, True):
@@ -339,7 +333,7 @@ def empty_rectangle(solver_status, board, window):
         cells_by_x = CELLS_IN_ROW if by_row else CELLS_IN_COL
         cells_by_y = CELLS_IN_COL if by_row else CELLS_IN_ROW
         cells = cells_by_x[idx]
-        opts = ''.join(board[cell] for cell in cells if not is_clue(cell, board, solver_status))
+        opts = ''.join(board[cell] for cell in cells if len(board[cell]) > 1)
         for val in SUDOKU_VALUES_LIST:
             if opts.count(val) == 2:
                 idy = [j for j in range(9) if val in board[cells[j]]]
@@ -383,7 +377,7 @@ def empty_rectangle(solver_status, board, window):
                                             return True
         return False
 
-    init_remaining_candidates(board, solver_status)
+    set_remaining_candidates(board, solver_status)
     kwargs = {}
     for indx in range(9):
         if _find_empty_rectangle(indx, True):

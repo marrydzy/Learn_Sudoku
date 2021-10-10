@@ -32,11 +32,11 @@ class AppWindow:
         self.font_text = pygame.font.SysFont(self.font_type, self.font_text_size, italic=True)
         self.font_buttons = pygame.font.SysFont(self.font_type, self.font_button_size, bold=True)
         self.font_keypad = pygame.font.SysFont(self.font_type, self.font_keypad_size, bold=False)
-        self.clue_shift_x = (CELL_SIZE - self.font_clues.size('1')[0]) // 2
-        self.clue_shift_y = (CELL_SIZE - self.font_clues.get_ascent()) // 2 - 2
-        self.option_shift_x = (CELL_SIZE // 3 - self.font_options.size('1')[0]) // 2
-        self.option_shift_y = (CELL_SIZE // 3 - self.font_options.get_ascent()) // 2
-        self.option_offsets = graph_utils.set_option_offsets()
+        self.digit_shift_x = (CELL_SIZE - self.font_clues.size('1')[0]) // 2
+        self.digit_shift_y = (CELL_SIZE - self.font_clues.get_ascent()) // 2 - 2
+        self.pencilmark_shift_x = (CELL_SIZE // 3 - self.font_options.size('1')[0]) // 2
+        self.pencilmark_shift_y = (CELL_SIZE // 3 - self.font_options.get_ascent()) // 2
+        self.pencilmark_offset = graph_utils.set_pencilmark_offset()
 
         self.screen = None
         self.board_cells = graph_utils.set_cell_rectangles()
@@ -84,13 +84,13 @@ class AppWindow:
             graph_utils.set_keyboard_status(self, False)
             graph_utils.set_btn_status(self, False)
             graph_utils.set_btn_status(self, True, (pygame.K_q, pygame.K_r))
-            if "new_clue" in kwargs:
-                if len(board[kwargs["new_clue"]]) == 1:
-                    if kwargs["new_clue"] in self.options_visible:
-                        self.options_visible.remove(kwargs["new_clue"])
-                    self.solver_status.cells_solved.add(kwargs["new_clue"])
+            if "cell_solved" in kwargs:
+                if len(board[kwargs["cell_solved"]]) == 1:
+                    if kwargs["cell_solved"] in self.options_visible:
+                        self.options_visible.remove(kwargs["cell_solved"])
+                    self.solver_status.cells_solved.add(kwargs["cell_solved"])
                 else:
-                    self.options_visible.add(kwargs["new_clue"])
+                    self.options_visible.add(kwargs["cell_solved"])
             for cell in self.critical_error:
                 if cell not in self.solver_status.givens:
                     self.options_visible.add(cell)
@@ -139,7 +139,7 @@ class AppWindow:
 
     def render_board(self, board, **kwargs):
         """ render board (TODO) """
-        active_clue = kwargs["new_clue"] if "new_clue" in kwargs else None
+        active_clue = kwargs["cell_solved"] if "cell_solved" in kwargs else None
         chain_a = kwargs["chain_a"] if "chain_a" in kwargs else None
         solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else "plain_board"
         incorrect_values = kwargs["incorrect_values"] if "incorrect_values" in kwargs else set()
@@ -203,7 +203,7 @@ class AppWindow:
         start = time.time()  # TODO - get rid of it!!!
         solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else "plain_board"   # TODO - simplify it !!!
 
-        if self.animate and solver_tool == "w_wing":        # TODO - for development & debugging only!
+        if self.animate and solver_tool == "xxx":        # TODO - for DEBUG !
             self.animate = False
             self.wait = True
             self.buttons[pygame.K_m].set_pressed(False)

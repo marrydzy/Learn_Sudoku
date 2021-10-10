@@ -32,7 +32,7 @@ from pygame import K_b, K_h, quit
 from collections import defaultdict, namedtuple, OrderedDict
 
 from utils import CELLS_IN_ROW, CELLS_IN_COL, CELLS_IN_BOX
-from utils import is_clue, is_solved, set_cell_candidates, set_neighbours_candidates, get_cell_candidates
+from utils import is_digit, is_solved, set_cell_candidates, set_neighbours_candidates, get_cell_candidates
 from display import screen_messages
 
 import singles
@@ -427,7 +427,7 @@ def _check_board_integrity(board, window):
     def _check_house(cells):
         values_dict = defaultdict(list)
         for cell in cells:
-            if is_clue(cell, board, solver_status):
+            if is_digit(cell, board, solver_status):
                 values_dict[board[cell]].append(cell)
         conflicted = set()
         for value, in_cells in values_dict.items():
@@ -449,7 +449,7 @@ def _check_candidates(board, window):
     c_chain = defaultdict(set)
     for cell in window.options_visible:
         if len(board[cell]) > 1:
-            candidates = get_cell_candidates(cell, board, solver_status)
+            candidates = get_cell_candidates(cell, board)
             if candidates != set(board[cell]):
                 for value in candidates.symmetric_difference(set(board[cell])):
                     c_chain[cell].add((value, 'pink'))
