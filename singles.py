@@ -149,7 +149,7 @@ def naked_single(solver_status, board, window):
     else:
         for cell in range(81):
             if board[cell] == ".":
-                cell_opts = get_cell_candidates(cell, board)
+                cell_opts = get_cell_candidates(cell, board, solver_status)
                 if len(cell_opts) == 1:
                     solver_status.capture_baseline(board, window)
                     board[cell] = cell_opts.pop()
@@ -180,7 +180,7 @@ def hidden_single(solver_status, board, window):
             if solver_status.pencilmarks:
                 in_cells = {cell for cell in unsolved if candidate in board[cell]}
             else:
-                in_cells = {cell for cell in unsolved if candidate in get_cell_candidates(cell, board)}
+                in_cells = {cell for cell in unsolved if candidate in get_cell_candidates(cell, board, solver_status)}
             if len(in_cells) == 1:
                 cell_solved = in_cells.pop()
                 eliminate, impacted_cells = place_digit(cell_solved, candidate, board, solver_status, window)

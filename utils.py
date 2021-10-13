@@ -201,9 +201,10 @@ def get_strong_links(board):
     return strong_links
 
 
-def get_cell_candidates(cell_id, board):
+def get_cell_candidates(cell_id, board, solver_status):
     """ return set of cell candidates """
-    return SUDOKU_VALUES_SET.difference(''.join(board[cell] for cell in ALL_NBRS[cell_id] if len(board[cell_id]) == 1))
+    return SUDOKU_VALUES_SET.difference(
+        ''.join(board[cell] for cell in ALL_NBRS[cell_id] if is_digit(cell, board, solver_status)))
 
 
 def get_pairs(board, by_row):
@@ -288,7 +289,7 @@ def place_digit(cell_id, digit, board, solver_status, window):
 
 def set_cell_candidates(cell_id, board, solver_status):
     """ Set cell remaining candidates """
-    board[cell_id] = ''.join(get_cell_candidates(cell_id, board))
+    board[cell_id] = ''.join(get_cell_candidates(cell_id, board, solver_status))
     if len(board[cell_id]) == 1:
         solver_status.naked_singles.add(cell_id)
 
@@ -302,14 +303,14 @@ def set_neighbours_candidates(cell_id, board, window, solver_status):
     for cell in ALL_NBRS[cell_id]:
         if not is_digit(cell, board, solver_status):
             if cell in window.options_visible:
-                updated_opts = set(board[cell]) & get_cell_candidates(cell, board)
+                updated_opts = set(board[cell]) & get_cell_candidates(cell, board, solver_status)
                 if updated_opts:
                     board[cell] = ''.join(updated_opts)
                 else:
-                    board[cell] = ''.join(get_cell_candidates(cell, board))
+                    board[cell] = ''.join(get_cell_candidates(cell, board, solver_status))
                     window.options_visible.remove(cell)
             else:
-                board[cell] = ''.join(get_cell_candidates(cell, board))
+                board[cell] = ''.join(get_cell_candidates(cell, board, solver_status))
             if len(board[cell]) > 1 and cell in solver_status.naked_singles:
                 solver_status.naked_singles.remove(cell)
             if len(board[cell]) == 1:

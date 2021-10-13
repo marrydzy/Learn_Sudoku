@@ -85,6 +85,7 @@ _solver_strategies = {
     "x_wing": Strategy(fish.x_wing, "fish", "X-Wing", 100, True),
     "jellyfish": Strategy(fish.jellyfish, "fish", "Jellyfish", 470, True),
     "finned_x_wing": Strategy(fish.finned_x_wing, "fish", "Finned X-Wing", 130, True),
+    # "sashimi_x_wing": Strategy(fish.finned_x_wing, "fish", "Sashimi X-Wing", 130, True),    # TODO - testing only!
     "finned_swordfish": Strategy(fish.finned_swordfish, "fish", "Finned Swordfish", 200, True),
     "finned_jellyfish": Strategy(fish.finned_jellyfish, "fish", "Finned Jellyfish", 240, True),
     "finned_squirmbag": Strategy(fish.finned_squirmbag, "fish", "Finned Squirmbag", 470, True),
@@ -264,6 +265,7 @@ def get_prioritized_strategies():
         "X-Wing": Priority(100, 33, 30, 30),
         "Jellyfish": Priority(470, 35, 43, 43),
         "Finned X-Wing": Priority(130, 14, 24, 23),
+        "Sashimi X-Wing": Priority(130, 14, 24, 23),        # TODO - Testing only!
         "Finned Swordfish": Priority(200, 23, 17, 20),
         "Finned Jellyfish": Priority(240, 18, 25, 24),
         "Finned Squirmbag": Priority(470, 25, 28, 27),

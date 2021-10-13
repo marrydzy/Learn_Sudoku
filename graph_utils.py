@@ -218,14 +218,10 @@ def draw_keypad(window):
 def draw_board_features(window, **kwargs):
     """ TBD """
 
-    rectangle = kwargs["rectangle"] if "rectangle" in kwargs else None
-    # xy_wing = kwargs["y_wing"] if "y_wing" in kwargs else None
-    wxy_wing = kwargs["wxy_wing"] if "wxy_wing" in kwargs else None
-    x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
-    skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
-    edges = kwargs["edges"] if "edges" in kwargs else None
-    chains = kwargs["chains"] if "chains" in kwargs else None
-    arcs = kwargs["arcs"] if "arcs" in kwargs else None
+    rectangle = kwargs.get("rectangle")
+    wxy_wing = kwargs.get("wxy_wing")
+    skyscraper = kwargs.get("skyscraper")
+    edges = kwargs.get("edges")
 
     if rectangle:
         left = (rectangle[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
@@ -247,20 +243,6 @@ def draw_board_features(window, **kwargs):
         y1 = (skyscraper[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
         x2 = (skyscraper[3] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
         y2 = (skyscraper[3] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-        pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
-
-    if x_wing:
-        color = html_color_codes["magenta"]
-        x_wing = sorted(x_wing)
-        x1 = (x_wing[0] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-        y1 = (x_wing[0] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-        x2 = (x_wing[3] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-        y2 = (x_wing[3] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-        pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
-        x1 = (x_wing[1] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-        y1 = (x_wing[1] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
-        x2 = (x_wing[2] % 9 + 0.5) * CELL_SIZE + LEFT_MARGIN
-        y2 = (x_wing[2] // 9 + 0.5) * CELL_SIZE + TOP_MARGIN
         pygame.draw.line(window.screen, color, (x1, y1), (x2, y2), width=5)
 
     y_wing = wxy_wing
@@ -392,24 +374,20 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
 
     global chain_counter
 
-    eliminate = kwargs["eliminate"] if "eliminate" in kwargs else None
-    claims = kwargs["claims"] if "claims" in kwargs else None
-    iterate = kwargs["iterate"] if "iterate" in kwargs else None
-    xy_wing = kwargs["y_wing"] if "y_wing" in kwargs else None
-    wxy_wing = kwargs["wxy_wing"] if "wxy_wing" in kwargs else None
-    corners = kwargs["rectangle"] if "rectangle" in kwargs else None
-    x_wing = kwargs["x_wing"] if "x_wing" in kwargs else None
-    if x_wing is None and "finned_x_wing" in kwargs:
-        x_wing = kwargs["finned_x_wing"]
-    skyscraper = kwargs["skyscraper"] if "skyscraper" in kwargs else None
-    sue_de_coq = kwargs["sue_de_coq"] if "sue_de_coq" in kwargs else None
-    nodes = kwargs["nodes"] if "nodes" in kwargs else None
-    c_chain = kwargs["c_chain"] if "c_chain" in kwargs else None
-    chain_a = kwargs["chain_a"] if "chain_a" in kwargs else None
-    chain_b = kwargs["chain_b"] if "chain_b" in kwargs else None
-    chain_c = kwargs["chain_c"] if "chain_c" in kwargs else None
-    chain_d = kwargs["chain_d"] if "chain_d" in kwargs else None
-    chain_i = kwargs["chain_i"] if "chain_i" in kwargs else None
+    eliminate = kwargs.get("eliminate")
+    claims = kwargs.get("claims")
+    iterate = kwargs.get("iterate")
+    xy_wing = kwargs.get("y_wing")
+    wxy_wing = kwargs.get("wxy_wing")
+    skyscraper = kwargs.get("skyscraper")
+    sue_de_coq = kwargs.get("sue_de_coq")
+    nodes = kwargs.get("nodes")
+    c_chain = kwargs.get("c_chain")
+    chain_a = kwargs.get("chain_a")
+    chain_b = kwargs.get("chain_b")
+    chain_c = kwargs.get("chain_c")
+    chain_d = kwargs.get("chain_d")
+    chain_i = kwargs.get("chain_i")
 
     if iterate is not None and cell_id == iterate:
         pygame.draw.rect(
@@ -426,10 +404,6 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
     if wxy_wing is not None and (cell_id == wxy_wing[2] or cell_id == wxy_wing[3] or cell_id == wxy_wing[4]):
         pygame.draw.rect(
             window.screen, Y_WING_LEAF,
-            (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
-    if corners and cell_id in corners or x_wing and cell_id in x_wing[1:]:
-        pygame.draw.rect(
-            window.screen, html_color_codes['orange'],
             (pos[0], pos[1], CELL_SIZE + 1, CELL_SIZE + 1))
     if nodes and cell_id in nodes[1:]:
         pygame.draw.rect(
@@ -459,11 +433,6 @@ def highlight_options(window, cell_id, new_value, pos, **kwargs):
                               pos[1] + window.pencilmark_offset[value][1],
                               CELL_SIZE // 3, CELL_SIZE // 3))
         if claims and (value, cell_id) in claims:
-            pygame.draw.rect(window.screen, html_color_codes["cyan"],
-                             (pos[0] + window.pencilmark_offset[value][0],
-                              pos[1] + window.pencilmark_offset[value][1],
-                              CELL_SIZE // 3, CELL_SIZE // 3))
-        if x_wing and value == x_wing[0] and cell_id in x_wing[1:]:
             pygame.draw.rect(window.screen, html_color_codes["cyan"],
                              (pos[0] + window.pencilmark_offset[value][0],
                               pos[1] + window.pencilmark_offset[value][1],
@@ -645,7 +614,7 @@ def check_options_integrity(window, _, board, *args, **kwargs):
     chain_i = defaultdict(set)
     for cell in window.options_visible:
         if len(board[cell]) > 1:
-            candidates = get_cell_candidates(cell, board)
+            candidates = get_cell_candidates(cell, board, solver_status)
             if candidates != set(board[cell]):
                 for value in candidates.symmetric_difference(set(board[cell])):
                     chain_i[cell].add((value, 'pink'))
@@ -871,8 +840,8 @@ def set_methods():
             "uniqueness_test_4": "r",
             "uniqueness_test_5": "r",
             "uniqueness_test_6": "r",
-            "x_wings": "x",
-            "finned_x_wings": "f",
+            "x_wing": "x",
+            "finned_x_wing": "f",
             "finned_jellyfish": "9",
             "finned_squirmbag": "9",
             "franken_x_wing": "a",
@@ -907,8 +876,8 @@ def set_methods():
             "w_wing": "4",
             "empty_rectangle": "5",
             # "coloring": "6",
-            "color trap": "6",
-            "color wrap": "6",
+            "color_trap": "6",
+            "color_wrap": "6",
             "multi_colors": "6",
             "multi_colors-color_wrap": "6",
             "multi_colors-color_wing": "6",

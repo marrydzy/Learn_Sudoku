@@ -67,18 +67,18 @@ def _hidden_subset(solver_status, board, window, subset_size):
                     to_eliminate = {(candidate, cell) for cell in subset_nodes for candidate in board[cell]
                                     if candidate not in subset}
                     if to_eliminate:
-                        c_chain = _get_chain(subset_nodes, candidates_positions)
-                        solver_status.capture_baseline(board, window)
-                        eliminate_options(solver_status, board, to_eliminate, window)
+                        kwargs = {}
                         if window:
-                            window.options_visible = window.options_visible.union(unsolved)
-                        kwargs = {
-                            "solver_tool": subset_strategies[subset_size][0].__name__,
-                            "chain_a": c_chain,
-                            "eliminate": to_eliminate,
-                            "house": house, }
+                            solver_status.capture_baseline(board, window)
+                        eliminate_options(solver_status, board, to_eliminate, window)
                         subset_strategies[subset_size][0].clues += len(solver_status.naked_singles)
                         subset_strategies[subset_size][0].options_removed += len(to_eliminate)
+                        kwargs["solver_tool"] = subset_strategies[subset_size][0].__name__
+                        if window:
+                            window.options_visible = window.options_visible.union(unsolved)
+                            kwargs["chain_a"] = _get_chain(subset_nodes, candidates_positions)
+                            kwargs["eliminate"] = to_eliminate
+                            kwargs["house"] = house
                         return kwargs
     return None
 
@@ -101,17 +101,18 @@ def _naked_subset(solver_status, board, window, subset_size):
         to_eliminate = {(candidate, cell)
                         for cell in impacted_cells for candidate in set(board[cell]).intersection(subset_dict)}
         if to_eliminate:
-            solver_status.capture_baseline(board, window)
-            eliminate_options(solver_status, board, to_eliminate, window)
+            kwargs = {}
             if window:
-                window.options_visible = window.options_visible.union(subset_cells).union(impacted_cells)
-            kwargs = {
-                "solver_tool": subset_strategies[subset_size][0].__name__,
-                "chain_a": _get_chain(subset_cells, subset_dict),
-                "eliminate": to_eliminate,
-                "house": impacted_cells.union(house), }
+                solver_status.capture_baseline(board, window)
+            eliminate_options(solver_status, board, to_eliminate, window)
             subset_strategies[subset_size][0].clues += len(solver_status.naked_singles)
             subset_strategies[subset_size][0].options_removed += len(to_eliminate)
+            kwargs["solver_tool"] = subset_strategies[subset_size][0].__name__
+            if window:
+                window.options_visible = window.options_visible.union(subset_cells).union(impacted_cells)
+                kwargs["chain_a"] = _get_chain(subset_cells, subset_dict)
+                kwargs["eliminate"] = to_eliminate
+                kwargs["house"] = impacted_cells.union(house)
             return kwargs
     return None
 

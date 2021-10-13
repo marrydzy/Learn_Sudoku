@@ -44,17 +44,17 @@ def locked_candidates(solver_status, board, window):
                 if impacted_cells:
                     to_eliminate = {(possibility, cell) for cell in impacted_cells if possibility in board[cell]}
                     if to_eliminate:
-                        solver_status.capture_baseline(board, window)
-                        eliminate_options(solver_status, board, to_eliminate, window)
                         if window:
-                            window.options_visible = window.options_visible.union(house).union(impacted_cells)
-                        kwargs["solver_tool"] = "locked_candidates_type_1"
-                        kwargs["house"] = impacted_cells.union(house)
-                        kwargs["eliminate"] = to_eliminate
-                        kwargs["chain_a"] = _paint_locked_candidates(house, possibility)
-                        # kwargs["impacted_cells"] = {cell for _, cell in to_eliminate}
+                            solver_status.capture_baseline(board, window)
+                        eliminate_options(solver_status, board, to_eliminate, window)
                         locked_candidates.clues += len(solver_status.naked_singles)
                         locked_candidates.options_removed += len(to_eliminate)
+                        kwargs["solver_tool"] = "locked_candidates_type_1"
+                        if window:
+                            window.options_visible = window.options_visible.union(house).union(impacted_cells)
+                            kwargs["house"] = impacted_cells.union(house)
+                            kwargs["eliminate"] = to_eliminate
+                            kwargs["chain_a"] = _paint_locked_candidates(house, possibility)
                         return True
         return False
 
@@ -74,16 +74,17 @@ def locked_candidates(solver_status, board, window):
                         impacted_cells = set(CELLS_IN_BOX[boxes.pop()]).difference(house)
                         to_eliminate = {(possibility, cell) for cell in impacted_cells if possibility in board[cell]}
                         if to_eliminate:
-                            solver_status.capture_baseline(board, window)
-                            eliminate_options(solver_status, board, to_eliminate, window)
                             if window:
-                                window.options_visible = window.options_visible.union(house).union(impacted_cells)
-                            kwargs["solver_tool"] = "locked_candidates_type_2"
-                            kwargs["house"] = impacted_cells.union(house)
-                            kwargs["eliminate"] = to_eliminate
-                            kwargs["chain_a"] = _paint_locked_candidates(house, possibility)
+                                solver_status.capture_baseline(board, window)
+                            eliminate_options(solver_status, board, to_eliminate, window)
                             locked_candidates.clues += len(solver_status.naked_singles)
                             locked_candidates.options_removed += len(to_eliminate)
+                            kwargs["solver_tool"] = "locked_candidates_type_2"
+                            if window:
+                                window.options_visible = window.options_visible.union(house).union(impacted_cells)
+                                kwargs["house"] = impacted_cells.union(house)
+                                kwargs["eliminate"] = to_eliminate
+                                kwargs["chain_a"] = _paint_locked_candidates(house, possibility)
                             return True
         return False
 

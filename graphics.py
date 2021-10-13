@@ -119,7 +119,7 @@ class AppWindow:
             self.calculate_next_clue = True
             return True
 
-        solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else None        # TODO - fix it !!!
+        solver_tool = kwargs.get("solver_tool")
         wrong_entry = bool("conflicted_cells" in kwargs and kwargs["conflicted_cells"] or
                            "incorrect_values" in kwargs and kwargs["incorrect_values"])
 
@@ -139,14 +139,12 @@ class AppWindow:
 
     def render_board(self, board, **kwargs):
         """ render board (TODO) """
-        active_clue = kwargs["cell_solved"] if "cell_solved" in kwargs else None
-        chain_a = kwargs["chain_a"] if "chain_a" in kwargs else None
-        solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else "plain_board"
-        incorrect_values = kwargs["incorrect_values"] if "incorrect_values" in kwargs else set()
-        conflicted_cells = kwargs["conflicted_cells"] if "conflicted_cells" in kwargs else set()
-        eliminated = kwargs["eliminate"] if "eliminate" in kwargs else None
-
-        assert solver_tool is not None
+        active_clue = kwargs.get("cell_solved")
+        chain_a = kwargs.get("chain_a")
+        solver_tool = kwargs.get("solver_tool", "plain_board")
+        incorrect_values = kwargs.get("incorrect_values", set())
+        conflicted_cells = kwargs.get("conflicted_cells", set())
+        eliminated = kwargs.get("eliminate")
 
         black_digits = self.solver_status.givens
         if not self.critical_error:
@@ -201,9 +199,9 @@ class AppWindow:
     def draw_board(self, board, **kwargs):
         """ TODO """
         start = time.time()  # TODO - get rid of it!!!
-        solver_tool = kwargs["solver_tool"] if "solver_tool" in kwargs else "plain_board"   # TODO - simplify it !!!
+        solver_tool = kwargs.get("solver_tool", "plain_board")
 
-        if self.animate and solver_tool == "xxx":        # TODO - for DEBUG !
+        if self.animate and solver_tool == "finned_x_wing":        # TODO - for DEBUG !
             self.animate = False
             self.wait = True
             self.buttons[pygame.K_m].set_pressed(False)
@@ -222,7 +220,7 @@ class AppWindow:
 
         self.render_board(board, **kwargs)
 
-        incorrect_values = kwargs["incorrect_values"] if "incorrect_values" in kwargs else set()
+        incorrect_values = kwargs.get("incorrect_values", set())
         if self.critical_error:
             graph_utils.display_info(self, screen_messages["critical_error"])
         elif "conflicted_cells" in kwargs and kwargs["conflicted_cells"]:
