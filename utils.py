@@ -225,18 +225,19 @@ def get_pairs(board, by_row):
     return pairs_dict
 
 
-def get_n_values(board, value, n, by_row):
-    """ return dictionary of rows/columns with 2 to n 'value' candidates
-    if 'by_row' is True, the returned data structure is {row: {col1, ...}, ...}
-    if 'by_row' if False, the returned data structure is {column: {row1,...}, ...}
+def get_2_upto_n_candidates(board, digit, n, by_row):
+    """ return dictionary of rows/columns nodes where there are 2 - n nodes
+    per line with the 'digit' candidate
+     - if 'by_row' is True, the returned data structure is {row: {col1, ...}, ...}
+     - if 'by_row' if False, the returned data structure is {column: {row1,...}, ...}
     """
-    n_values = {}
+    nodes = {}
     for x_id in range(9):
         cells = CELLS_IN_ROW[x_id] if by_row else CELLS_IN_COL[x_id]
-        options = "".join(board[cell] for cell in cells)
-        if 1 < options.count(value) <= n:
-            n_values[x_id] = {y_id for y_id in range(9) if value in board[cells[y_id]]}
-    return n_values
+        candidates = "".join(board[cell] for cell in cells)
+        if 1 < candidates.count(digit) <= n:
+            nodes[x_id] = {y_id for y_id in range(9) if digit in board[cells[y_id]]}
+    return nodes
 
 
 def get_house_pairs(house, board):

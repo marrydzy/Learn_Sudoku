@@ -182,6 +182,9 @@ def skyscraper(solver_status, board, window):
                             kwargs["impacted_cells"] = impacted_cells
                             skyscraper.clues += len(solver_status.naked_singles)
                             skyscraper.options_removed += len(to_eliminate)
+
+                            # print(f'\t{kwargs["solver_tool"]}')
+
                             return True
         return False
 
