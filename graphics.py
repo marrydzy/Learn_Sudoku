@@ -201,7 +201,7 @@ class AppWindow:
         start = time.time()  # TODO - get rid of it!!!
         solver_tool = kwargs.get("solver_tool", "plain_board")
 
-        if self.animate and solver_tool == "swordfish":        # TODO - for DEBUG !
+        if self.animate and solver_tool == "sashimi_x_wing":        # TODO - for DEBUG !
             self.animate = False
             self.wait = True
             self.buttons[pygame.K_m].set_pressed(False)
