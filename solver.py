@@ -36,6 +36,7 @@ from utils import is_digit, is_solved, set_cell_candidates, set_neighbours_candi
 from display import screen_messages
 
 import singles
+import single_digit_patterns
 import intersections
 import subsets
 import uniqueness_tests
@@ -64,6 +65,10 @@ _solver_strategies = {
     "locked_candidates_type_2": Strategy(None, "", "Locked Candidates - Type 2 (Claiming)", 0, False),
     "naked_pair": Strategy(subsets.naked_pair, "subsets", "Naked Pair", 60, True),
     "hidden_pair": Strategy(subsets.hidden_pair, "subsets", "Hidden Pair", 70, True),
+    "two_string_kite": Strategy(single_digit_patterns.two_string_kite, "single_digit_patterns",
+                                "2-String Kite", 70, True),
+    "empty_rectangle": Strategy(single_digit_patterns.empty_rectangle, "single_digit_pattern",
+                                "Empty Rectangle", 130, True),
     "three_d_medusa": Strategy(coloring.three_d_medusa, "coloring", "3D Medusa", 320, True),
     "finned_x_wing": Strategy(fish.finned_x_wing, "fish", "Finned X-Wing", 130, True),
     "sashimi_x_wing": Strategy(fish.sashimi_x_wing, "fish", "Sashimi X-Wing", 130, True),  # TODO - testing only!
@@ -115,8 +120,8 @@ _solver_strategies = {
     # "three_d_medusa": Strategy(coloring.three_d_medusa, "coloring", "3D Medusa", 320, True),
     "naked_xy_chain": Strategy(coloring.naked_xy_chain, "coloring", "Naked XY Chain", 310, True),
     "hidden_xy_chain": Strategy(coloring.hidden_xy_chain, "coloring", "Hidden XY Chain", 310, True),
-    "empty_rectangle": Strategy(intermediate_techniques.empty_rectangle, "intermediate_techniques",
-                                "Empty Rectangle", 130, True),
+    # "empty_rectangle": Strategy(intermediate_techniques.empty_rectangle, "intermediate_techniques",
+    #                             "Empty Rectangle", 130, True),
     "sue_de_coq": Strategy(intermediate_techniques.sue_de_coq, "intermediate_techniques", "Sue de Coq technique",
                            130, True),
     "als_xy": Strategy(almost_locked_set.als_xy, "almost_locked_set", "ALS-XY", 320, True),
@@ -259,6 +264,7 @@ def get_prioritized_strategies():
         "Locked Candidates": Priority(50, 3, 4, 3),
         "Naked Pair": Priority(60, 5, 8, 7),
         "Hidden Pair": Priority(70, 6, 2, 2),
+        "2-String Kite": Priority(70, 6, 2, 2),         # TODO - Testing only!
         "Swordfish": Priority(140, 24, 14, 13),
         "XY-Wing": Priority(160, 13, 10, 9),
         "XYZ-Wing": Priority(180, 29, 19, 11),
