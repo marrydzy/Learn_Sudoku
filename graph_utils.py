@@ -523,7 +523,7 @@ def next_btn_clicked(window, _, board, **kwargs):
 
 
 def hint_btn_clicked(window, _, board, **kwargs):
-    """ action on pressing 'Hing' button """
+    """ action on pressing 'Hint' button """
     if window.buttons[pygame.K_h].is_active():
         window.buttons[pygame.K_h].press_and_deactivate(window.screen)
         window.suggest_technique = True
@@ -639,7 +639,7 @@ def quit_btn_clicked(window, *args, **kwargs):
 
 def keyboard_btn_clicked(window, btn_id, *args, **kwargs):
     """ Actions on pressing a keyboard button
-     - If the value is set as clue, the selected cell is deactivated deactivated:
+     - If the value is set as clue, the selected cell is deactivated:
        this helps to avoid accidentally entering another value in the same cell
     """
     if window.selected_cell is not None:
