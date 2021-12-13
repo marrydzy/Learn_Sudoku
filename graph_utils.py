@@ -3,6 +3,8 @@ import sys
 import pygame
 
 from collections import defaultdict
+
+import utils
 from solver import solver_status, ValueEntered
 
 from utils import set_remaining_candidates, get_cell_candidates
@@ -157,9 +159,12 @@ def render_options(window, options, pos):
                            pos[1] + window.pencilmark_offset[value][1] + window.pencilmark_shift_y))
 
 
-def cell_color(window, cell, **kwargs):
+def cell_color(window, cell, board, **kwargs):
     """ TODO """
     color = html_color_codes["white"]
+    if window.highlight_selected_digit and utils.is_digit(cell, board, window.solver_status) and \
+            board[cell] == window.selected_key:
+        color = html_color_codes["moccasin"]
     if "house" in kwargs and kwargs["house"] and cell in kwargs["house"]:
         color = html_color_codes["lightyellow"]
     if "greyed_out" in kwargs and cell in kwargs["greyed_out"]:
@@ -609,6 +614,16 @@ def toggle_pencil_marks_btn_clicked(window, _, board, *args, **kwargs):
         window.board_updated = False
 
 
+def toggle_highlight_digit(window, _, board, *args, **kwargs):
+    """ action on selecting 'x' option """
+    if not window.buttons[pygame.K_n].is_pressed():     # TODO !!!
+        window.highlight_selected_digit = not window.highlight_selected_digit
+        window.render_board(board, solver_tool="plain_board")
+        pygame.display.update()
+        window.wait = False
+        window.board_update = False
+
+
 def check_options_integrity(window, _, board, *args, **kwargs):
     """ check integrity of (entered) candidates """
     chain_i = defaultdict(set)
@@ -660,6 +675,12 @@ def keyboard_btn_clicked(window, btn_id, *args, **kwargs):
             window.selected_key = str(btn_id)
             window.buttons[btn_id].set_pressed(True)
             window.buttons[btn_id].draw(window.screen)
+
+    if window.highlight_selected_digit:
+    # window.render_board(board, solver_tool="plain_board")
+    # pygame.display.update()
+        window.wait = False
+        window.board_update = True
 
 
 def cell_clicked(window, cell_id, *args, **kwargs):
@@ -757,8 +778,10 @@ def set_buttons(window):
     window.buttons[pygame.K_r] = Button(pygame.K_q, btn_rect, "Reset", window.font_buttons)
     window.actions[pygame.K_r] = reset_btn_clicked
 
-    window.actions[pygame.K_o] = toggle_pencil_marks_btn_clicked  # TODO - add buttons
+    # TODO: These are hidden options; decide what to do with them
+    window.actions[pygame.K_o] = toggle_pencil_marks_btn_clicked
     window.actions[pygame.K_i] = check_options_integrity
+    window.actions[pygame.K_x] = toggle_highlight_digit
 
 
 def window_size():
@@ -893,6 +916,7 @@ def set_methods():
             "als_xy_wing": "0",
             "als_xy": "0",
             "death_blossom": "0",
+            "two_string_kite": "0",
             }
 
 

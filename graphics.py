@@ -59,6 +59,7 @@ class AppWindow:
         self.board_updated = False
         self.value_entered = ValueEntered(cell=None, value=None, as_clue=None)
         self.show_all_pencil_marks = False
+        self.highlight_selected_digit = False
         self.critical_error = None
         self.wait = False
         self.calculate_next_clue = False
@@ -162,7 +163,7 @@ class AppWindow:
                 cell_id = row_id * 9 + col_id
                 cell_pos = (col_id * CELL_SIZE + LEFT_MARGIN, row_id * CELL_SIZE + TOP_MARGIN)
                 cell_rect = (cell_pos[0], cell_pos[1], CELL_SIZE + 1, CELL_SIZE + 1)
-                pygame.draw.rect(self.screen, graph_utils.cell_color(self, cell_id, **kwargs), cell_rect)
+                pygame.draw.rect(self.screen, graph_utils.cell_color(self, cell_id, board, **kwargs), cell_rect)
                 if board[cell_id] != '.':
                     if cell_id in black_digits:
                         graph_utils.render_clue(self, board[cell_id], cell_pos, html_color_codes["black"])
