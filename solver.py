@@ -423,6 +423,7 @@ def _as_candidate_and_unresolved(board, window):
     cell_id, value, _ = window.value_entered
     if cell_id in window.options_visible or window.show_all_pencil_marks:
         solver_status.naked_singles.discard(cell_id)
+        window.options_visible.add(cell_id)
         if value in board[cell_id]:
             board[cell_id] = board[cell_id].replace(value, "")
             if len(board[cell_id]) == 0:
@@ -432,7 +433,6 @@ def _as_candidate_and_unresolved(board, window):
                 solver_status.naked_singles.add(cell_id)
         else:
             board[cell_id] += value
-            window.options_visible.add(cell_id)
     else:
         board[cell_id] = value
         solver_status.naked_singles.add(cell_id)

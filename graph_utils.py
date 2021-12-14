@@ -628,11 +628,10 @@ def check_options_integrity(window, _, board, *args, **kwargs):
     """ check integrity of (entered) candidates """
     chain_i = defaultdict(set)
     for cell in window.options_visible:
-        if len(board[cell]) > 1:
-            candidates = get_cell_candidates(cell, board, solver_status)
-            if candidates != set(board[cell]):
-                for value in candidates.symmetric_difference(set(board[cell])):
-                    chain_i[cell].add((value, 'pink'))
+        candidates = get_cell_candidates(cell, board, solver_status)
+        if candidates != set(board[cell]):
+            for value in candidates.symmetric_difference(set(board[cell])):
+                chain_i[cell].add((value, 'pink'))
     if chain_i:
         solver_tool = "options_integrity_issue"
         set_btn_status(window, False, (pygame.K_h, pygame.K_n, pygame.K_s, pygame.K_b, pygame.K_m))
