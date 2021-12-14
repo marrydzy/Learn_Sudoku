@@ -161,7 +161,7 @@ class SolverStatus:
             self.naked_singles_baseline = self.naked_singles.copy()
             self.cells_solved_baseline = self.cells_solved.copy()
             self.visible_pencilmarks_baseline = window.options_visible.copy()
-            if not window.animate:
+            if window.solver_loop != -1 and not window.animate and not window.suggest_technique:
                 window.buttons[K_b].set_status(True)
 
     def restore_baseline(self, board, window):

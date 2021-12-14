@@ -111,8 +111,8 @@ class AppWindow:
 
     def plain_board_event(self):
         """ Clean current board, not solved yet event  """
-        graph_utils.set_btn_status(self, False, (pygame.K_a, pygame.K_b))
-        graph_utils.set_btn_status(self, True, (pygame.K_s, pygame.K_m, pygame.K_s))
+        graph_utils.set_btn_status(self, False, (pygame.K_b,))
+        graph_utils.set_btn_status(self, True, (pygame.K_s, pygame.K_a, pygame.K_s))
 
     def handle_input_events(self, board, **kwargs):
         """ handle input events before entering the display loop  """
@@ -205,9 +205,9 @@ class AppWindow:
         if self.animate and solver_tool == "sashimi_x_wing":        # TODO - for DEBUG !
             self.animate = False
             self.wait = True
-            self.buttons[pygame.K_m].set_pressed(False)
-            graph_utils.set_btn_status(self, True, (pygame.K_a, pygame.K_b))
-            graph_utils.set_btn_status(self, False, (pygame.K_m,))
+            self.buttons[pygame.K_a].set_pressed(False)
+            graph_utils.set_btn_status(self, True, (pygame.K_b,))
+            graph_utils.set_btn_status(self, False, (pygame.K_a,))
             graph_utils.set_keyboard_status(self, True)
 
         if self.handle_input_events(board, **kwargs):
