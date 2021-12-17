@@ -537,8 +537,10 @@ def hint_btn_clicked(window, *args, **kwargs):
 def back_btn_clicked(window, _, board, **kwargs):
     """ action on clicking 'Back' button """
     if window.buttons[pygame.K_b].is_active():
-        window.buttons[pygame.K_b].press_and_release(window.screen)
         solver_status.restore_baseline(board, window)
+        set_keyboard_status(window, True)
+        set_btn_status(window, True)
+        window.buttons[pygame.K_b].press_and_release(window.screen)
         window.wait = False
 
 
