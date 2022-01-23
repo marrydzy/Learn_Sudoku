@@ -209,6 +209,7 @@ def _run_solver(progress_bar=None):
         window.solver_loop = data["current_loop"]
         if window.solved_board is None and "solved_board" in data:
             window.solved_board = data["solved_board"]
+        window.mask_buttons()   # TODO 
 
     ret_code = _apply_standard_techniques()
     if not ret_code:

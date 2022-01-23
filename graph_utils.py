@@ -539,7 +539,8 @@ def back_btn_clicked(window, _, board, **kwargs):
     if window.buttons[pygame.K_b].is_active():
         solver_status.restore_baseline(board, window)
         set_keyboard_status(window, True)
-        set_btn_status(window, True)
+        if not window.solver_status.set_givens:
+            set_btn_status(window, True)
         window.buttons[pygame.K_b].press_and_release(window.screen)
         window.wait = False
 
@@ -579,10 +580,11 @@ def reset_btn_clicked(window, _, board, *args, **kwargs):
     window.critical_error = None
     window.show_all_pencil_marks = False
     window.selected_cell = None
-    set_btn_status(window, True)
-    set_btn_status(window, False, (pygame.K_b,))
-    set_btn_state(window, False)
-    set_btn_state(window, True, (pygame.K_c, ))
+    if not window.solver_status.set_givens:
+        set_btn_status(window, True)
+        set_btn_status(window, False, (pygame.K_b,))
+        set_btn_state(window, False)
+        set_btn_state(window, True, (pygame.K_c, ))
     window.selected_key = None
     window.wait = False
     window.calculate_next_clue = False
@@ -608,6 +610,13 @@ def toggle_highlight_digit(window, _, board, *args, **kwargs):
         window.board_update = False
 
 
+def defining_completed(window, _, board, *args, **kwargs):
+    """ actions on selecting 'd' options: ends sudoku puzzle definition """
+    if window.solver_status.set_givens:
+        window.solver_status.set_givens = False
+        reset_btn_clicked(window, _, board, *args, **kwargs)
+
+
 def check_options_integrity(window, _, board, *args, **kwargs):
     """ check integrity of (entered) candidates """
     chain_i = defaultdict(set)
@@ -621,7 +630,7 @@ def check_options_integrity(window, _, board, *args, **kwargs):
         set_btn_status(window, False, (pygame.K_h, pygame.K_m, pygame.K_s, pygame.K_b, pygame.K_a))
     else:
         solver_tool = "options_integrity_ok"
-        set_btn_status(window, True, (pygame.K_h, pygame.K_m, pygame.K_s, pygame.K_a))
+        # set_btn_status(window, True, (pygame.K_h, pygame.K_m, pygame.K_s, pygame.K_a))
     window.draw_board(board, solver_tool=solver_tool, chain_i=chain_i)
     pygame.display.update()
     window.wait = False
@@ -673,11 +682,11 @@ def cell_clicked(window, cell_id, *args, **kwargs):
     """
     if get_keyboard_status(window):
         cell_id -= CELL_ID_OFFSET
-        if cell_id not in solver_status.givens:
+        if window.solver_status.set_givens or cell_id not in solver_status.givens:
             if window.selected_key:
                 window.value_entered = ValueEntered(cell_id, window.selected_key,
-                                                  True if window.buttons[pygame.K_c].is_pressed() else False)
-                if window.buttons[pygame.K_c].is_pressed():
+                                                    True if window.buttons[pygame.K_c].is_pressed() else False)
+                if window.buttons[pygame.K_c].is_pressed() and not window.solver_status.set_givens:
                     window.buttons[int(window.selected_key)].set_pressed(False)
                     window.buttons[int(window.selected_key)].draw(window.screen)
                     window.selected_key = None
@@ -758,6 +767,7 @@ def set_buttons(window):
     window.actions[pygame.K_r] = reset_btn_clicked
 
     # TODO: These are hidden options; decide what to do with them
+    window.actions[pygame.K_d] = defining_completed
     window.actions[pygame.K_o] = toggle_pencil_marks_btn_clicked
     window.actions[pygame.K_i] = check_options_integrity
     window.actions[pygame.K_x] = toggle_highlight_digit

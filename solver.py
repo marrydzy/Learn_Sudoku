@@ -142,6 +142,7 @@ class SolverStatus:
     """ class to store data needed to recover status of the puzzle solver prior to a move """
     def __init__(self):
         self.pencilmarks = False
+        self.set_givens = False
         self.iteration = 0
         self.givens = set()
         self.cells_solved = set()
@@ -153,6 +154,8 @@ class SolverStatus:
 
     def initialize(self, board):
         self.givens = set(cell_id for cell_id in range(81) if board[cell_id] != ".")
+        if not self.givens:
+            self.set_givens = True
         self.reset(board)
 
     def capture_baseline(self, board, window):
@@ -347,7 +350,10 @@ def _manual_move(board, window):
     if window and window.value_entered.cell is not None:
         solver_status.capture_baseline(board, window)
         cell_id, value, as_value = window.value_entered
-        if cell_id in solver_status.cells_solved:
+        if solver_status.set_givens:
+            board[window.value_entered.cell] = window.value_entered.value
+            solver_status.givens.add(window.value_entered.cell)
+        elif cell_id in solver_status.cells_solved:
             if board[cell_id] == value:
                 _the_same_as_value_set(board, window, solver_status.pencilmarks)
             else:
@@ -367,7 +373,8 @@ def _manual_move(board, window):
                   "conflicted_cells": conflicted,
                   "c_chain": c_chain,
                   }
-        window.buttons[K_h].set_status(True)
+        if not solver_status.set_givens:
+            window.buttons[K_h].set_status(True)
     if is_solved(board, solver_status) and window.solver_loop != -1:
         kwargs["solver_tool"] = "end_of_game"
     return kwargs

@@ -75,6 +75,16 @@ class AppWindow:
         self.screen.fill(html_color_codes["gainsboro"])     # TODO - use html color definition
         graph_utils.set_buttons(self)
 
+    def mask_buttons(self):
+        """ TBD """
+        self.buttons[pygame.K_c].set_status(False)
+        self.buttons[pygame.K_p].set_status(False)
+        self.buttons[pygame.K_h].set_status(False)
+        self.buttons[pygame.K_m].set_status(False)
+        self.buttons[pygame.K_a].set_status(False)
+        self.buttons[pygame.K_s].set_status(False)
+        self.buttons[pygame.K_r].set_status(False)
+
     def critical_error_event(self, board, **kwargs):
         """ Handle 'Critical Error' event """
         if self.buttons[pygame.K_s].is_pressed() or self.animate:
@@ -112,7 +122,8 @@ class AppWindow:
     def plain_board_event(self):
         """ Clean current board, not solved yet event  """
         graph_utils.set_btn_status(self, False, (pygame.K_b,))
-        graph_utils.set_btn_status(self, True, (pygame.K_s, pygame.K_a, pygame.K_s))
+        if not self.solver_status.set_givens:       # TODO
+            graph_utils.set_btn_status(self, True, (pygame.K_a, pygame.K_s,))
 
     def handle_input_events(self, board, **kwargs):
         """ handle input events before entering the display loop  """

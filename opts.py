@@ -41,6 +41,7 @@ def _set_config_defaults(args, config, data):
     config["write_to_log"] = bool(config["log_fname"])
     config["log_csv_format"] = False
     config["puzzles_list"] = False
+    config["is_empty"] = False
     config["is_solved"] = False
     config["output_opts"] = None
     config["stats"] = False
