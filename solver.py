@@ -342,7 +342,7 @@ def get_strategy_name(strategy):
 
 
 def _manual_move(board, window):
-    """ Depending on board state: sets or removes entered digit as cell clue or candidate
+    """ Depending on edit context: sets or removes entered digit as cell given, clue or candidate
          - checks board integrity after the move
          - checks if the board has been solved by the move
      """
@@ -351,8 +351,12 @@ def _manual_move(board, window):
         solver_status.capture_baseline(board, window)
         cell_id, value, as_value = window.value_entered
         if solver_status.set_givens:
-            board[window.value_entered.cell] = window.value_entered.value
-            solver_status.givens.add(window.value_entered.cell)
+            if board[window.value_entered.cell] == window.value_entered.value:
+                board[window.value_entered.cell] = '.'
+                solver_status.givens.remove(window.value_entered.cell)
+            else:
+                board[window.value_entered.cell] = window.value_entered.value
+                solver_status.givens.add(window.value_entered.cell)
         elif cell_id in solver_status.cells_solved:
             if board[cell_id] == value:
                 _the_same_as_value_set(board, window, solver_status.pencilmarks)

@@ -24,6 +24,7 @@
         _get_methods() - returns list of (strategy.name, strategy.solver) tuples
 
 TODO:
+    - video OCR option should be active only when webcam is ON (add appropriate argument to solver options)
     - video_ocr() needs to properly handle failures of _run_solver()
     - to clean displaying multiple sudoku definition file (right now there is no information
       when displaying results in-line (verbose = 1) and redundant information when displaying
@@ -73,7 +74,7 @@ def main():
     set_solver_options(config, data)    # set solver data & configuration parameters
     _read_boards()
     if config['graphical_mode']:
-        data["graph_display"] = graphics.AppWindow(board, solver_status, config["peep"])
+        data["graph_display"] = graphics.AppWindow(board, solver_status, config)
 
     if boards:
         if not config["puzzles_list"]:
@@ -107,7 +108,7 @@ def _picture_ocr():
     ocr_engine.show_contour(10)
     _init_board()
     if config['graphical_mode']:
-        data["graph_display"] = graphics.AppWindow(board, solver_status, config["peep"])
+        data["graph_display"] = graphics.AppWindow(board, solver_status, config)
     _solve_sudoku_puzzle()
 
 
@@ -126,7 +127,7 @@ def _video_ocr():
     ocr_engine.close()
     config["ocr"] = False
     _init_board()
-    data["graph_display"] = graphics.AppWindow(board, solver_status, config["peep"])
+    data["graph_display"] = graphics.AppWindow(board, solver_status, config)
     _solve_sudoku_puzzle()
 
 
@@ -209,7 +210,7 @@ def _run_solver(progress_bar=None):
         window.solver_loop = data["current_loop"]
         if window.solved_board is None and "solved_board" in data:
             window.solved_board = data["solved_board"]
-        window.mask_buttons()   # TODO 
+        window.mask_buttons()   # TODO
 
     ret_code = _apply_standard_techniques()
     if not ret_code:
@@ -368,6 +369,9 @@ def _read_boards():
     it has to be a text file containing 81 (or multiply of 81) characters from {'.', 0-9} set.
     The characters can be separated by any other characters. The subsequent characters
     are used to define the puzzle(s) board(s) by rows.
+    If the file name is not given and OCR option is not active it creates one empty board
+    and sets "first_id" and "last_id" to 1
+    TODO: add checking if webcam/OCR is off
     """
     if config["fname"]:
         board_id = 0
@@ -390,6 +394,11 @@ def _read_boards():
             sys.exit(0)
         if config["last_id"] - config["first_id"] > 0:
             config["puzzles_list"] = True
+    else:
+        boards[0] = ['.'] * 81
+        config["first_id"] = 1
+        config["last_id"] = 1
+
     set_output_options(config)
 
 

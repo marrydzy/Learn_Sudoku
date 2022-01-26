@@ -548,6 +548,10 @@ def back_btn_clicked(window, _, board, **kwargs):
 def solve_btn_clicked(window, *args, **kwargs):
     """ action on pressing 'Solve' button """
     window.selected_cell = None
+    if window.selected_key:
+        window.buttons[int(window.selected_key)].set_pressed(False)
+        window.buttons[int(window.selected_key)].draw(window.screen)
+    window.selected_key = None
     window.buttons[pygame.K_s].press_and_release(window.screen)
     set_btn_status(window, False)
     set_keyboard_status(window, False)
@@ -560,6 +564,10 @@ def solve_btn_clicked(window, *args, **kwargs):
 def animate_btn_clicked(window, *args, **kwargs):
     """ action on pressing 'Animate' button """
     window.selected_cell = None
+    if window.selected_key:
+        window.buttons[int(window.selected_key)].set_pressed(False)
+        window.buttons[int(window.selected_key)].draw(window.screen)
+    window.selected_key = None
     window.buttons[pygame.K_a].press_and_release(window.screen)
     set_btn_status(window, False)
     set_keyboard_status(window, False)
@@ -610,11 +618,66 @@ def toggle_highlight_digit(window, _, board, *args, **kwargs):
         window.board_update = False
 
 
+def move_selected_cell_right(window, *args, **kwargs):
+    """ move selected cell RIGHT """
+    if window.selected_cell is not None:
+        row_max_cell_id = (window.selected_cell // 9) * 9 + 8
+        window.selected_cell = min(window.selected_cell + 1, row_max_cell_id)
+        window.wait = False
+        window.board_updated = True
+
+
+def move_selected_cell_left(window, *args, **kwargs):
+    """ move selected cell LEFT """
+    if window.selected_cell is not None:
+        row_min_cell_id = (window.selected_cell // 9) * 9
+        window.selected_cell = max(window.selected_cell - 1, row_min_cell_id)
+        window.wait = False
+        window.board_updated = True
+
+
+def move_selected_cell_up(window, *args, **kwargs):
+    """ move selected cell UP """
+    if window.selected_cell is not None:
+        window.selected_cell = window.selected_cell - 9 if window.selected_cell > 8 else window.selected_cell
+        window.wait = False
+        window.board_updated = True
+
+
+def move_selected_cell_down(window, *args, **kwargs):
+    """ move selected cell DOWN """
+    if window.selected_cell is not None:
+        window.selected_cell = window.selected_cell + 9 if window.selected_cell < 72 else window.selected_cell
+        window.wait = False
+        window.board_updated = True
+
+
 def defining_completed(window, _, board, *args, **kwargs):
     """ actions on selecting 'd' options: ends sudoku puzzle definition """
     if window.solver_status.set_givens:
         window.solver_status.set_givens = False
         reset_btn_clicked(window, _, board, *args, **kwargs)
+
+
+def save_sudoku_definition_file(window, _, board, *args, **kwargs):
+    """ Save sudoku definition file
+    TODO:
+    This is a mock implementation of the option
+    """
+    import os
+
+    file_name = 'sudoku_xyz'
+    f_name, ext = os.path.splitext(file_name)
+    path, _ = os.path.split(file_name)
+    if ext.lower() != '.txt':
+        ext = '.txt'
+    if not path:
+        path = window.config["puzzles"]
+    path_name = os.path.join(path, f_name+ext.lower())
+    with open(path_name, "w") as sudoku_puzzle:
+        for cell_id in range(81):
+            cell_value = board[cell_id] + ',' if board[cell_id].isdigit() else '.,'
+            sudoku_puzzle.write(cell_value)
 
 
 def check_options_integrity(window, _, board, *args, **kwargs):
@@ -645,15 +708,13 @@ def quit_btn_clicked(window, *args, **kwargs):
 
 
 def keyboard_btn_clicked(window, btn_id, *args, **kwargs):
-    """ Actions on pressing a keyboard button
-     - If the value is set as clue, the selected cell is deactivated:
-       this helps to avoid accidentally entering another value in the same cell
+    """ Actions on pressing a keyboard button (in app window or on computer keyboard)
     """
+    assert not (window.selected_cell and window.selected_key)
+
     if window.selected_cell is not None:
         window.value_entered = ValueEntered(window.selected_cell, str(btn_id),
                                             True if window.buttons[pygame.K_c].is_pressed() else False)
-        if window.buttons[pygame.K_c].is_pressed():
-            window.selected_cell = None
         window.wait = False
     else:
         if str(btn_id) == window.selected_key:
@@ -668,17 +729,17 @@ def keyboard_btn_clicked(window, btn_id, *args, **kwargs):
             window.buttons[btn_id].set_pressed(True)
             window.buttons[btn_id].draw(window.screen)
 
-    if window.highlight_selected_digit:
+    # if window.highlight_selected_digit:
     # window.render_board(board, solver_tool="plain_board")
     # pygame.display.update()
-        window.wait = False
-        window.board_update = True
+    window.wait = False
+    window.board_update = True
 
 
 def cell_clicked(window, cell_id, *args, **kwargs):
     """ Actions on clicking a board cell
-     - If the value is set as clue, the selected keyboard key is deactivated:
-       this helps to avoid accidentally entering the same value in another cell
+     - If a key is selected it is entered as cell given/clue/candidate
+     - Otherwise, the cell is activated or deactivated (if it was active)
     """
     if get_keyboard_status(window):
         cell_id -= CELL_ID_OFFSET
@@ -686,11 +747,11 @@ def cell_clicked(window, cell_id, *args, **kwargs):
             if window.selected_key:
                 window.value_entered = ValueEntered(cell_id, window.selected_key,
                                                     True if window.buttons[pygame.K_c].is_pressed() else False)
-                if window.buttons[pygame.K_c].is_pressed() and not window.solver_status.set_givens:
-                    window.buttons[int(window.selected_key)].set_pressed(False)
-                    window.buttons[int(window.selected_key)].draw(window.screen)
-                    window.selected_key = None
-                window.board_updated = True
+                # if window.buttons[pygame.K_c].is_pressed() and not window.solver_status.set_givens:
+                #     window.buttons[int(window.selected_key)].set_pressed(False)
+                #    window.buttons[int(window.selected_key)].draw(window.screen)
+                #     window.selected_key = None
+                # window.board_updated = True
             else:
                 if cell_id == window.selected_cell:
                     window.selected_cell = None
@@ -770,7 +831,13 @@ def set_buttons(window):
     window.actions[pygame.K_d] = defining_completed
     window.actions[pygame.K_o] = toggle_pencil_marks_btn_clicked
     window.actions[pygame.K_i] = check_options_integrity
+    window.actions[pygame.K_w] = save_sudoku_definition_file
     window.actions[pygame.K_x] = toggle_highlight_digit
+    window.actions[pygame.K_RIGHT] = move_selected_cell_right
+    window.actions[pygame.K_LEFT] = move_selected_cell_left
+    window.actions[pygame.K_UP] = move_selected_cell_up
+    window.actions[pygame.K_DOWN] = move_selected_cell_down
+
 
 
 def window_size():

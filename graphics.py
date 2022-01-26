@@ -1,4 +1,27 @@
 # -*- coding: UTF-8 -*-
+"""
+Active keys:
+
+'a' pygame.K_a      - the same as pressing Animate button
+'b' pygame.K_b      - the same as pressing Back button
+'c' pygame.K_c      - the same as pressing Clues button
+'d' pygame.K_d      - ending puzzle definition phase ('defines' entry)
+'h' pygame.K_h      - the same as pressing Help button
+'i' pygame.K_i      - checks options integrity
+'m' pygame.K_m      - the same as pressing Move button
+'o' pygame.K_o      - toggle visibility of all pencil marks
+'p' pygame.K_p      - the same as pressing Pencil Marks button
+'q' pygame.K_q      - the same as pressing Quit button
+'r' pygame.K_r      - the same as pressing Reset button
+'s' pygame.K_s      - the same as pressing Save button
+'w' pygame.K_w      - save puzzle definition to a file
+'x' pygame.K_x      - toggle highlighting of a selected digit
+'←' pygame.K_LEFT   - move selected cell left (within a row)
+'→' pygame.K_RIGHT  - move selected cell right (within a row)
+'↑' pygame.K_UP     - move selected cell up (within a column)
+'↓' pygame.K_DOWN   - move selected cell down (within a column)
+
+"""
 
 import pygame
 import time
@@ -18,7 +41,7 @@ KEYBOARD_DIGITS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
 class AppWindow:
     """ TODO """
 
-    def __init__(self, board, solver_status, inspect):
+    def __init__(self, board, solver_status, config):
         if not pygame.get_init():
             pygame.init()
         self.font_type = "FreeSans"
@@ -46,9 +69,10 @@ class AppWindow:
         self.actions = {}
 
         self.method = graph_utils.set_methods()
-        self.peep = inspect if len(inspect) else ''.join(self.method.values())
+        self.peep = config["peep"] if len(config["peep"]) else ''.join(self.method.values())
         self.inspect = self.peep
 
+        self.config = config
         self.solver_status = solver_status
         self.options_visible = set()
         self.selected_key = None
@@ -115,6 +139,10 @@ class AppWindow:
     def sudoku_solved_event(self, board):
         """ Handle 'Sudoku Solved' event """
         self.animate = False
+        if self.selected_key:
+            self.buttons[int(self.selected_key)].set_pressed(False)
+            self.buttons[int(self.selected_key)].draw(self.screen)
+        self.selected_key = None
         graph_utils.set_keyboard_status(self, False)
         graph_utils.set_btn_status(self, False)
         graph_utils.set_btn_status(self, True, (pygame.K_q, pygame.K_r))
